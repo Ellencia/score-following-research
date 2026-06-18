@@ -6,7 +6,7 @@
 
 ## 🔗 바로 보기 (어디서든)
 
-**👉 https://ellencia.github.io/score-following-research/**
+**👉 <https://ellencia.github.io/score-following-research/>**
 
 브라우저만 있으면 PC·모바일 어디서든 열람할 수 있습니다. 설치 불필요.
 
@@ -17,6 +17,8 @@
 ## 🎧 시간이 없을 때 — 듣기용 오디오 대본
 
 읽을 시간이 없다면 [오디오_대본.md](오디오_대본.md)를 음성으로 들으세요. 약 25~30분 분량으로 분야 전체를 귀로 흡수할 수 있도록 구어체로 썼습니다. (TTS 변환 방법은 파일 상단 안내 참고)
+
+라이브 사이트에서는 **"전체 종합 문서 → 🎧 듣기용 오디오 대본"** 카드로 바로 열어 볼 수도 있습니다.
 
 ## 📚 무엇을 다루나 — 한눈에
 
@@ -44,7 +46,7 @@ python -m http.server 8000
 
 ## 📂 저장소 구조
 
-```
+```text
 index.html                  # 단독 웹앱 (진입점)
 glossary.js                 # 용어집 hover 카드 데이터
 js/mermaid.min.js           # 다이어그램 렌더러
