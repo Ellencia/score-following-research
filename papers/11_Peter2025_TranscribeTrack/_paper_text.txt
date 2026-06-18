@@ -1,0 +1,458 @@
+                                                                           PAIRING R EAL -T IME P IANO T RANSCRIPTION
+                                                                                 WITH S YMBOL - LEVEL T RACKING
+                                                                          FOR P RECISE AND ROBUST S CORE F OLLOWING
+
+                                        Silvan D. P ETER 1 , Patricia H U (胡紫漪)1 , and Gerhard W IDMER 1, 2
+                                        1
+                                            Institute of Computational Perception, Johannes Kepler University, Linz, Austria
+                                        2
+                                            LIT AI Lab, Linz Institute of Technology, Linz, Austria
+
+
+
+                                                                          ABSTRACT                                          audio domain and then aligning the two audio streams,
+                                                                                                                            or processing them in the symbolic domain, where mu-
+                                        Real-time music tracking systems follow a musical per-
+arXiv:2505.05078v1 [cs.SD] 8 May 2025
+
+
+
+
+                                                                                                                            sic is represented as note events or MIDI data. The
+                                        formance and at any time report the current position in                             first approach is more versatile as both audio reference
+                                        a corresponding score. Most existing methods approach                               tracks (e.g., previous recordings of a piece) as well as
+                                        this problem exclusively in the audio domain, typically us-                         audio inputs (e.g., live recordings of an acoustic instru-
+                                        ing online time warping (OLTW) techniques on incoming                               ment) are more readily available than their symbolic rep-
+                                        audio and an audio representation of the score. Audio                               resentations such as MusicXML scores or MIDI perfor-
+                                        OLTW techniques have seen incremental improvements                                  mances. Most methods to date have consequently followed
+                                        both in features and model heuristics which reached a per-                          the first approach, treating music tracking as an audio-
+                                        formance plateau in the past ten years. We argue that                               to-audio alignment problem by synthesizing a MIDI ver-
+                                        converting and representing the performance in the sym-                             sion of the score into an audio file. Harmonic (energy
+                                        bolic domain – thereby transforming music tracking into                             distribution-based) or onset (energy dynamics-based) fea-
+                                        a symbolic task – can be a more effective approach, even                            tures are then used to align performance and score using
+                                        when the domain transformation is imperfect. Our mu-                                online variants of the online time warping (OLTW) algo-
+                                        sic tracking system combines two real-time components:                              rithm [1–11]. Apart from these OLTW-based methods,
+                                        one handling audio-to-note transcription and the other a                            especially earlier systems have relied on Hidden Markov
+                                        novel symbol-level tracker between transcribed input and                            Models (HMMs) and other Bayesian networks for align-
+                                        score. We compare the performance of this mixed audio-                              ment [12, 13]. The second approach, symbol-level track-
+                                        symbolic approach with its equivalent audio-only counter-                           ing, is applied for high-precision scenarios such as auto-
+                                        part, and demonstrate that our method outperforms the lat-                          matic accompaniment [14]. While this domain has seen
+                                        ter in terms of both precision, i.e., absolute tracking error,                      less research, symbol-level trackers tend to be more pre-
+                                        and robustness, i.e., tracking success.                                             cise if successful, though they are more susceptible to er-
+                                                                                                                            rors from performance inconsistencies and reference mis-
+                                                                1. INTRODUCTION                                             matches [14, 15]
+                                        The task of a real-time music tracking system (also known
+                                        as a score follower) is to listen to a musical performance
+                                        and recognize automatically, at any time, the current po-                             In this paper, we develop a novel symbol-level tracker
+                                        sition in the corresponding musical score. Typically, the                           based on online time warping (OLTW) that incorporates
+                                        system possesses a representation of the score in advance,                          path-wise tempo estimation. We evaluate this symbol-
+                                        and maps an incoming real-time audio stream onto this rep-                          level tracker in a score following scenario where the real-
+                                        resentation to decode the current score position. A system                          time input consists of an audio recording and the score
+                                        that achieves this task accurately and robustly promises to                         is provided in a symbolically encoded format. Specifi-
+                                        be useful in a wide range of applications, e.g., performance                        cally, we demonstrate that transforming the incoming per-
+                                        visualizations, live music subtitling, automatic score dis-                         formance stream from the audio into the symbolic domain,
+                                        plays, or live synchronization between a musician and the                           and subsequently aligning it with its corresponding sym-
+                                        score following system.                                                             bolic score, in real time, can surpass the performance of ex-
+                                          In a real-time music tracker, the representation of the                           isting audio-based music tracking systems, even when the
+                                        two time series to be aligned – score and live perfor-                              audio-to-symbolic conversion is imperfect. We compare
+                                        mance – plays a crucial role. Generally, there are two                              our method to its online audio-only counterpart and ana-
+                                        principal approaches: representing both time series in the                          lyze how various tuning parameters, from feature selection
+                                                                                                                            to alignment algorithms, influence the performance. Our
+                                        Copyright: © 2025. This is an open-access article distributed under the terms       experimental results highlight the potential of approaching
+                                        of the Creative Commons Attribution 3.0 Unported License, which permits unre-       real-time music tracking as a symbol-level task, supported
+                                        stricted use, distribution, and reproduction in any medium, provided the original   by both improved, reliable symbol-level tracking and re-
+                                        author and source are credited.                                                     cent advances in real-time audio-to-note transcription.
+                 2. RELATED WORK                                Algorithm 1 Pairwise Distance Metric combining Pitch
+                                                                and Time
+Most existing systems have treated real-time music track-
+                                                                Require: for score (A) and performance (B) each: current
+ing as an online audio alignment problem, and devel-
+                                                                    times aTi , bTj , previous times aTpi , bTpj , current pitch set
+oped their approaches from offline dynamic time warping
+(DTW). In (offline) DTW, the two sequences to be aligned            aP                 P
+                                                                      i and pitch bj , previous tempo tp . timing weight c,
+
+are completely known beforehand, and the goal is to find            decay factor tempo d
+                                                                 1: pitch error eP ← 0 if bP         P
+                                                                                               j ∈ ai else 1
+an optimal alignment between the two based on a local dis-
+tance measure and an alignment cost matrix. Each entry in        2: current onset time estimate b  cT ← bT + (aT − aT ) ∗ t
+                                                                                                      j      pj      i      pi    p
+the matrix represents the cost of the optimal alignment up
+to that point, and the optimal warping path is found by re-                          c
+                                                                 3: time error eT ← |b T − bT |
+                                                                                       j    j
+cursively tracing back through the matrix using dynamic          4: pairwise distance pd ← eP + c ∗ eT
+programming [16].                                                5: if aT     T
+                                                                        i 6= api then
+  In the standard version of online time warping (OLTW)          6:    current tempo tc ← (bTj + bTpj )/(aTi − aTpi )
+[1], only the score is known completely beforehand while         7: else
+the performance is streamed in real time. The alignment          8:   current tempo tc ← tp + bTj − bTpj
+is now computed incrementally by expanding the window            9: end if
+into the (row and/or column) direction with minimal nor-        10: smoothed tempo ts ← tc ∗ d + (1 − d) ∗ tp
+malized cost. This online variant achieves linear time and      11: return pd, ts
+space complexity, as it updates only a fixed number of cells
+per step rather than the entire matrix. Variants of OLTW in-
+clude enhancements such as the ‘backward-forward strat-                          3. PROPOSED METHOD
+egy’ [3] that revisits past decisions to improve the preci-
+sion of the current score position estimate, the use of tempo   In this section, we introduce our score following method
+models [5] to adjust the score representation based on the      based on real-time piano transcription and symbol-level
+tempo of the live performance, as well as the use of multi-     music tracking. We start with the real-time transcription
+ple reference performances [6, 14].                             module which is chosen from the literature and adapted to
+  Most audio-based music tracking systems rely on care-         our use case with minimal modifications. Most of this sec-
+fully crafted audio features. Widely used features include      tion then concerns our symbol-level tracking algorithm.
+chroma-based harmonic features [3, 5, 17, 18], onset-based
+features [19], or a combination of both, which balance          3.1 Real-time AMT
+chroma robustness with temporal accuracy [2]. More re-          We choose to use [33] for the online transcription part
+cently, the focus has shifted toward learned features, lever-   of our method. [33] consists of a convolutional acous-
+aging deep neural networks [7, 9, 11, 20–23].                   tic model that extracts local acoustic features, and a uni-
+  Compared to audio-based music tracking, symbolic mu-          directional LSTM that predicts notes per pitch and per
+sic tracking remains relatively under-explored [14, 15]. In     frame auto-regressively. Compared to previous methods
+offline audio-to-score alignment, there is prior work that      [27, 28], the architecture in [33] is more lightweight as
+follows a similar approach to ours, that is, leveraging auto-   multiple note states (i.a., onset, off, on) are predicted in
+matic music transcription (AMT) to predict note presence        a multi-class framework rather than using separate model
+and onset timing, which are then used as note features for      branches for each state. This model represents the current
+subsequent MIDI-based offline score alignment [24, 25].         state of the art in online piano transcription, with competi-
+Moreover, some studies have explored a middle ground be-        tive F1 scores at a latency of 174 ms.
+tween audio and symbol-level alignment by aligning raw
+transcription features [26].
+                                                                3.2 Symbol-level Tracking
+  Recent advancements in AMT have been largely driven
+by the availability of large-scale, well-aligned audio-MIDI     The symbol-level tracker builds on three separate strands
+datasets and increased availability of computational re-        of work: the core OLTW algorithm used in audio tracking
+sources [27], enabling deep neural networks to achieve          [1,2], a pitch-based sequence representation introduced for
+state-of-the-art performance [28, 29]. However, as these        offline symbol-level alignment [15], and tempo modeling
+models have grown in complexity and size, they have be-         [5, 11, 14]. We combine these into a novel OLTW version
+come increasingly resource-intensive, limiting their appli-     on symbol sequences with a new pairwise pitch- and time-
+cability in real-time scenarios. Most existing systems are      based distance metric.
+therefore designed for offline use, with only a limited num-      Our tracker works on two sequences of symbolically en-
+ber addressing the task in real-time contexts [30–32].          coded notes, each represented by integer MIDI pitches
+  Online methods for AMT focus on reducing complexity           and floating-point onset times. The performance (B :=
+through architectural choices such as single-branching [30]     [. . . , (bP    T
+                                                                           j , bj ), . . . ]) is a sequence of pitch onset tuples,
+                                                                   P       T
+or substituting conventional components with more com-          (b , b ), representing MIDI notes, whether they are
+putationally lightweight alternatives [32], in addition to      streamed in real-time, recorded, or transcribed. The score
+changing recurrent directions from bi- to uni-directional       sequence A, in contrast, encodes chords instead of in-
+[30, 32], or removing recurrent layers entirely [31].           dividual pitches. It is directly extracted from MIDI or
+a symbolically encoded score, grouping notes with co-                selection, path normalization, and window initialization,
+inciding onsets into pitch sets that represent all starting          are preserved in our symbol-level OLTW. For the sake of
+notes at each score onset. The resulting score sequence              clarity, these steps are omitted from Algorithm 2.
+(A := [. . . , (aP    T                                     P
+                 i , ai ), . . . ]) consists of pitch set (a ) and
+        T                                                              The key novelties are twofold: 1) the introduction of di-
+onset (a ) tuples.
+                                                                     rectional weights dw0 , dw1 , dw2 for the score, diagonal
+3.2.1 Pairwise distance metric                                       and performance directions, respectively, and 2) the in-
+                                                                     corporation of a tempo matrix T (line 2) to track point
+Algorithm 1 describes the pairwise distance metric, which            (onset)-wise tempo estimates. The directional weights pri-
+compares (performance and score) pitch and time (tempo)              oritize certain directions over others, thereby encouraging
+information. Uppercase variables are used for sequences              or penalizing specific paths. This technique is commonly
+or matrices, lowercase ones for scalars and pitch sets. The          employed in offline DTW to influence path selection. In
+pairwise distance metric computes a measure of closeness             lines 6 - 8, the pairwise distances pwc and tempo esti-
+between an incoming performance tuple (bP              T
+                                                  j , bj ) and a     mates t corresponding to the three possible directions are
+                             P   T
+reference score tuple (ai , ai ), and consists of localized          computed based on the pairwise distance metric described
+part based on pitch eP , and context-dependent part eT               above. Then, in lines 9 - 11, the distances are weighted
+based on both onset information and a tempo estimate tp .            by their directional weight and accumulated to directional
+  For the pitch error eP (line 1), we adapt the representation       costs dc. The index idxmin corresponding to the direction
+and metric in [15], a binary distance between a performed            which minimizes the accumulated cost dc is computed in
+pitch bP j = pj and a pitch set corresponding to a score on-         line 12. The cost at this index is stored in the windowed ac-
+set aP                                                    P
+      i = {pi1 , pi2 , ...}, which equals zero if pj ∈ ai , and      cumulated cost matrix AC (line 13). In line 14, the tempo
+                                        T
+one otherwise. For the time error e , we first extrapolate           estimate t corresponding to the direction with the minimal
+the current performed onset time bc   T from the previous per-
+                                      j
+                                                                     accumulated cost is updated and stored in the tempo ma-
+formance onset time, using the score inter-onset interval            trix T . Rather than relying on an external tempo model or
+(i.e., the distance between previous and current score on-           time-based heuristic, this algorithm implicitly tracks mul-
+set times) and the previous tempo estimate tp (line 2), and          tiple alternative paths, each with its own continuously up-
+compare this estimate to the actually observed current per-          dated tempo estimate. Finally, in line 15, the path length is
+formed note onset bTj (line 3). Intuitively, the time error eT       updated and stored in its matrix P L.
+measures how close the current performed onset time is to              The method involves several tuning parameters, includ-
+its expected position, based on the previous tracking posi-          ing directional weights, initial tempo, tempo decay factor,
+tion and tempo. The total pairwise distance pd is then com-          window size, and timing weight, all of which impact its
+puted as the sum of the pitch error eP and the time error            behavior, which are explored in further detail in the next
+eT weighted by factor c. Besides the distance, Algorithm 1           section.
+also computes an updated smoothed tempo estimate ts for
+the current tracking position based an exponential moving
+average of previous tempo values with decay factor d (lines          Algorithm 2 Custom Online Time Warping Algorithm
+5 - 10).                                                             Require: reference sequence A = {a1 , a2 , . . . , an }, input
+3.2.2 Adapted OLTW algorithm                                             queue B = {b1 , b2 , . . . , bm }, local distance metric m,
+                                                                         window size w, directional weights dw0 , dw1 , dw2 .
+The distance metric usefully encapsulates both pitch and              1: AC ← AC0
+timing information. However, it relies on information                 2: T ← T0
+about previous tracking positions as well as their tempo es-          3: P L ← 0
+timates, requiring modifications to the standard OLTW al-             4: for bk in B.pop() do
+gorithm. Algorithm 2 shows the central loop of our tracker            5:   for (i, j) in idxborder do
+that accommodates for this distance metric.                           6:      pwc0 , t0 ← m(ai , bj , ai−1 , bj , T [i − 1, j])
+  The underlying concept of OLTW is briefly outlined here,            7:      pwc1 , t1 ← m(ai , bj , ai−1 , bj−1 , T [i − 1, j − 1])
+for a full description we refer to [1]. OLTW involves the
+iterative evaluation of the forward pass of a windowed                8:      pwc2 , t2 ← m(ai , bj , ai , bj−1 , T [i, j − 1])
+dynamic time warping (DTW) algorithm. Specifically,                   9:      dc0 ← dw0 ∗ pwc0 + AC[i − 1, j]
+the accumulated cost between two windowed sequences is               10:      dc1 ← dw1 ∗ pwc1 + AC[i − 1, j − 1]
+computed while tracking the path-wise alignment length.              11:      dc2 ← dw2 ∗ pwc2 + AC[i, j − 1]
+Normalization is applied to the costs along the outer bor-           12:      idxmin ←argmin(dC0 , dC1 , dC2 )
+der of the cost matrix by dividing them by their respective          13:      AC[i, j] ← [dc0 , dc1 , dc2 ][idxmin ]
+path lengths. The matching pair is then determined by se-            14:      T [i, j] ← [t0 , t1 , t2 ][idxmin ]
+lecting the sequence indices that correspond to the minimal          15:      P L[i, j] ← 1 + [P L[i − 1, j], P L[i − 1, j −
+normalized cost along the border. Following this, the win-                    1]P L[i, j − 1]][idxmin ]
+dow is extended in the direction of the match — e.g., in             16:   end for
+the score direction if the last match is the final score note        17: end for
+within the window — and the process repeats. Core as-
+pects of this algorithm, such as candidate selection, border
+  Window size                                      10                                                20
+  Weighting onset metric           0.5             1.0               2.0            0.5              1.0             2.0
+  Weighting score direction   1       2       1       2         1       2      1       2        1       2       1       2
+  Robustness                  69.44 77.78     75.00 86.11       83.33 77.78    86.11 91.67      91.67 91.67     91.67 88.89
+  % abs error ≤ 0.5 s         97.13 97.23     97.19 96.44       97.37 96.12    96.82 96.98      97.04 97.22     97.26 96.95
+  % abs error ≤ 0.25 s        93.86 94.26     94.33 93.59       94.75 93.12    93.51 93.74      94.10 94.29     94.72 94.07
+  % abs error ≤ 0.1 s         82.94 83.89     84.10 83.97       88.33 86.35    83.48 83.92      84.72 84.76     85.93 84.66
+  % abs error ≤ 0.05 s        59.28 60.34     60.14 61.80       65.30 65.35    61.58 61.99      62.69 62.71     63.70 62.86
+  % abs error ≤ 0.025 s       35.29 36.10     35.67 37.21       39.08 40.14    37.37 37.68      38.09 38.08     38.64 38.59
+
+Table 1: Robustness and precision results of parameter grid search of our symbolic OLTW tracker on transcribed MIDI
+data, comparing effects of window size w, timing weighting c in pairwise distance metric, and score direction penalization
+dw0 .
+
+
+                   4. EXPERIMENTS                                  with 88 semitone bins, using a hop size of 1024 on 44.1
+                                                                   kHz audio with Hann windows. The OLTW window size is
+4.1 Experimental setup                                             set to 500 frames (11.6 seconds), with an average of 89 per-
+We evaluate our real-time music tracking method on the             formance onsets per window in our dataset. Since OLTW
+Batik-plays-Mozart corpus [34], a dataset of precise, note-        performs best when tempos are similar [5], we stretch the
+aligned MIDI piano performances and MusicXML scores.               score by the nearest integer ratio of score to performance
+We complete this public symbolic data with the carefully           length. Additionally, we experiment with two different
+aligned original audio recordings of the performances. To          directional weight settings, where the diagonal is encour-
+enable audio-to-audio score following we also add synthe-          aged either weakly (dw1 = 0.9) or strongly (dw1 = 0.5)
+sized versions of the scores, using Fluidsynth 1 at 44.1 kHz       while the other directions are kept at one (dw0 = 1 and
+with a standard tempo of 120 quarter notes per minute.             dw2 = 1).
+  In a first experiment, we examine the impact of tun-               For evaluation, we employ two metrics: robustness and
+ing parameters on our method. Specifically, we evaluate            precision. We define robustness as the proportion of per-
+four window sizes, w ∈ 10, 20, 40, 80, timing weights,             formances in the dataset that the score follower success-
+c ∈ 0.5, 1.0, 2.0, and directional weights, which penal-           fully tracks until the end without losing alignment. Detect-
+ize the score direction by a factor of dw0 ∈ {1, 2}. The           ing when a tracker is lost is nontrivial; therefore, we apply
+other directions which are weighted at one (dw1 = 1 and            a heuristic criterion, considering a tracker lost if its abso-
+dw2 = 1), a step in score direction is either twice as costly      lute error exceeds 10 seconds at any point. Precision is
+(dw0 = 2) or equal (dw0 = 1). We set the tempo de-                 quantified as the absolute error between predicted and ac-
+cay to d = 0.1 and the initial tempo to 0.5 seconds per            tual performance times, computed for each score onset. To
+quarter note. To assess the influence of different parame-         present the distribution of absolute errors, we report five
+ter settings, we evaluate our method on both transcribed           percentages: the proportions of errors below 25 ms, 50 ms,
+and recorded MIDI performance data. The latter serves as           100 ms, 250 ms, and 500 ms, respectively. Precision val-
+an approximation of the upper performance bound of our             ues are computed only for robustly tracked performances,
+online symbolic tracker, assuming an ideal real-time tran-         as the large errors from lost trackers are uninformative and
+scription that accurately detects all onsets.                      would therefore distort the analysis.
+  In a second experiment, we compare our method to its
+real-time audio-only counterpart. Our audio-only tracking          4.2 Results
+is based on a reference OLTW implementation from the
+matchmaker Python package [35], with modifications and             Table 1 shows an excerpt of the results of the parameter
+fine-tuned parameters to ensure competitiveness with state-        combinations addressed in the first experiment. Window
+of-the-art audio tracking.                                         sizes w > 20 are omitted (from the table) as they neither
+  First, we modify the OLTW method to support weighted             improve precision nor robustness. Trackers with w = 10
+directions. Second, we evaluate a range of audio features:         are significantly less robust while achieving precision com-
+normalized semitone spectra (NS), normalized chroma                parable to those with w = 20. For recorded MIDI data (see
+(NC), locally normalized semitone onset (LNSO), and lo-            Table 2), a window size of 40 results in increased robust-
+cally normalized chroma onset (LNCO). For NS and NC,               ness, while precision values remain largely unchanged.
+frame-wise distances are computed using the Euclidean                We found w = 20, c = 2.0, and dw0 = 1 to be the
+distance, whereas for LNSO and LNCO, a normalized and              best parameter configuration as it maximizes precision un-
+weighted L1 metric is employed as a feature-specific dis-          der the constraint of maintaining strong robustness. While
+tance measure [2].                                                 the effect of the timing weight c (see Algorithm 1 for de-
+  All features are computed from a constant-Q transform            tails) is less clear, higher time weighting seems to generally
+                                                                   improve the performance. The interaction between timing
+  1 https://www.fluidsynth.org/                                    and score directional weight is generally positive, with in-
+  Window size                              20                 40               Weighting diagonal direction                   0.5
+  Weighting onset metric                             2.0                       Feature                        NS      NC        LNSO    LNCO
+  Weighting score direction        1            2       1          2           Robustness                     88.89   88.89     58.33   72.22
+  Robustness                       88.89        91.67 94.44        94.44       % abs error ≤ 0.5 s            94.98   95.07     93.19   87.46
+                                                                               % abs error ≤ 0.25 s           89.04   89.37     87.59   81.83
+  % abs error ≤ 0.5 s              98.55        98.67 98.12        98.46
+                                                                               % abs error ≤ 0.1 s            71.44   73.02     77.42   74.38
+  % abs error ≤ 0.25 s             97.70        97.79 97.15        97.52
+                                                                               % abs error ≤ 0.05 s           49.30   52.11     63.30   60.70
+  % abs error ≤ 0.1 s              96.19        96.36 95.63        96.09
+                                                                               % abs error ≤ 0.025 s          28.75   32.02     45.33   44.91
+  % abs error ≤ 0.05 s             94.71        94.76 94.16        94.54
+  % abs error ≤ 0.025 s            93.50        93.53 92.95        93.32      Table 3: Robustness and precision of the baseline audio
+                                                                              OLTW music tracker with diagonal weight (dw1 = 0.5)
+Table 2: Grid search results excerpt for OLTW tracker on                      using different chroma-based (NS and NC) and onset-
+recorded MIDI data. Parameter configurations identical as                     based (LNSO and LNCO) features.
+those tested in Table 1.
+
+                                                                              significantly higher than what is typically achievable with
+creased penalization improving tracking in most configu-                      audio trackers. High quantiles clearing these low error
+rations. However, in the selected best configuration, this                    thresholds are particularly important for reactive, musical
+interaction unexpectedly results in a slightly negative ef-                   tasks like accompaniment generation.
+fect.                                                                           Although our method is precise and robust, it’s real-time
+  Table 3 presents an excerpt from the grid search results                    application is complicated by the (fixed) latency of the
+of an audio-based OLTW baseline. We report results for                        transcription model of 174 ms. In practice, this can be
+directional weights dw1 = 0.5, which strongly favor the                       addressed by predicting current onsets 174 ms into the fu-
+diagonal direction, as these yielded the best performance                     ture. This extrapolation step typically results in a slight
+in our experiments. Overall, the values range in the same                     reduction in alignment precision, yet it is not uncommon
+order of a highly tuned OLTW model [2].                                       in real-time tracking. The Disklavier series of computer
+  Comparing the features, harmonic features (NC and NS)                       controlled grand pianos has a fixed mechanical delay in
+demonstrate greater robustness, while onset-based features                    the order of 200 ms which requires prediction of accom-
+(LNCO and LNSO) show higher precision, particularly at                        paniment in the future [14]. For less time-critical contexts
+low error thresholds. This trade-off is in line with our un-                  such as subtitling or page turning, the current configura-
+derstanding of the inherent characteristics of these feature                  tions are sufficiently fast without the need for adaptation
+types. All audio trackers show notably lower robustness                       or extrapolation.
+and precision than our proposed method. The only excep-
+tion is the precision of onset-based features at low error
+thresholds, which slightly outperforms our best configura-                                         5. CONCLUSION
+tion in terms of precision. However, this improvement in
+precision comes at the cost of a considerably lower robust-                   In this work, we introduced a score following method that
+ness, i.e., tracking success rate.                                            operates in the symbolic domain, tackling the problem us-
+                                                                              ing real-time transcription and a novel symbol-level online
+  It is important to note that the precision of our proposed
+                                                                              tracker. Our system tracks complex piano music with high
+method is bounded by the resolution of the transcription
+                                                                              robustness and precision, and even does so in the absence
+model, which operates at a 32 ms hop size. The audio
+                                                                              of perfect transcription.
+OLTW model, on the other hand, has a hop size of approx-
+imately 23 ms. Even if these trackers identify the correct                      Our method is independent of the specific music tran-
+matching frames for each note, the absolute error might                       scription algorithm used, so our tracking framework will
+still be as large as 16 ms or 23 ms, respectively 2 . Thus,                   automatically benefit from ongoing work (e.g., [32]) or fu-
+while it is possible, it is very difficult to achieve the highest             ture improvements in the field of real-time music transcrip-
+precision quantile of 25 ms.                                                  tion: In particular, higher transcription fidelity and lower
+                                                                              latency would significantly enhance the performance of
+  However, we still include the absolute error at this pre-
+                                                                              our model, making it well-suited for real-time accompa-
+cision, not least to evaluate the performance of symbolic
+                                                                              niment generation. Considering that our symbolic tracker
+tracking approach in isolation. The tracking results on
+                                                                              achieves high robustness and precision on recorded MIDI
+recorded MIDI in Table 2 represent an upper bound for
+                                                                              data – representing an upper bound of this method – we ar-
+the symbolic tracker, assuming perfect transcription con-
+                                                                              gue that this transcribe-and-track approach is a promising
+ditions. Notably, the precision at low error thresholds is
+                                                                              direction for future research.
+   2 The ground truth alignment stems from symbolically encoded scores
+and performances. If a MIDI note is correctly transcribed, i.e., the au-       Acknowledgments
+dio frame containing its onset is correctly identified by the transcription
+model, the maximal error between the frame center and the ground truth        This research acknowledges support by the European Re-
+MIDI note onset is half the hop size, or 16 ms. For the audio matching
+case, the maximal symbol-to-audio frame error of half a hop size may          search Council (ERC), under the European Union’s Hori-
+occur twice, once for the score and once for the performance. As a re-        zon 2020 research and innovation programme, grant agree-
+sult, the maximum total error between ground truth and correctly matched
+frame is one full hop size, or 23 ms.                                         ment No. 101019375 Whither Music?. We thank Jiyun
+ Park and Carlos Cancino-Chacón for their valuable in-         [12] A. Cont, “A coupled duration-focused architecture for
+ sights and constructive discussion.                                real-time music-to-score alignment,” IEEE transac-
+                                                                    tions on pattern analysis and machine intelligence,
+                    6. REFERENCES                                   vol. 32, no. 6, pp. 974–987, 2009.
+
+ [1] S. Dixon, “An On-Line Time Warping Algorithm for          [13] C. Raphael, “Current directions with music plus one,”
+     Tracking Musical Performances.” in Proceedings of              in Proc. of the Sound and Music Computing Confer-
+     the International Joint Conference on Artificial Intel-        ence, 2009.
+     ligence (IJCAI), 2005, pp. 1727–1728.
+                                                               [14] C. Cancino-Chacón, S. Peter, P. Hu, E. Karystinaios,
+ [2] A. Arzt, G. Widmer, and S. Dixon, “Adaptive distance           F. Henkel, F. Foscarin, N. Varga, and G. Widmer, “The
+     normalization for real-time music tracking,” in Pro-           Accompanion: Combining Reactivity, Robustness, and
+     ceedings of the 20th European Signal Processing Con-           Musical Expressivity in an Automatic Piano Accom-
+     ference (EUSIPCO). IEEE, 2012, pp. 2689–2693.                  panist,” in International Joint Conference on Artificial
+                                                                    Intelligence (IJCAI), 2023.
+ [3] ——, “Automatic page turning for musicians via real-
+     time machine listening,” in ECAI 2008. IOS Press,         [15] S. D. Peter, “Online Symbolic Music Alignment with
+     2008, pp. 241–245.                                             Offline Reinforcement Learning,” in Proceedings of
+                                                                    the International Society for Music Information Re-
+ [4] N. Hu, R. B. Dannenberg, and G. Tzanetakis, “Poly-             trieval Conference (ISMIR), 2023.
+     phonic audio matching and alignment for music re-
+     trieval,” in 2003 IEEE Workshop on Applications of        [16] M. Müller, Fundamentals of Music Processing: Using
+     Signal Processing to Audio and Acoustics (IEEE Cat.            Python and Jupyter Notebooks. Springer, 2021, vol. 2.
+     No. 03TH8684). IEEE, 2003, pp. 185–188.
+                                                               [17] C. Raffel and D. P. Ellis, “Optimizing DTW-based
+ [5] A. Arzt and G. Widmer, “Simple tempo models for                audio-to-MIDI alignment and matching,” in 2016 IEEE
+     real-time music tracking,” in Proceedings of the Sound         International Conference on Acoustics, Speech and
+     and Music Computing Conference (SMC), 2010, p. 9.              Signal Processing (ICASSP). IEEE, 2016, pp. 81–85.
+
+ [6] ——, “Real-time music tracking using multiple per-         [18] M. Müller, H. Mattes, and F. Kurth, “An efficient mul-
+     formances as a reference,” in Proceedings of the 14th          tiscale approach to audio synchronization.” in ISMIR,
+     International Society for Music Information Retrieval          vol. 546, 2006, pp. 192–197.
+     Conference, ISMIR 2015, 2015, pp. 357–363.
+                                                               [19] S. Ewert, M. Muller, and P. Grosche, “High resolution
+ [7] C. Brazier and G. Widmer, “On-line audio-to-lyrics             audio synchronization using chroma onset features,”
+     alignment based on a reference performance,” in Pro-           in 2009 IEEE International Conference on Acoustics,
+     ceedings of the 22nd International Society for Music           Speech and Signal Processing. IEEE, 2009, pp. 1869–
+     Information Retrieval Conference, ISMIR 2021, On-              1872.
+     line, November 7-12, 2021, 2021, pp. 66–73.
+                                                               [20] R. M. Bittner, B. McFee, J. Salamon, P. Li, and J. P.
+ [8] ——, “Improving real-time score following in opera by           Bello, “Deep Salience Representations for F0 Estima-
+     combining music with lyrics tracking,” in Proceedings          tion in Polyphonic Music,” in ISMIR. Suzhou (China),
+     of the 2nd Workshop on NLP for Music and Spoken                2017, pp. 63–70.
+     Audio (NLP4MusA), 2021, pp. 1–5.
+                                                               [21] A. Arzt and S. Lattner, “Audio-to-score alignment
+ [9] J. Park, S. Yong, T. Kwon, and J. Nam, “A real-time            using transposition-invariant features,” arXiv preprint
+     lyrics alignment system using chroma and phonetic              arXiv:1807.07278, 2018.
+     features for classical vocal performance,” in ICASSP
+     2024 - 2024 IEEE International Conference on Acous-       [22] M. Dorfer, A. Arzt, and G. Widmer, “Learning audio-
+     tics, Speech and Signal Processing (ICASSP), 2024,             sheet music correspondences for score identification
+     pp. 1371–1375.                                                 and offline alignment,” in Proceedings of the 18th In-
+                                                                    ternational Society for Music Information Retrieval
+[10] I.-C. Wei and L. Su, “Online music performance track-          Conference, ISMIR 2017, Suzhou, China, October 23-
+     ing using parallel dynamic time warping,” in 2018              27, 2017, 2017, pp. 115–122.
+     IEEE 20th International Workshop on Multimedia Sig-
+     nal Processing (MMSP). IEEE, 2018, pp. 1–6.               [23] R. Agrawal and S. Dixon, “Learning frame similarity
+                                                                    using siamese networks for audio-to-score alignment,”
+[11] F. J. Rodriguez-Serrano, J. J. Carabias-Orti, P. Vera-         in 2020 28th European Signal Processing Conference
+     Candeas, and D. Martinez-Munoz, “Tempo driven                  (EUSIPCO). IEEE, 2021, pp. 141–145.
+     audio-to-score alignment using spectral decomposition
+     and online dynamic time warping,” ACM Transactions        [24] T. Kwon, D. Jeong, and J. Nam, “Audio-to-score align-
+     on Intelligent Systems and Technology (TIST), vol. 8,          ment of piano music using rnn-based automatic music
+     no. 2, pp. 1–20, 2016.                                         transcription,” arXiv preprint arXiv:1711.04480, 2017.
+[25] F. Simonetta, S. Ntalampiras, and F. Avanzini, “Audio-    Music Information Retrieval Conference, San Fran-
+     to-score alignment using deep automatic music tran-       cisco, USA., 2024.
+     scription,” in 2021 IEEE 23rd International Workshop
+     on Multimedia Signal Processing (MMSP).          IEEE,
+     2021, pp. 1–6.
+[26] J. Zeitler, B. Maman, and M. Müller, “Robust
+     and accurate audio synchronization using raw fea-
+     tures from transcription models,” in Proceedings
+     of the 25th International Society for Music In-
+     formation Retrieval Conference, ISMIR 2024, San
+     Francisco, California, USA and Online, November
+     10-14, 2024, 2024, pp. 120–127. [Online]. Available:
+     https://doi.org/10.5281/zenodo.14877291
+[27] C. Hawthorne, A. Stasyuk, A. Roberts, I. Simon,
+     C. A. Huang, S. Dieleman, E. Elsen, J. H. Engel, and
+     D. Eck, “Enabling Factorized Piano Music Modeling
+     and Generation with the MAESTRO Dataset,” in In-
+     ternational Conference on Learning Representations,
+     (ICLR), 2019.
+[28] Q. Kong, B. Li, X. Song, Y. Wan, and Y. Wang, “High-
+     Resolution Piano Transcription with Pedals by Re-
+     gressing Onset and Offset Times,” IEEE/ACM Trans-
+     actions on Audio Speech and Language Processing,
+     vol. 29, pp. 3707–3717, 2021.
+[29] D. Edwards, S. Dixon, E. Benetos, A. Maezawa, and
+     Y. Kusaka, “A Data-Driven Analysis of Robust Au-
+     tomatic Piano Transcription,” IEEE Signal Processing
+     Letters, 2024.
+[30] D. Jeong, “Real-time automatic piano music transcrip-
+     tion system,” Proc. Late Breaking/Demo of the 21 st
+     ISMIR, pp. 4–6, 2020.
+[31] A. Fernandez, “Onsets and Velocities: Affordable
+     Real-Time Piano Transcription Using Convolutional
+     Neural Networks,” in 2023 31st European Signal Pro-
+     cessing Conference (EUSIPCO).      IEEE, 2023, pp.
+     151–155.
+[32] Y. Kusaka and A. Maezawa, “Mobile-AMT: Real-
+     time Polyphonic Piano Transcription for In-the-Wild
+     Recordings,” in 2024 32st European Signal Processing
+     Conference (EUSIPCO). IEEE, 2024, pp. 36–40.
+[33] T. Kwon, D. Jeong, and J. Nam, “Polyphonic pi-
+     ano transcription using autoregressive multi-state note
+     model,” in Proceedings of the International Society
+     for Music Information Retrieval Conference (ISMIR),
+     2020.
+[34] P. Hu and G. Widmer, “The Batik-plays-Mozart Cor-
+     pus: Linking Performance to Score to Musicological
+     Annotations,” in Proceedings of the International So-
+     ciety for Music Information Retrieval Conference (IS-
+     MIR), 2023.
+[35] J. Park, C. Cancino-Chacón, T. Kwon, and J. Nam,
+     “Matchmaker: A Python library for Real-time Mu-
+     sic Alignment,” in Proceedings of the Late Break-
+     ing/Demo Session at the 25th International Society for
+

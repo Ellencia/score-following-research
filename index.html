@@ -1,0 +1,2197 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Score Following 연구 프로젝트 — 단독 웹앱 (13편)</title>
+<script src="glossary.js"></script>
+<script src="js/mermaid.min.js"></script>
+<style>
+  /* =========================================================
+     12 토큰
+     ========================================================= */
+  :root {
+    --bg:        #0b0d12;
+    --panel:     #14171f;
+    --panel-2:   #1d2230;
+    --border:    #2a3142;
+    --text:      #e7ecf3;
+    --muted:     #8b94a3;
+    --accent:    #6aa6ff;
+    --accent-2:  #a5c8ff;
+
+    --classical: #f0a500;
+    --learning:  #b07cff;
+    --hybrid:    #5cd575;
+    --offline:   #ff7b72;
+    --nextgen:   #2dd4bf;
+
+    --tint-classical: rgba(240,165,0,0.10);
+    --tint-learning:  rgba(176,124,255,0.10);
+    --tint-hybrid:    rgba(92,213,117,0.10);
+    --tint-offline:   rgba(255,123,114,0.10);
+    --tint-nextgen:   rgba(45,212,191,0.10);
+
+    --radius-sm: 6px;
+    --radius:    10px;
+    --radius-lg: 14px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* =========================================================
+     GLOSSARY HOVER CARD
+     ========================================================= */
+  dfn.gloss-term {
+    font-style: normal;
+    border-bottom: 1px dashed var(--accent);
+    cursor: help;
+    color: inherit;
+    transition: color 0.12s ease, border-bottom-color 0.12s ease;
+  }
+  dfn.gloss-term:hover, dfn.gloss-term:focus-visible, dfn.gloss-term[data-active="true"] {
+    color: var(--accent-2);
+    border-bottom-color: var(--accent-2);
+  }
+
+  .gloss-card {
+    position: fixed; z-index: 1100;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 16px 12px;
+    width: 340px; max-width: calc(100vw - 32px);
+    box-shadow: 0 16px 40px rgba(0,0,0,0.55), 0 0 0 1px rgba(0,0,0,0.4);
+    font-size: 13px; line-height: 1.65;
+    opacity: 0; transform: translateY(4px);
+    transition: opacity 0.14s ease, transform 0.14s ease;
+    pointer-events: none;
+  }
+  .gloss-card.open { opacity: 1; transform: translateY(0); pointer-events: auto; }
+  .gloss-card.pinned { border-left-color: var(--nextgen); }
+  .gloss-card.pinned .gc-head { cursor: move; }
+  .gloss-card.dragging { transition: none; user-select: none; }
+  .gloss-card.dragging .gc-head { cursor: grabbing; }
+  .gloss-card .gc-head {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 6px;
+  }
+  .gloss-card .gc-cat {
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--accent);
+    padding: 2px 6px; background: rgba(106,166,255,0.10);
+    border-radius: 3px;
+  }
+  .gloss-card .gc-pin, .gloss-card .gc-close {
+    margin-left: auto; width: 24px; height: 24px;
+    background: transparent; border: 1px solid var(--border);
+    border-radius: 4px; color: var(--muted); cursor: pointer;
+    font-size: 12px; line-height: 1; padding: 0;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-family: inherit;
+  }
+  .gloss-card .gc-pin:hover, .gloss-card .gc-close:hover {
+    color: var(--accent); border-color: var(--accent);
+  }
+  .gloss-card .gc-close { display: none; }
+  .gloss-card.pinned .gc-pin { display: none; }
+  .gloss-card.pinned .gc-close { display: inline-flex; }
+  .gloss-card h4 {
+    font-size: 14px; font-weight: 600; letter-spacing: -0.005em;
+    margin: 0 0 6px; color: var(--text);
+  }
+  .gloss-card .gc-short {
+    color: var(--text); font-weight: 500; margin: 0 0 10px;
+    padding-bottom: 10px; border-bottom: 1px solid var(--border);
+    line-height: 1.6;
+  }
+  .gloss-card.no-long .gc-short {
+    margin-bottom: 0; padding-bottom: 0; border-bottom: 0;
+  }
+  .gloss-card .gc-long { color: var(--muted); font-size: 12.5px; }
+  .gloss-card .gc-long p { margin: 0 0 8px; line-height: 1.7; }
+  .gloss-card .gc-long p:last-child { margin-bottom: 0; }
+  .gloss-card .gc-long dfn.gloss-term {
+    color: var(--accent-2); border-bottom-color: rgba(165,200,255,0.35);
+  }
+  .gloss-card .gc-long code {
+    background: var(--panel-2); padding: 1px 5px; border-radius: 3px;
+    font-family: ui-monospace, monospace; font-size: 0.9em;
+    color: var(--accent-2);
+  }
+  .gloss-card .gc-foot {
+    margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--border);
+    font-size: 11px; color: var(--muted);
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap;
+  }
+  .gloss-card .gc-foot kbd {
+    font-family: ui-monospace, monospace; font-size: 10px;
+    padding: 1px 5px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 3px;
+  }
+  .gloss-card .gc-papers {
+    display: inline-flex; gap: 3px; flex-wrap: wrap;
+  }
+  .gloss-card .gc-papers .p-badge {
+    font-family: ui-monospace, monospace; font-size: 10px;
+    min-width: 18px; padding: 1px 4px; text-align: center;
+    background: rgba(106,166,255,0.10); color: var(--accent);
+    border: 1px solid rgba(106,166,255,0.25); border-radius: 3px;
+  }
+  .gloss-card .gc-foot .gc-foot-spacer { flex: 1; }
+
+  @media (max-width: 720px) {
+    .gloss-card { width: calc(100vw - 24px); }
+  }
+
+  /* =========================================================
+     A11Y
+     ========================================================= */
+  :focus { outline: none; }
+  :focus-visible {
+    outline: 2px solid var(--accent-2);
+    outline-offset: 2px;
+    border-radius: inherit;
+  }
+
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; }
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Pretendard", "Noto Sans KR",
+                 "Malgun Gothic", system-ui, sans-serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+  }
+  body { padding: 0 0 80px; }
+  .container { max-width: 1280px; margin: 0 auto; }
+
+  /* =========================================================
+     HUB
+     ========================================================= */
+  .hub { padding: 0; }
+  .hub .pad { padding: 32px 28px 40px; }
+
+  .hub-header {
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+  }
+  .hub-header .title-row {
+    display: flex; align-items: flex-start; gap: 18px; flex-wrap: wrap;
+  }
+  .hub-header h1 {
+    font-size: 30px; font-weight: 700; letter-spacing: -0.025em;
+    line-height: 1.2; flex: 1; min-width: 280px;
+  }
+  .hub-header h1 .accent {
+    background: linear-gradient(120deg, var(--accent-2), var(--nextgen));
+    -webkit-background-clip: text; background-clip: text;
+    color: transparent;
+  }
+  .hub-header .index-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 11px; padding: 6px 12px;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 999px; color: var(--muted);
+    letter-spacing: 0.06em;
+  }
+  .hub-header .index-badge .live-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--nextgen);
+    box-shadow: 0 0 0 3px rgba(45,212,191,0.18);
+  }
+  .hub-header .lede {
+    color: var(--muted); margin-top: 14px; font-size: 14.5px;
+    max-width: 820px; line-height: 1.7;
+  }
+  .hub-header .meta {
+    display: flex; gap: 8px; margin-top: 18px; flex-wrap: wrap;
+  }
+  .hub-header .meta .chip {
+    font-size: 12px; color: var(--muted);
+    padding: 5px 11px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .hub-header .meta .chip strong { color: var(--text); font-weight: 600; }
+  .hub-header .meta .chip.ok::before {
+    content: "●"; color: var(--nextgen); font-size: 10px;
+  }
+
+  .section-title {
+    display: flex; align-items: baseline; gap: 12px;
+    margin: 36px 4px 18px;
+  }
+  .section-title h2 {
+    font-size: 13px; font-weight: 600; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.12em;
+  }
+  .section-title .count {
+    font-size: 11px; color: var(--muted); font-feature-settings: "tnum";
+    padding: 2px 8px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 4px;
+  }
+  .section-title .rule {
+    flex: 1; height: 1px; background: var(--border);
+    align-self: center; margin-left: 6px;
+  }
+
+  /* === 종합 문서 5장 === */
+  .synthesis-grid {
+    display: grid; gap: 14px;
+    grid-template-columns: 1.4fr 1fr 1fr;
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "start glossary trends"
+      "start datasets recommend";
+  }
+  .synth-card {
+    position: relative; padding: 22px 22px 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    cursor: pointer; text-align: left; color: inherit;
+    font: inherit; display: flex; flex-direction: column; gap: 10px;
+    min-height: 132px;
+  }
+  .synth-card:hover {
+    border-color: var(--accent);
+    background: var(--panel-2);
+    transform: translateY(-1px);
+  }
+  .synth-card .head {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600;
+  }
+  .synth-card .head .glyph {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--panel-2); border: 1px solid var(--border);
+    color: var(--accent-2); font-size: 13px;
+  }
+  .synth-card h3 {
+    font-size: 18px; font-weight: 600; letter-spacing: -0.01em;
+    line-height: 1.35;
+  }
+  .synth-card p {
+    color: var(--muted); font-size: 13px; line-height: 1.65;
+  }
+  .synth-card .arrow {
+    margin-top: auto; font-size: 12px; color: var(--accent);
+    display: inline-flex; align-items: center; gap: 6px;
+    opacity: 0; transform: translateX(-4px); transition: all 0.15s ease;
+  }
+  .synth-card:hover .arrow { opacity: 1; transform: translateX(0); }
+
+  .synth-card.primary {
+    grid-area: start;
+    background: linear-gradient(135deg, var(--panel) 0%, rgba(106,166,255,0.06) 100%);
+    border: 1px solid var(--border);
+    padding: 26px 26px 24px;
+  }
+  .synth-card.primary::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: linear-gradient(180deg,
+      var(--classical) 0%, var(--learning) 35%, var(--hybrid) 60%, var(--nextgen) 100%);
+    border-radius: var(--radius) 0 0 var(--radius);
+  }
+  .synth-card.primary .head { color: var(--accent); }
+  .synth-card.primary .head .glyph {
+    background: rgba(106,166,255,0.12); border-color: rgba(106,166,255,0.3);
+    color: var(--accent-2);
+  }
+  .synth-card.primary h3 { font-size: 22px; }
+  .synth-card.primary p { font-size: 14px; }
+
+  .synth-card.glossary  { grid-area: glossary; }
+  .synth-card.trends    { grid-area: trends; }
+  .synth-card.datasets  { grid-area: datasets; }
+  .synth-card.recommend { grid-area: recommend; }
+
+  .synth-card.recommend {
+    background: linear-gradient(135deg, var(--panel) 0%, rgba(45,212,191,0.06) 100%);
+    border: 1px solid rgba(45,212,191,0.25);
+  }
+  .synth-card.recommend:hover { border-color: var(--nextgen); }
+  .synth-card.recommend .head { color: var(--nextgen); }
+  .synth-card.recommend .head .glyph {
+    background: rgba(45,212,191,0.12); border-color: rgba(45,212,191,0.3);
+    color: var(--nextgen);
+  }
+
+  /* === 마인드맵 === */
+  .mindmap {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 18px 18px 22px;
+    margin-top: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+  .mindmap-header {
+    display: flex; align-items: center; gap: 18px; flex-wrap: wrap;
+    margin-bottom: 36px; /* bezier 곡선이 보일 공간 */
+  }
+  .mindmap-header .root-pill {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 8px 14px;
+    background: var(--bg); border: 1px solid var(--accent);
+    border-radius: 999px; font-size: 13px; font-weight: 600;
+    color: var(--accent-2);
+  }
+  .mindmap-header .root-pill::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px rgba(106,166,255,0.2);
+  }
+  .mindmap-header .legend {
+    display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px;
+    color: var(--muted);
+  }
+  .mindmap-header .legend .item {
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .mindmap-header .legend .dot {
+    width: 9px; height: 9px; border-radius: 50%;
+  }
+  .legend .dot.classical { background: var(--classical); }
+  .legend .dot.learning  { background: var(--learning); }
+  .legend .dot.hybrid    { background: var(--hybrid); }
+  .legend .dot.offline   { background: var(--offline); }
+  .legend .dot.nextgen   { background: var(--nextgen); }
+
+  .mindmap-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    position: relative;
+    z-index: 1;
+  }
+  .mindmap-col {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+    border-top-width: 2px;
+  }
+  .mindmap-col.classical { border-top-color: var(--classical); }
+  .mindmap-col.learning  { border-top-color: var(--learning); }
+  .mindmap-col.hybrid    { border-top-color: var(--hybrid); }
+  .mindmap-col.offline   { border-top-color: var(--offline); border-style: dashed; border-top-style: solid; }
+  .mindmap-col.nextgen   { border-top-color: var(--nextgen); border-style: dashed; border-top-style: solid; }
+
+  .mindmap-col .col-label {
+    font-size: 10.5px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted);
+    padding: 4px 6px 8px; line-height: 1.3;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 4px;
+  }
+  .mindmap-col.classical .col-label { color: var(--classical); }
+  .mindmap-col.learning  .col-label { color: var(--learning); }
+  .mindmap-col.hybrid    .col-label { color: var(--hybrid); }
+  .mindmap-col.offline   .col-label { color: var(--offline); }
+  .mindmap-col.nextgen   .col-label { color: var(--nextgen); }
+
+  .mindmap-node {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 11px;
+    cursor: pointer;
+    text-align: left; color: inherit; font: inherit;
+    width: 100%;
+    transition: border-color 0.15s ease, background 0.15s ease;
+    display: block;
+  }
+  .mindmap-node:hover { border-color: var(--accent); background: var(--bg); }
+  .mindmap-node .nh {
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 4px;
+  }
+  .mindmap-node .nh .num-dot {
+    font-size: 10px; font-weight: 700; padding: 1px 5px;
+    border-radius: 3px; color: #0b0d12;
+    font-family: ui-monospace, monospace;
+  }
+  .mindmap-node .nh strong { font-size: 12.5px; font-weight: 600; }
+  .mindmap-node .nh .badge {
+    margin-left: auto; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.06em; padding: 2px 5px; border-radius: 3px;
+  }
+  .mindmap-node .nh .badge.offline { color: var(--offline); background: var(--tint-offline); }
+  .mindmap-node .nh .badge.year    { color: var(--nextgen); background: var(--tint-nextgen); }
+  .mindmap-node .nh .badge.hybrid-tag,
+  .badge.hybrid-tag {
+    color: var(--hybrid); background: var(--tint-hybrid);
+    border: 1px solid rgba(92,213,117,0.35);
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.04em;
+    padding: 1px 5px; border-radius: 3px;
+    font-family: ui-monospace, monospace;
+  }
+  .mindmap-node small {
+    color: var(--muted); font-size: 11px; line-height: 1.45; display: block;
+  }
+
+  .mindmap-col.classical .num-dot { background: var(--classical); }
+  .mindmap-col.learning  .num-dot { background: var(--learning); }
+  .mindmap-col.hybrid    .num-dot { background: var(--hybrid); }
+  .mindmap-col.offline   .num-dot { background: var(--offline); }
+  .mindmap-col.nextgen   .num-dot { background: var(--nextgen); }
+
+  .mindmap-svg-overlay {
+    position: absolute; inset: 0; pointer-events: none;
+    z-index: 0;
+  }
+  .mindmap-svg-overlay path {
+    fill: none; stroke-width: 1.4; opacity: 0.78;
+    filter: drop-shadow(0 0 3px rgba(106,166,255,0.25));
+  }
+  .mindmap-svg-overlay path.classical { stroke: var(--classical); }
+  .mindmap-svg-overlay path.learning  { stroke: var(--learning); }
+  .mindmap-svg-overlay path.hybrid    { stroke: var(--hybrid); }
+  .mindmap-svg-overlay path.offline   { stroke: var(--offline); stroke-dasharray: 4 3; }
+  .mindmap-svg-overlay path.nextgen   { stroke: var(--nextgen); stroke-dasharray: 6 3; }
+  .mindmap-svg-overlay circle {
+    fill: var(--accent);
+    filter: drop-shadow(0 0 4px rgba(106,166,255,0.55));
+  }
+  .mindmap-svg-overlay circle.classical { fill: var(--classical); filter: drop-shadow(0 0 4px rgba(240,165,0,0.55)); }
+  .mindmap-svg-overlay circle.learning  { fill: var(--learning);  filter: drop-shadow(0 0 4px rgba(176,124,255,0.55)); }
+  .mindmap-svg-overlay circle.hybrid    { fill: var(--hybrid);    filter: drop-shadow(0 0 4px rgba(92,213,117,0.55)); }
+  .mindmap-svg-overlay circle.offline   { fill: var(--offline);   filter: drop-shadow(0 0 4px rgba(255,123,114,0.55)); }
+  .mindmap-svg-overlay circle.nextgen   { fill: var(--nextgen);   filter: drop-shadow(0 0 4px rgba(45,212,191,0.55)); }
+
+  .mindmap-hint {
+    display: none; font-size: 12px; color: var(--muted);
+    margin: 12px 4px 0; line-height: 1.5;
+    padding-left: 10px; border-left: 2px solid var(--border);
+  }
+
+  .mindmap-chips {
+    display: none; gap: 6px; flex-wrap: wrap;
+    margin: 14px 0 14px; padding: 0 4px;
+  }
+  .mindmap-chips .chip-btn {
+    font-size: 12px; padding: 8px 12px; min-height: 38px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 999px; color: var(--text); cursor: pointer;
+    font-family: inherit; font-weight: 500;
+    transition: all 0.12s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .mindmap-chips .chip-btn::before {
+    content: ""; width: 7px; height: 7px; border-radius: 50%;
+  }
+  .mindmap-chips .chip-btn.classical::before { background: var(--classical); }
+  .mindmap-chips .chip-btn.learning::before  { background: var(--learning); }
+  .mindmap-chips .chip-btn.offline::before   { background: var(--offline); }
+  .mindmap-chips .chip-btn.nextgen::before   { background: var(--nextgen); }
+  .mindmap-chips .chip-btn:hover,
+  .mindmap-chips .chip-btn:focus-visible {
+    border-color: var(--accent); color: var(--accent);
+  }
+
+  /* === 논문 13장 === */
+  .papers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 12px;
+  }
+  .paper-card {
+    --cat: var(--border);
+    --cat-tint: rgba(255,255,255,0.02);
+    position: relative;
+    background:
+      linear-gradient(180deg, var(--cat-tint) 0%, transparent 80px),
+      var(--panel);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--cat);
+    border-radius: var(--radius);
+    padding: 18px 20px 16px;
+    transition: border-color 0.15s ease, transform 0.15s ease, background 0.15s ease;
+    scroll-margin-top: 16px;
+  }
+  .paper-card.classical { --cat: var(--classical); --cat-tint: var(--tint-classical); }
+  .paper-card.learning  { --cat: var(--learning);  --cat-tint: var(--tint-learning); }
+  .paper-card.hybrid    { --cat: var(--hybrid);    --cat-tint: var(--tint-hybrid); }
+  .paper-card.offline   { --cat: var(--offline);   --cat-tint: var(--tint-offline); }
+  .paper-card.nextgen   { --cat: var(--nextgen);   --cat-tint: var(--tint-nextgen); }
+  .paper-card:hover {
+    border-color: var(--cat);
+    border-left-color: var(--cat);
+    transform: translateY(-1px);
+  }
+  .paper-card:target {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(106,166,255,0.4);
+  }
+  .paper-card .head {
+    display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px;
+  }
+  .paper-card .num {
+    font-size: 11px; font-weight: 700; padding: 4px 8px;
+    border-radius: 5px; color: #0b0d12;
+    flex-shrink: 0;
+    font-family: ui-monospace, monospace; letter-spacing: 0.04em;
+    background: var(--cat);
+  }
+  .paper-card .badge {
+    font-size: 10px; padding: 2px 7px; border-radius: 4px;
+    background: var(--cat-tint); color: var(--cat);
+    font-weight: 600; letter-spacing: 0.06em;
+    align-self: center;
+  }
+  .paper-card h3 {
+    font-size: 16px; line-height: 1.35; font-weight: 600;
+    letter-spacing: -0.005em;
+    flex: 1; min-width: 0;
+  }
+  .paper-card .meta {
+    color: var(--muted); font-size: 12px;
+    margin: 0 0 10px; line-height: 1.5;
+  }
+  .paper-card .tagline {
+    font-size: 13px; color: var(--text); margin: 6px 0 14px;
+    line-height: 1.65;
+    padding: 10px 12px;
+    background: var(--bg); border: 1px solid var(--border);
+    border-left: 2px solid var(--cat);
+    border-radius: 4px;
+  }
+  .paper-card .links {
+    display: flex; gap: 6px; flex-wrap: wrap;
+  }
+  .paper-card .links button, .paper-card .links a {
+    flex: 1; min-width: 100px; text-align: center;
+    padding: 0 12px; min-height: 38px; height: 38px;
+    font-size: 12px; font-weight: 500;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); text-decoration: none;
+    transition: all 0.12s ease; cursor: pointer; font-family: inherit;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .paper-card .links button:hover, .paper-card .links a:hover {
+    border-color: var(--accent); background: rgba(106,166,255,0.08); color: var(--accent);
+  }
+  .paper-card .links button.primary {
+    background: rgba(106,166,255,0.10);
+    border-color: rgba(106,166,255,0.35);
+    color: var(--accent-2);
+  }
+  @media (max-width: 720px) {
+    .paper-card .links button, .paper-card .links a {
+      min-height: 44px; height: 44px;
+    }
+  }
+
+  /* === 사용자 응용 종합 옵션 (기타·첼로) === */
+  .guitar-cello-grid {
+    display: grid; gap: 14px;
+    grid-template-columns: 1fr;
+  }
+  .guitar-cello-card {
+    background: linear-gradient(135deg, var(--panel) 0%, rgba(176,124,255,0.06) 50%, rgba(45,212,191,0.06) 100%);
+    border: 1px solid rgba(176,124,255,0.3);
+    padding: 26px 28px 24px;
+  }
+  .guitar-cello-card:hover {
+    border-color: var(--learning);
+    background: linear-gradient(135deg, var(--panel-2) 0%, rgba(176,124,255,0.10) 50%, rgba(45,212,191,0.10) 100%);
+  }
+  .guitar-cello-card .head { color: var(--learning); }
+  .guitar-cello-card .head .glyph {
+    background: rgba(176,124,255,0.12); border-color: rgba(176,124,255,0.3);
+    color: var(--learning);
+  }
+  .guitar-cello-card h3 { font-size: 20px; }
+
+  /* =========================================================
+     MODAL
+     ========================================================= */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; opacity: 0; pointer-events: none;
+    transition: opacity 0.18s ease;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .modal-window {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    width: 100%; max-width: 1180px; max-height: 92vh;
+    display: flex; flex-direction: column; overflow: hidden;
+    transform: translateY(8px) scale(0.99);
+    transition: transform 0.22s ease;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+  .modal-overlay.open .modal-window { transform: translateY(0) scale(1); }
+
+  .modal-header {
+    --cat: var(--accent);
+    --cat-tint: rgba(106,166,255,0.10);
+    padding: 14px 22px;
+    display: flex; align-items: center; gap: 12px;
+    border-bottom: 1px solid var(--border);
+    background:
+      linear-gradient(180deg, var(--cat-tint), transparent),
+      var(--panel);
+    position: relative;
+  }
+  .modal-header.classical { --cat: var(--classical); --cat-tint: var(--tint-classical); }
+  .modal-header.learning  { --cat: var(--learning);  --cat-tint: var(--tint-learning); }
+  .modal-header.hybrid    { --cat: var(--hybrid);    --cat-tint: var(--tint-hybrid); }
+  .modal-header.offline   { --cat: var(--offline);   --cat-tint: var(--tint-offline); }
+  .modal-header.nextgen   { --cat: var(--nextgen);   --cat-tint: var(--tint-nextgen); }
+  .modal-header::before {
+    content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+    width: 3px; background: var(--cat);
+  }
+  .modal-header .num {
+    font-size: 11px; font-weight: 700; padding: 4px 8px;
+    border-radius: 4px; color: #0b0d12; background: var(--cat);
+    font-family: ui-monospace, monospace; letter-spacing: 0.04em;
+  }
+  .modal-header .modal-title {
+    font-size: 13px; font-weight: 500; flex: 1;
+    color: var(--muted);
+  }
+  .modal-header .modal-title strong {
+    color: var(--text); font-weight: 600; margin-right: 6px;
+  }
+  .modal-header .modal-title .sep { color: var(--border); margin: 0 6px; }
+  .modal-header .modal-actions { display: flex; gap: 6px; }
+  .modal-header button, .modal-header a {
+    padding: 0 12px; height: 36px; font-size: 12px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); cursor: pointer;
+    font-family: inherit; text-decoration: none;
+    transition: all 0.12s ease;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+  .modal-header button:hover, .modal-header a:hover {
+    border-color: var(--accent); color: var(--accent);
+  }
+  .modal-header .modal-close {
+    width: 36px; padding: 0; font-size: 16px;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .modal-header a[hidden] { display: none; }
+  .modal-kbd-hint {
+    font-size: 10.5px; color: var(--muted); margin-right: 8px;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .modal-kbd-hint kbd {
+    font-family: ui-monospace, monospace; font-size: 10px;
+    padding: 1px 5px; background: var(--panel-2);
+    border: 1px solid var(--border); border-radius: 3px;
+    color: var(--text);
+  }
+  @media (max-width: 900px) { .modal-kbd-hint { display: none; } }
+  @media (max-width: 720px) {
+    .modal-header button, .modal-header a, .modal-header .modal-close {
+      height: 44px; min-width: 44px;
+    }
+  }
+
+  .modal-body {
+    flex: 1; overflow-y: auto;
+    padding: 36px 56px 48px;
+    background: var(--bg);
+  }
+  .modal-body .doc-wrap { max-width: 720px; margin: 0 auto; }
+
+  .modal-body h1, .modal-body .doc-title {
+    font-size: 26px; font-weight: 700; letter-spacing: -0.02em;
+    margin: 0 0 8px; line-height: 1.3;
+  }
+  .modal-body .doc-subtitle {
+    color: var(--muted); font-size: 13px;
+    padding-bottom: 18px; margin-bottom: 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex; gap: 12px; flex-wrap: wrap;
+    align-items: center;
+  }
+  .modal-body .doc-subtitle .sep { color: var(--border); }
+  .modal-body h2 {
+    font-size: 19px; font-weight: 600; letter-spacing: -0.01em;
+    margin: 40px 0 14px;
+    color: var(--text);
+    padding-left: 12px;
+    border-left: 3px solid var(--accent);
+    line-height: 1.35;
+  }
+  .modal-window.cat-classical .modal-body h2 { border-left-color: var(--classical); }
+  .modal-window.cat-learning  .modal-body h2 { border-left-color: var(--learning); }
+  .modal-window.cat-hybrid    .modal-body h2 { border-left-color: var(--hybrid); }
+  .modal-window.cat-offline   .modal-body h2 { border-left-color: var(--offline); }
+  .modal-window.cat-nextgen   .modal-body h2 { border-left-color: var(--nextgen); }
+
+  .modal-body h3 {
+    font-size: 15px; font-weight: 600; letter-spacing: -0.005em;
+    margin: 26px 0 8px; color: var(--text);
+  }
+  .modal-body p {
+    margin: 0 0 18px; line-height: 1.85;
+    font-size: 14.5px;
+    text-wrap: pretty;
+  }
+  .modal-body ul, .modal-body ol { margin: 0 0 20px; padding-left: 22px; }
+  .modal-body li {
+    margin: 6px 0; line-height: 1.75; font-size: 14.5px;
+  }
+  .modal-body strong { font-weight: 600; color: var(--text); }
+  .modal-body em { font-style: italic; color: var(--text); }
+
+  .modal-body .table-wrap {
+    margin: 22px 0; overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+  }
+  .modal-body table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .modal-body th, .modal-body td {
+    padding: 11px 14px; text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  .modal-body th {
+    background: var(--panel-2);
+    font-weight: 600; font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 0.06em; text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+  }
+  .modal-body tr:last-child td { border-bottom: none; }
+  .modal-body tbody tr:hover { background: rgba(255,255,255,0.015); }
+
+  .modal-body code {
+    background: var(--panel-2); padding: 2px 6px; border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.88em; color: var(--accent-2);
+  }
+  .modal-body pre {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px 18px; margin: 18px 0;
+    overflow-x: auto; font-size: 12.5px; line-height: 1.6;
+  }
+  .modal-body pre code { background: none; padding: 0; color: var(--text); font-size: 12.5px; }
+
+  /* mermaid 블록은 doc-wrap의 720px 폭을 넘어 modal-body 가용 폭을 더 사용 */
+  .modal-body .mermaid-block {
+    margin: 28px auto;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    /* doc-wrap을 벗어나 modal-body 폭만큼 확장 */
+    width: calc(100% + 280px);
+    max-width: calc(100vw - 80px);
+    margin-left: -140px;
+    margin-right: -140px;
+  }
+  .modal-body .mermaid-block figcaption {
+    font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .modal-body .mermaid-block figcaption::before {
+    content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--nextgen);
+  }
+  .modal-body .mermaid-block pre {
+    margin: 0; border: none; border-radius: 0;
+    background: var(--panel);
+    color: var(--muted); font-size: 12px;
+  }
+  .modal-body .mermaid {
+    background: var(--panel); padding: 24px 18px;
+    text-align: center;
+    overflow-x: auto;
+  }
+  .modal-body .mermaid svg {
+    max-width: 100%;
+    height: auto;
+  }
+  /* mermaid 노드 텍스트 가독성 — 인라인 SVG에 직접 적용 */
+  .modal-body .mermaid svg .nodeLabel,
+  .modal-body .mermaid svg .edgeLabel,
+  .modal-body .mermaid svg foreignObject span,
+  .modal-body .mermaid svg foreignObject p,
+  .modal-body .mermaid svg foreignObject div {
+    font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif !important;
+    font-size: 14.5px !important;
+    line-height: 1.5 !important;
+  }
+  /* timeline / 일반 svg text — 폰트 사이즈 강제 */
+  .modal-body .mermaid svg text {
+    font-family: "Pretendard", "Noto Sans KR", "Malgun Gothic", system-ui, sans-serif !important;
+    font-size: 14px;
+  }
+  .modal-body .mermaid svg .titleText,
+  .modal-body .mermaid svg text.titleText {
+    font-size: 16.5px !important; font-weight: 600;
+  }
+  @media (max-width: 1100px) {
+    .modal-body .mermaid-block {
+      width: 100%; max-width: 100%;
+      margin-left: 0; margin-right: 0;
+    }
+  }
+
+  .modal-body blockquote {
+    margin: 18px 0; padding: 14px 18px;
+    border-left: 3px solid var(--accent);
+    background: var(--panel);
+    border-radius: 0 6px 6px 0;
+    color: var(--text); font-size: 14px;
+    line-height: 1.7;
+  }
+  .modal-body blockquote p { margin: 0; }
+
+  .modal-body a {
+    color: var(--accent); text-decoration: none;
+    border-bottom: 1px solid rgba(106,166,255,0.3);
+    transition: border-color 0.12s ease, color 0.12s ease;
+  }
+  .modal-body a:hover { color: var(--accent-2); border-bottom-color: var(--accent-2); }
+
+  /* footnote refs */
+  .modal-body a.fn-ref {
+    display: inline-block; font-size: 0.72em;
+    padding: 0 5px; min-width: 16px; text-align: center;
+    color: var(--muted); border: 1px solid var(--border);
+    border-radius: 999px; background: var(--panel-2);
+    margin: 0 1px; vertical-align: 0.25em;
+    line-height: 1.5; font-weight: 600;
+    font-family: ui-monospace, monospace;
+    text-decoration: none;
+  }
+  .modal-body a.fn-ref:hover {
+    color: var(--accent); border-color: var(--accent);
+    background: rgba(106,166,255,0.12);
+  }
+  .modal-body a.fn-ref-empty { cursor: default; opacity: 0.5; }
+
+  /* footnote refs 접기 */
+  .modal-body details.fn-refs {
+    margin: 36px 0 0;
+    padding: 14px 18px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
+  .modal-body details.fn-refs > summary {
+    font-size: 12px; font-weight: 600;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--muted); cursor: pointer;
+    list-style: none; padding: 4px 2px;
+    display: flex; align-items: center; gap: 8px;
+    user-select: none;
+  }
+  .modal-body details.fn-refs > summary::-webkit-details-marker { display: none; }
+  .modal-body details.fn-refs > summary::before {
+    content: "▸"; color: var(--accent); transition: transform 0.15s ease;
+  }
+  .modal-body details.fn-refs[open] > summary::before { transform: rotate(90deg); }
+  .modal-body details.fn-refs .fn-count { color: var(--accent); }
+  .modal-body details.fn-refs > p {
+    margin: 8px 0 4px; font-size: 12.5px;
+    color: var(--muted); line-height: 1.65;
+  }
+  .modal-body details.fn-refs > p:first-of-type { margin-top: 12px; }
+
+  .modal-window.explain .modal-body p { font-size: 15px; line-height: 1.95; }
+  .modal-window.explain .modal-body { padding: 36px 56px 56px; }
+
+  @media (max-width: 720px) {
+    .modal-overlay { padding: 8px; }
+    .modal-body { padding: 22px 18px 32px; }
+    .modal-window.explain .modal-body { padding: 22px 18px 32px; }
+    .modal-body h2 { font-size: 17px; }
+    .modal-body p, .modal-body li { font-size: 14px; }
+  }
+
+  /* =========================================================
+     RESPONSIVE
+     ========================================================= */
+  @media (max-width: 900px) {
+    .synthesis-grid {
+      grid-template-columns: 1fr 1fr;
+      grid-template-areas:
+        "start start"
+        "glossary trends"
+        "datasets recommend";
+    }
+    .mindmap-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 720px) {
+    body { padding: 0 0 64px; }
+    .hub .pad { padding: 22px 16px 32px; }
+    .hub-header h1 { font-size: 24px; }
+    .synthesis-grid {
+      grid-template-columns: 1fr;
+      grid-template-areas:
+        "start"
+        "glossary"
+        "trends"
+        "datasets"
+        "recommend";
+    }
+    .mindmap-grid { grid-template-columns: 1fr; gap: 10px; }
+    .mindmap-svg-overlay { display: none; }
+    .mindmap-hint { display: block; }
+    .mindmap-chips { display: flex; }
+    .papers-grid { grid-template-columns: 1fr; }
+    .modal-body { padding: 22px 18px 32px; }
+  }
+
+  footer {
+    margin: 64px auto 0; max-width: 1280px;
+    padding: 18px 28px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 12px; line-height: 1.7;
+  }
+
+  /* doc 본문에서 첫 h1을 숨김 (모달 헤더와 중복) */
+  .modal-body .doc-wrap > h1:first-child { display: none; }
+
+  /* =========================================================
+     PRINT — 화이트 배경, 검정 텍스트, 모달 본문 우선
+     ========================================================= */
+  @media print {
+    html, body {
+      background: #fff !important; color: #000 !important;
+      padding: 0 !important;
+    }
+    /* 본 페이지 인쇄 시: chrome 요소 숨김 */
+    footer, .mindmap-svg-overlay, .mindmap-chips, .modal-kbd-hint,
+    .gloss-card, .modal-close, .modal-header .modal-actions a,
+    .paper-card .links, .synth-card .arrow {
+      display: none !important;
+    }
+    .container { max-width: none; margin: 0; }
+    .hub .pad { padding: 0; }
+    .hub-header, .section-title, .synth-card, .paper-card, .mindmap, .mindmap-col, .mindmap-node {
+      background: #fff !important; color: #000 !important;
+      border-color: #ccc !important;
+      box-shadow: none !important;
+    }
+    .paper-card .tagline, .paper-card .meta,
+    .synth-card p, .synth-card .head,
+    .mindmap-node small, .col-label {
+      color: #333 !important;
+    }
+    a, a:visited { color: #0044aa !important; text-decoration: underline; }
+
+    /* 모달이 열려 있으면: 모달 본문만 인쇄 */
+    body:has(.modal-overlay.open) > div.container,
+    body:has(.modal-overlay.open) > script {
+      display: none !important;
+    }
+    .modal-overlay.open {
+      position: static !important; background: #fff !important;
+      backdrop-filter: none !important; padding: 0 !important;
+      display: block !important; opacity: 1 !important;
+    }
+    .modal-overlay.open .modal-window {
+      max-width: none !important; max-height: none !important;
+      transform: none !important; border: 0 !important;
+      background: #fff !important; box-shadow: none !important;
+    }
+    .modal-header {
+      background: #fff !important; color: #000 !important;
+      border-bottom: 1px solid #000 !important;
+    }
+    .modal-header .num { color: #fff !important; }
+    .modal-header .modal-title, .modal-header .modal-title strong {
+      color: #000 !important;
+    }
+    .modal-body {
+      background: #fff !important; color: #000 !important;
+      padding: 16px 0 !important; overflow: visible !important;
+    }
+    .modal-body h1, .modal-body h2, .modal-body h3,
+    .modal-body p, .modal-body li, .modal-body strong, .modal-body em {
+      color: #000 !important;
+    }
+    .modal-body h2 { border-left-color: #000 !important; }
+    .modal-body table { border-color: #000 !important; }
+    .modal-body th, .modal-body td { border-color: #ccc !important; color: #000 !important; }
+    .modal-body th { background: #eee !important; }
+    .modal-body code, .modal-body pre {
+      background: #f4f4f4 !important; color: #000 !important;
+      border-color: #ccc !important;
+    }
+    .modal-body a.fn-ref {
+      color: #0044aa !important; background: #fff !important;
+      border-color: #888 !important;
+    }
+    .modal-body details.fn-refs { background: #fff !important; border-color: #888 !important; }
+    .modal-body details.fn-refs[open] > summary { color: #000 !important; }
+    /* 인쇄 시 footnote details 자동 펼침 */
+    .modal-body details.fn-refs { /* details 펼치기 */ }
+    .modal-body details.fn-refs:not([open]) { display: block; }
+    .modal-body details.fn-refs > * { display: revert; }
+
+    /* dfn 점선은 인쇄에서 시각적 노이즈 → 제거 */
+    dfn.gloss-term { border-bottom: none !important; color: inherit !important; }
+
+    /* 페이지 break 힌트 */
+    .modal-body h2, .modal-body h3 { page-break-after: avoid; }
+    .modal-body table, .modal-body figure { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="hub">
+    <div class="pad">
+
+      <header class="hub-header">
+        <div class="title-row">
+          <h1>Score Following <span class="accent">연구 프로젝트</span></h1>
+          <span class="index-badge"><span class="live-dot"></span>오프라인 작동 · 2016–2025</span>
+        </div>
+        <p class="lede">
+          실시간 음악 추적(Score Following / Music Tracking)과 인접 분야 audio-to-score alignment 13편 논문을 분석·비교·해설한 단독 웹앱. 2016–2024년 9편 + 2025년 차세대 4편(Matchmaker / Transcribe-and-Track / Low-Latency AMT / RUMAA)을 한 자리에서 비교. 노드 / 카드 / 버튼을 클릭하면 문서가 즉시 모달로 열림.
+        </p>
+        <div class="meta">
+          <span class="chip"><strong>13</strong> 논문 (2016–2025)</span>
+          <span class="chip"><strong>13</strong> 분석 보고서</span>
+          <span class="chip"><strong>13</strong> 비전공자 해설</span>
+          <span class="chip"><strong>5</strong> 종합 문서</span>
+          <span class="chip"><strong>1</strong> 응용 옵션 카탈로그</span>
+          <span class="chip ok">인터넷 연결 없이 작동</span>
+        </div>
+      </header>
+
+      <!-- 종합 문서 5장 -->
+      <div class="section-title">
+        <h2>전체 종합 문서</h2>
+        <span class="count">5</span>
+        <span class="rule"></span>
+      </div>
+
+      <div class="synthesis-grid">
+        <button class="synth-card primary" type="button" onclick="openDoc('topic_relationship', this)" data-title="논문 관계도와 흐름">
+          <span class="head"><span class="glyph">▶</span>시작은 여기서</span>
+          <h3>논문 관계도와 흐름</h3>
+          <p>13편의 시간선·계보·영향 관계, 세 갈래 노선(고전 신호처리 / 학습 기반 / 2025 차세대) + 오프라인 정렬 인접 분야, 누가 누구를 어떻게 발전시켰는가, 추천 읽기 순서까지 종합한 문서.</p>
+          <span class="arrow">관계도와 흐름 열기 →</span>
+        </button>
+
+        <button class="synth-card glossary" type="button" onclick="openDoc('topic_glossary', this)" data-title="마스터 용어집">
+          <span class="head"><span class="glyph">◧</span>용어가 헷갈릴 때</span>
+          <h3>마스터 용어집</h3>
+          <p>13편 해설 문서에서 사용된 핵심 용어 100개 이상을 7개 카테고리(문제 정의, 고전 알고리즘, 신호 처리, 딥러닝, 데이터·평가, 시스템·응용, 2025-2026 신규)로 통합·색인.</p>
+          <span class="arrow">열기 →</span>
+        </button>
+
+        <button class="synth-card trends" type="button" onclick="openDoc('topic_landscape', this)" data-title="2025–2026 분야 동향">
+          <span class="head"><span class="glyph">◐</span>18개월 동향</span>
+          <h3>2025–2026 분야 동향</h3>
+          <p>Tier 2 5편(Cowley·Pillay·Tsai·Murgul·Zeitler) + Tier 3 6편(LBD·Rach3·PIANO PRECISION·Basso Continuo·Flutist Onset 등) + 분야가 *없는* 것 — foundation model · diffusion · 페이지 터너 user study — 까지 한 자리.</p>
+          <span class="arrow">열기 →</span>
+        </button>
+
+        <button class="synth-card datasets" type="button" onclick="openDoc('topic_datasets', this)" data-title="2025–2026 신규 데이터셋 인벤토리">
+          <span class="head"><span class="glyph">◔</span>학습 자원</span>
+          <h3>2025–2026 신규 데이터셋 인벤토리</h3>
+          <p>GOAT(일렉기타) · Guitar-TECHS · PianoVAM · Rach3 · PDMX(250K MusicXML) · Sheet Music Benchmark — 6종을 표로 일별, 사용 시나리오별 권고. 비-피아노 자원이 폭발한 18개월의 정리.</p>
+          <span class="arrow">열기 →</span>
+        </button>
+
+        <button class="synth-card recommend" type="button" onclick="openDoc('topic_recommendation', this)" data-title="페이지 터너 응용 적용 권고">
+          <span class="head"><span class="glyph">◉</span>응용 결정</span>
+          <h3>페이지 터너 응용 적용 권고</h3>
+          <p>13편 분석을 한 응용 결정으로 응축. 4가지 사용자 시나리오(피아노 / 일렉기타 / 바이올린 / 첼로)별 백엔드 권고, 단계별 개발 로드맵, 응용이 자연스럽게 학술 기여로 환원되는 4지점.</p>
+          <span class="arrow">열기 →</span>
+        </button>
+      </div>
+
+      <!-- 마인드맵 -->
+      <div class="section-title">
+        <h2>논문 마인드맵</h2>
+        <span class="count">13편</span>
+        <span class="rule"></span>
+      </div>
+
+      <div class="mindmap" id="mindmap">
+        <div class="mindmap-header">
+          <div class="root-pill">Score Following · 실시간 악보 추적</div>
+          <div class="legend">
+            <span class="item"><span class="dot classical"></span>고전 신호처리</span>
+            <span class="item"><span class="dot learning"></span>학습 기반</span>
+            <span class="item"><span class="dot offline"></span>오프라인 정렬 (인접)</span>
+            <span class="item"><span class="dot nextgen"></span>2025 차세대</span>
+            <span class="item"><span class="badge hybrid-tag" style="position:static; margin:0 4px 0 0;">H</span>혼합·통합형 (메타 라벨)</span>
+          </div>
+        </div>
+
+        <p class="mindmap-hint">분류별로 4개 컬럼에 펼쳐진 지도. 모바일에서는 칩을 눌러 해당 분류 컬럼으로 점프.</p>
+
+        <div class="mindmap-chips" role="navigation" aria-label="분류별 점프">
+          <button class="chip-btn classical" type="button" data-target-col="classical">고전 신호처리</button>
+          <button class="chip-btn learning" type="button" data-target-col="learning">학습 기반</button>
+          <button class="chip-btn offline" type="button" data-target-col="offline">오프라인 정렬</button>
+          <button class="chip-btn nextgen" type="button" data-target-col="nextgen">2025 차세대</button>
+        </div>
+
+        <svg class="mindmap-svg-overlay" id="mindmap-svg" aria-hidden="true"></svg>
+
+        <div class="mindmap-grid" id="mindmap-grid">
+          <div class="mindmap-col classical">
+            <div class="col-label">고전 신호처리<br>DTW · OLTW · HMM · 2016–2024</div>
+            <button class="mindmap-node" data-paper="01">
+              <span class="nh"><span class="num-dot">01</span><strong>Arzt 2016</strong></span>
+              <small>Flexible and Robust Music Tracking — JKU 박사논문 · DTW + tempo + fingerprint + multi-agent 종합</small>
+            </button>
+            <button class="mindmap-node" data-paper="06">
+              <span class="nh"><span class="num-dot">06</span><strong>Lee 2022</strong></span>
+              <small>Imperial College FYP — 3종 follower(Beat / ASM / CQT-DTW) + QualScofo testbench</small>
+            </button>
+            <button class="mindmap-node" data-paper="07">
+              <span class="nh"><span class="num-dot">07</span><strong>Zeitler 2024</strong><span class="badge hybrid-tag" title="혼합·통합형 자격: 신경망 중간 표현을 DTW에 입력하는 두 노선의 가교">H</span></span>
+              <small>Transcription Raw Features — 신경망 중간 활성치를 DTW raw feature로 (signal × learning 가교)</small>
+            </button>
+          </div>
+
+          <div class="mindmap-col learning">
+            <div class="col-label">학습 기반<br>CNN · RL · BBox · DL</div>
+            <button class="mindmap-node" data-paper="02">
+              <span class="nh"><span class="num-dot">02</span><strong>Dorfer 2016</strong></span>
+              <small>Sheet Music Image CNN — 악보 이미지·오디오 직접 정렬 첫 실증</small>
+            </button>
+            <button class="mindmap-node" data-paper="03">
+              <span class="nh"><span class="num-dot">03</span><strong>Dorfer/Henkel 2018</strong></span>
+              <small>Score Following as RL Game — A2C 에이전트로 재정식화</small>
+            </button>
+            <button class="mindmap-node" data-paper="04">
+              <span class="nh"><span class="num-dot">04</span><strong>Henkel 2020</strong></span>
+              <small>Complete Score Sheet Images — 페이지 한 장 전체 입력 (referring segmentation)</small>
+            </button>
+            <button class="mindmap-node" data-paper="05">
+              <span class="nh"><span class="num-dot">05</span><strong>Henkel 2021</strong></span>
+              <small>Multi-modal Conditional BBox Regression — YOLO식 audio-conditioned BBox + IR 데이터 증강</small>
+            </button>
+            <button class="mindmap-node" data-paper="08">
+              <span class="nh"><span class="num-dot">08</span><strong>Pillay 2024</strong></span>
+              <small>HeurMiT (CMU MS Thesis) — 1D-CNN 잠재공간 + 교차상관 + 휴리스틱 polyphonic follower</small>
+            </button>
+          </div>
+
+          <div class="mindmap-col offline">
+            <div class="col-label">오프라인 정렬<br>인접 분야 (실시간 ✗)</div>
+            <button class="mindmap-node" data-paper="09">
+              <span class="nh"><span class="num-dot">09</span><strong>Bukey 2024</strong><span class="badge offline">OFFLINE</span></span>
+              <small>Just Label the Repeats (JLTR) — In-the-wild offline alignment · 사람 클릭 + bootleg + raw onset</small>
+            </button>
+          </div>
+
+          <div class="mindmap-col nextgen">
+            <div class="col-label">2025 차세대<br>Library · TaT · Low-latency · Transformer</div>
+            <button class="mindmap-node" data-paper="10">
+              <span class="nh"><span class="num-dot">10</span><strong>Park 2025</strong><span class="badge year">2025</span></span>
+              <small>Matchmaker (오픈소스 라이브러리) — 표준화된 평가 + OLTW-Arzt + LSE + pip 두 줄 API</small>
+            </button>
+            <button class="mindmap-node" data-paper="11">
+              <span class="nh"><span class="num-dot">11</span><strong>Peter 2025</strong><span class="badge year">2025</span></span>
+              <small>Transcribe-and-Track — audio OLTW plateau 돌파 · 새 OLTW + path-wise tempo</small>
+            </button>
+            <button class="mindmap-node" data-paper="12">
+              <span class="nh"><span class="num-dot">12</span><strong>Hu 2025</strong><span class="badge year">2025</span></span>
+              <small>Low-Latency AMT — strict causal · &lt; 30 ms · Mobile-AMT의 숨은 SE 지연 폭로</small>
+            </button>
+            <button class="mindmap-node" data-paper="13">
+              <span class="nh"><span class="num-dot">13</span><strong>Chang 2025</strong><span class="badge year">2025</span></span>
+              <small>RUMAA (Transformer 통합) — native MusicXML repeat · alignment + transcription + mistake</small>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 논문 상세 -->
+      <div class="section-title">
+        <h2>논문 상세</h2>
+        <span class="count">13</span>
+        <span class="rule"></span>
+      </div>
+
+      <div class="papers-grid">
+
+        <article class="paper-card classical" id="paper-01">
+          <div class="head">
+            <span class="num">01</span>
+            <h3>Flexible and Robust Music Tracking</h3>
+          </div>
+          <p class="meta">Andreas Arzt · JKU 박사학위논문 · 2016</p>
+          <p class="tagline">단일 알고리즘이 아니라 템포 모델·특징 정규화·실연주 참조·지문 검색·다중 에이전트 추적의 다섯 모듈을 한 팀처럼 묶어, 라이브 공연장에서도 살아남는 score following 시스템을 세워 낸 박사학위논문.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('01_analysis', this)" data-num="01" data-cat="classical" data-title="Arzt 2016 • Flexible and Robust Music Tracking">분석 보고서</button>
+            <button type="button" onclick="openDoc('01_explanation', this)" data-num="01" data-cat="classical" data-title="Arzt 2016 • Flexible and Robust Music Tracking">비전공자 해설</button>
+            <a href="papers/01_Arzt2016_Flexible/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card learning" id="paper-02">
+          <div class="head">
+            <span class="num">02</span>
+            <h3>Towards Score Following in Sheet Music Images</h3>
+          </div>
+          <p class="meta">Dorfer · Arzt · Widmer · ISMIR 2016</p>
+          <p class="tagline">기호적 악보 변환 없이 악보 이미지와 오디오 스펙트로그램을 두 갈래 멀티모달 CNN으로 직접 정렬해, score following이 raw 이미지·오디오 학습 기반으로도 가능함을 처음 실증한 proof-of-concept 논문.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('02_analysis', this)" data-num="02" data-cat="learning" data-title="Dorfer · Arzt · Widmer 2016 • Towards Score Following in Sheet Music Images">분석 보고서</button>
+            <button type="button" onclick="openDoc('02_explanation', this)" data-num="02" data-cat="learning" data-title="Dorfer · Arzt · Widmer 2016 • Towards Score Following in Sheet Music Images">비전공자 해설</button>
+            <a href="papers/02_Dorfer2016_SheetImage/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card learning" id="paper-03">
+          <div class="head">
+            <span class="num">03</span>
+            <h3>Learning to Listen, Read, and Follow: Score Following as a Reinforcement Learning Game</h3>
+          </div>
+          <p class="meta">Dorfer · Henkel · Widmer · 2018</p>
+          <p class="tagline">악보 따라가기를 비디오 게임처럼 다루어 에이전트가 악보 위 읽는 속도를 스스로 조절하게 한 최초의 강화학습 정식화 논문.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('03_analysis', this)" data-num="03" data-cat="learning" data-title="Dorfer · Henkel · Widmer 2018 • Score Following as RL Game">분석 보고서</button>
+            <button type="button" onclick="openDoc('03_explanation', this)" data-num="03" data-cat="learning" data-title="Dorfer · Henkel · Widmer 2018 • Score Following as RL Game">비전공자 해설</button>
+            <a href="papers/03_Dorfer2018_RL/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card learning" id="paper-04">
+          <div class="head">
+            <span class="num">04</span>
+            <h3>Learning to Read and Follow Music in Complete Score Sheet Images</h3>
+          </div>
+          <p class="meta">Henkel · Kelz · Widmer · ISMIR 2020</p>
+          <p class="tagline">한 줄짜리 악보 조각이 아니라 페이지 한 장 전체를 입력으로 받아 referring image segmentation으로 score following을 종단간 학습한 최초의 시스템.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('04_analysis', this)" data-num="04" data-cat="learning" data-title="Henkel · Kelz · Widmer 2020 • Complete Score Sheet Images">분석 보고서</button>
+            <button type="button" onclick="openDoc('04_explanation', this)" data-num="04" data-cat="learning" data-title="Henkel · Kelz · Widmer 2020 • Complete Score Sheet Images">비전공자 해설</button>
+            <a href="papers/04_Henkel2020_Complete/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card learning" id="paper-05">
+          <div class="head">
+            <span class="num">05</span>
+            <h3>Multi-modal Conditional Bounding Box Regression for Music Score Following</h3>
+          </div>
+          <p class="meta">Henkel · Widmer · EUSIPCO 2021</p>
+          <p class="tagline">악보 따라가기 문제를 픽셀 분할이 아닌 오디오-조건부 YOLO bounding box 회귀로 재정의해 SOTA를 갱신하고, IR 데이터 증강만으로 합성-실세계 도메인 갭을 절반 가까이 메웠다.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('05_analysis', this)" data-num="05" data-cat="learning" data-title="Henkel · Widmer 2021 • BBox Regression">분석 보고서</button>
+            <button type="button" onclick="openDoc('05_explanation', this)" data-num="05" data-cat="learning" data-title="Henkel · Widmer 2021 • BBox Regression">비전공자 해설</button>
+            <a href="papers/05_Henkel2021_BBox/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card classical" id="paper-06">
+          <div class="head">
+            <span class="num">06</span>
+            <h3>Musical Score Following and Audio Alignment</h3>
+          </div>
+          <p class="meta">Lin Hao Lee · Imperial College London FYP · 2022</p>
+          <p class="tagline">3종 score follower(TuneApp Conductor / ASM / CQT-DTW)와 두 오픈소스 testbench·QualScofo 데이터셋을 함께 공개해, sliCQ 기반 특징 추출이 동일 OLTW 위에서 FFT 기반 baseline을 일관되게 능가함을 ablation 비교로 입증한 통합 시스템 보고서.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('06_analysis', this)" data-num="06" data-cat="classical" data-title="Lee 2022 • Imperial College FYP">분석 보고서</button>
+            <button type="button" onclick="openDoc('06_explanation', this)" data-num="06" data-cat="classical" data-title="Lee 2022 • Imperial College FYP">비전공자 해설</button>
+            <a href="papers/06_Lee2022_Imperial/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card classical" id="paper-07">
+          <div class="head">
+            <span class="num">07</span>
+            <h3>Robust and Accurate Audio Synchronization Using Raw Features from Transcription Models</h3>
+          </div>
+          <p class="meta">Zeitler · Maman · Müller · ISMIR 2024</p>
+          <p class="tagline">채보 신경망의 임계값 적용 전 raw onset/frame 확률을 그대로 DTW에 입력해 음악 동기화의 outlier를 크게 줄이고, target 데이터에 fine-tuning까지 더하면 beat-tracking 수준(약 62 ms)의 강건한 정렬을 달성한다.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('07_analysis', this)" data-num="07" data-cat="classical" data-title="Zeitler · Maman · Müller 2024 • Raw Features from Transcription Models">분석 보고서</button>
+            <button type="button" onclick="openDoc('07_explanation', this)" data-num="07" data-cat="classical" data-title="Zeitler · Maman · Müller 2024 • Raw Features from Transcription Models">비전공자 해설</button>
+            <a href="papers/07_Zeitler2024_ISMIR/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card learning" id="paper-08">
+          <div class="head">
+            <span class="num">08</span>
+            <h3>A Neural Score Follower for Computer Accompaniment of Polyphonic Musical Instruments</h3>
+          </div>
+          <p class="meta">Ashwin Pillay · Carnegie Mellon University MS Thesis · 2024</p>
+          <p class="tagline">HeurMiT는 1D-CNN 잠재 표현 위에서 교차상관과 휴리스틱을 결합한 O(1) 폴리포닉 신경 스코어 팔로워로, OLTW 베이스라인에 견줄 정렬 정밀도를 보이지만 템포 민감성 때문에 실용보다는 DL 기반 score following의 출발점·평가 프레임워크 제공에 가치가 있다.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('08_analysis', this)" data-num="08" data-cat="learning" data-title="Pillay 2024 • HeurMiT (CMU MS Thesis)">분석 보고서</button>
+            <button type="button" onclick="openDoc('08_explanation', this)" data-num="08" data-cat="learning" data-title="Pillay 2024 • HeurMiT (CMU MS Thesis)">비전공자 해설</button>
+            <a href="papers/08_Pillay2024_HeurMiT/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card offline" id="paper-09">
+          <div class="head">
+            <span class="num">09</span>
+            <h3>Just Label the Repeats for In-the-Wild Audio-to-Score Alignment</h3>
+            <span class="badge">OFFLINE</span>
+          </div>
+          <p class="meta">Bukey · Feffer · Donahue · CMU · ISMIR 2024</p>
+          <p class="tagline">페이지당 6초의 사람 클릭으로 반복 기호 jump를 라벨링하고, 마디 단위 bootleg score와 transcription model의 raw onset 확률을 ordinary DTW에 결합해 in-the-wild audio-to-score 정렬 정확도를 33%에서 82%(상대 150%)로 끌어올린 인간-기계 협업 워크플로우.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('09_analysis', this)" data-num="09" data-cat="offline" data-title="Bukey · Feffer · Donahue 2024 • Just Label the Repeats (JLTR)">분석 보고서</button>
+            <button type="button" onclick="openDoc('09_explanation', this)" data-num="09" data-cat="offline" data-title="Bukey · Feffer · Donahue 2024 • Just Label the Repeats (JLTR)">비전공자 해설</button>
+            <a href="papers/09_Bukey2024_JLTR/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card nextgen" id="paper-10">
+          <div class="head">
+            <span class="num">10</span>
+            <h3>Matchmaker: An Open-Source Library for Real-Time Piano Score Following and Systematic Evaluation</h3>
+            <span class="badge">2025</span>
+          </div>
+          <p class="meta">Park · Cancino-Chacón · Chiruthapudi · Nam · KAIST + JKU · ISMIR 2025</p>
+          <p class="tagline">분야 40년의 파편화된 평가 환경을 해결한 오픈소스 Python 라이브러리. OLTW-Dixon, OLTW-Arzt, HMM 세 알고리즘을 동일 인터페이스로 제공하고 (n)ASAP·Batik·Vienna4x22 184 연주에서 공평하게 비교. 결론은 OLTW-Arzt + log-spectral-energy 조합이 정확도와 지연 모두에서 균형잡힌 baseline. 페이지 터너 응용의 즉시 사용 가능한 백엔드.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('10_analysis', this)" data-num="10" data-cat="nextgen" data-title="Park 2025 • Matchmaker (KAIST + JKU · ISMIR 2025)">분석 보고서</button>
+            <button type="button" onclick="openDoc('10_explanation', this)" data-num="10" data-cat="nextgen" data-title="Park 2025 • Matchmaker (KAIST + JKU · ISMIR 2025)">비전공자 해설</button>
+            <a href="papers/10_Park2025_Matchmaker/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card nextgen" id="paper-11">
+          <div class="head">
+            <span class="num">11</span>
+            <h3>Pairing Real-Time Piano Transcription with Symbol-level Tracking for Precise and Robust Score Following</h3>
+            <span class="badge">2025</span>
+          </div>
+          <p class="meta">Peter · Hu · Widmer · JKU · SMC 2025</p>
+          <p class="tagline">Audio OLTW가 plateau에 도달했다는 분야 진단을 4종 audio 특징의 동일 알고리즘 ablation으로 정량 입증. 그 plateau를 돌파하는 transcribe-then-track 새 패러다임 — 오디오를 음표 시퀀스로 변환한 뒤 심볼 도메인에서 정렬 — 을 제시. 새 OLTW는 pitch+time pairwise distance + path-wise tempo matrix로 audio-only baseline 대비 큰 폭 우위.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('11_analysis', this)" data-num="11" data-cat="nextgen" data-title="Peter · Hu · Widmer 2025 • Transcribe-and-Track (JKU · SMC 2025)">분석 보고서</button>
+            <button type="button" onclick="openDoc('11_explanation', this)" data-num="11" data-cat="nextgen" data-title="Peter · Hu · Widmer 2025 • Transcribe-and-Track (JKU · SMC 2025)">비전공자 해설</button>
+            <a href="papers/11_Peter2025_TranscribeTrack/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card nextgen" id="paper-12">
+          <div class="head">
+            <span class="num">12</span>
+            <h3>Exploring System Adaptations for Minimum Latency Real-Time Piano Transcription</h3>
+            <span class="badge">2025</span>
+          </div>
+          <p class="meta">Hu · Peter · Schlüter · Widmer · JKU · ISMIR 2025</p>
+          <p class="tagline">Online ≠ Real-time이라는 정직한 분야 진단. Mobile-AMT의 보고된 174 ms 지연에 SE 층의 10초 lookahead가 숨어 있음을 폭로하고, strict causality 보장 + STFT 비대칭 윈도우 + acoustic stack 공유의 세 갈래 ablation으로 30 ms 지연에서 비-causal baseline 수준 정확도 가능함을 입증. 분석 11번의 transcription 모듈로 결합하면 자동 반주까지 가능.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('12_analysis', this)" data-num="12" data-cat="nextgen" data-title="Hu · Peter · Schlüter · Widmer 2025 • Low-Latency AMT (JKU · ISMIR 2025)">분석 보고서</button>
+            <button type="button" onclick="openDoc('12_explanation', this)" data-num="12" data-cat="nextgen" data-title="Hu · Peter · Schlüter · Widmer 2025 • Low-Latency AMT (JKU · ISMIR 2025)">비전공자 해설</button>
+            <a href="papers/12_Hu2025_LowLatencyAMT/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+        <article class="paper-card nextgen" id="paper-13">
+          <div class="head">
+            <span class="num">13</span>
+            <h3>RUMAA: Repeat-Aware Unified Music Audio Analysis</h3>
+            <span class="badge">2025</span>
+          </div>
+          <p class="meta">Chang · Dixon · Benetos · QMUL · WASPAA 2025</p>
+          <p class="tagline">하나의 transformer로 alignment + score-informed transcription + mistake detection 세 task를 통합. 사람이 미리 unfold한 score 없이 MusicXML의 반복 기호를 native로 처리. 사전학습 M3 score encoder + YourMT3+ audio encoder + 6-block hierarchical cross-attention decoder. 반복 악보에서 RUMAA F_align 98.4 vs 베이스라인 12.7–36.4(최대 87% drop) — 분야의 오랜 한계를 학습으로 정면 돌파.</p>
+          <div class="links">
+            <button class="primary" type="button" onclick="openDoc('13_analysis', this)" data-num="13" data-cat="nextgen" data-title="Chang · Dixon · Benetos 2025 • RUMAA (QMUL · WASPAA 2025)">분석 보고서</button>
+            <button type="button" onclick="openDoc('13_explanation', this)" data-num="13" data-cat="nextgen" data-title="Chang · Dixon · Benetos 2025 • RUMAA (QMUL · WASPAA 2025)">비전공자 해설</button>
+            <a href="papers/13_Chang2025_RUMAA/원본.pdf" target="_blank" rel="noopener">원본 PDF</a>
+          </div>
+        </article>
+
+      </div>
+
+      <!-- 사용자 응용 카탈로그 -->
+      <div class="section-title">
+        <h2>사용자 응용을 위한 종합 옵션 카탈로그</h2>
+        <span class="count">1</span>
+        <span class="rule"></span>
+      </div>
+
+      <div class="guitar-cello-grid">
+        <button class="synth-card guitar-cello-card" type="button" onclick="openDoc('topic_guitar_cello', this)" data-title="페이지 터너 종합 옵션 카탈로그 — 일렉기타·첼로 전용">
+          <span class="head"><span class="glyph">♪</span>일렉기타 · 첼로 전용</span>
+          <h3>페이지 터너 종합 옵션 카탈로그 — 보수안부터 엽기안까지 70개 옵션</h3>
+          <p>13편 분석 + Tier 2/3 + 6종 데이터셋을 통합해, 사용자의 일렉기타·첼로 페이지 터너 응용에 직접 적용 가능한 70개 옵션을 다섯 갈래(보수 / 검증된 결합 / 신선한 ML / 멀티모달·하드웨어 / 엽기적 안)로 카탈로그화. MERT × score following, Bow IMU, smart pick, BCI EEG, 청중 모바일 sync, audio watermark까지. 각 옵션마다 악기 적용성·구현 난이도·분야 첫 시도 여부 표기. 세 가지 시스템 아키텍처(MVP / 멀티모달 / 연구 지향) + 단계별 1년 로드맵 + 학술 환원 4지점.</p>
+          <span class="arrow">카탈로그 열기 →</span>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <footer>
+    이 웹앱은 13편 논문의 분석·해설을 모두 담고 있음. 카드의 [분석 보고서] [비전공자 해설] 버튼을 누르면 모달로 열리고, [원본 PDF]는 papers/ 폴더의 PDF 파일 경로를 가리킴. 09번(JLTR)은 실시간이 아닌 오프라인 audio-to-score alignment, 13번(RUMAA)도 1분 청크 한정의 오프라인 통합 모델이지만 두 편 모두 분야 전체에 시사점이 큼. 10–13번(Tier 1) 네 편은 모두 2025년 발표 — 분야의 다음 10년 응용 스택의 네 부품: Matchmaker(라이브러리) + Peter T-and-T(정렬 모듈) + Hu Low-Latency AMT(저지연 모듈) + RUMAA(통합 사전 정렬). 본문에는 마스터 용어집 호버카드가 자동 적용됨 — 점선 밑줄 용어 위에 마우스를 올리면 정의 카드가 뜸.
+  </footer>
+</div>
+
+<!-- =====================================================
+     LIVE MODAL
+     ===================================================== -->
+<div class="modal-overlay" id="live-modal" role="dialog" aria-modal="true" aria-labelledby="live-modal-title" tabindex="-1" aria-hidden="true">
+  <div class="modal-window" id="live-modal-window">
+    <div class="modal-header" id="live-modal-header">
+      <span class="num" id="live-modal-num">·</span>
+      <div class="modal-title" id="live-modal-title"></div>
+      <div class="modal-actions">
+        <span class="modal-kbd-hint" aria-hidden="true" title="키보드 단축키"><kbd>←</kbd><kbd>→</kbd> 인접 논문 · <kbd>A</kbd>/<kbd>E</kbd> 분석/해설 · <kbd>Esc</kbd> 닫기</span>
+        <a id="live-modal-download" href="#" download hidden>📄 docx 다운로드</a>
+        <button class="modal-close" type="button" aria-label="닫기" onclick="closeModal()">×</button>
+      </div>
+    </div>
+    <div class="modal-body" id="live-modal-body">
+      <div class="doc-wrap auto-glossary" id="live-doc-wrap"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  // ---------- mermaid ----------
+  const KO_FONT = '"Pretendard", "Noto Sans KR", "Malgun Gothic", -apple-system, BlinkMacSystemFont, system-ui, sans-serif';
+  if (typeof mermaid !== 'undefined') {
+    mermaid.initialize({
+      startOnLoad: false,
+      theme: 'dark',
+      fontFamily: KO_FONT,
+      themeVariables: {
+        background: '#14171f',
+        primaryColor: '#1d2230',
+        primaryTextColor: '#e7ecf3',
+        primaryBorderColor: '#2a3142',
+        lineColor: '#6aa6ff',
+        secondaryColor: '#1d2230',
+        tertiaryColor: '#0b0d12',
+        fontFamily: KO_FONT,
+        fontSize: '16px'
+      },
+      securityLevel: 'loose',
+      flowchart: {
+        curve: 'basis',
+        useMaxWidth: true,
+        nodeSpacing: 50,
+        rankSpacing: 60,
+        padding: 14,
+        htmlLabels: true
+      },
+      timeline: { useMaxWidth: true, padding: 14 }
+    });
+  }
+
+  // ---------- DOM refs ----------
+  const liveModal  = document.getElementById('live-modal');
+  const liveBody   = document.getElementById('live-doc-wrap');
+  const liveTitle  = document.getElementById('live-modal-title');
+  const liveNum    = document.getElementById('live-modal-num');
+  const liveHeader = document.getElementById('live-modal-header');
+  const liveWindow = document.getElementById('live-modal-window');
+  const liveDl     = document.getElementById('live-modal-download');
+
+  let lastFocus = null;
+  // 현재 모달에 띄워진 문서 컨텍스트 (키보드 네비게이션용)
+  let currentDoc = null; // { num, cat, kind: 'analysis' | 'explanation' | null, key }
+
+  // ---------- footnote fixer ----------
+  function fixFootnotes(html) {
+    if (!html) return html;
+    // <a href="...">[N]</a> -> small pill
+    return html.replace(/<a href="([^"]*)">\[(\d+)\]<\/a>/g, function(_, url, n) {
+      if (!url) return '<a class="fn-ref fn-ref-empty" title="참조 ' + n + '">' + n + '</a>';
+      return '<a class="fn-ref" href="' + url + '" target="_blank" rel="noopener" title="참조 ' + n + '">' + n + '</a>';
+    });
+  }
+
+  // ---------- footnote 끝 블록 details 처리 ----------
+  // 본문 끝에서 `<p>` 요소 중 첫 자식이 <a class="fn-ref">인 것을 발견하면
+  // 그 이후 형제 전부를 <details><summary>참고문헌</summary>…</details>로 감싸 접음.
+  function groupFootnotesIntoDetails(root) {
+    if (!root) return;
+    const kids = Array.from(root.children);
+    let startIdx = -1;
+    // 끝부터 거꾸로 스캔하다가, 어느 시점부터 reference 패턴이 끊기는지 찾기
+    for (let i = kids.length - 1; i >= 0; i--) {
+      const el = kids[i];
+      if (el.tagName !== 'P') {
+        // P가 아닌 요소(헤딩 등)을 만나면 거기서 멈춤
+        if (startIdx >= 0) break;
+        continue;
+      }
+      const firstChild = el.firstElementChild;
+      const isRefHead = firstChild && firstChild.tagName === 'A' && firstChild.classList.contains('fn-ref');
+      const text = el.textContent || '';
+      // URL paragraph: 문단 전체가 <…>로 감싸진 url 형태
+      const isUrlPara = /^\s*<[^>]+>\s*$/.test(text);
+      if (isRefHead || isUrlPara) {
+        startIdx = i;
+      } else {
+        break;
+      }
+    }
+    if (startIdx < 0) return;
+    // 최소 2개 이상의 reference 항목이 있을 때만 접기 (단일 항목이면 그대로 둠)
+    const refCount = kids.slice(startIdx).filter(el => {
+      const f = el.firstElementChild;
+      return f && f.classList && f.classList.contains('fn-ref');
+    }).length;
+    if (refCount < 2) return;
+
+    const details = document.createElement('details');
+    details.className = 'fn-refs';
+    const summary = document.createElement('summary');
+    summary.innerHTML = '참고문헌 <span class="fn-count">(' + refCount + ')</span>';
+    details.appendChild(summary);
+    // 옮기기
+    for (let i = startIdx; i < kids.length; i++) {
+      details.appendChild(kids[i]);
+    }
+    root.appendChild(details);
+  }
+
+  // ---------- mermaid block conversion ----------
+  function convertMermaidBlocks(root) {
+    // pandoc default: <pre><code>flowchart...</code></pre> with no language class.
+    // Detect by content keywords.
+    root.querySelectorAll('pre').forEach(pre => {
+      const code = pre.querySelector('code');
+      const txt = (code ? code.textContent : pre.textContent) || '';
+      const isMermaid =
+        pre.classList.contains('mermaid') ||
+        (code && (code.classList.contains('language-mermaid') || code.classList.contains('mermaid'))) ||
+        /^\s*(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey)\b/m.test(txt);
+      if (!isMermaid) return;
+      const fig = document.createElement('figure');
+      fig.className = 'mermaid-block';
+      const cap = document.createElement('figcaption');
+      cap.textContent = '다이어그램 · mermaid';
+      fig.appendChild(cap);
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = txt;
+      fig.appendChild(div);
+      pre.parentNode.replaceChild(fig, pre);
+    });
+  }
+
+  // ---------- template loader ----------
+  const docCache = new Map();
+  async function loadTemplate(key) {
+    if (docCache.has(key)) return docCache.get(key);
+    const res = await fetch('templates/' + key + '.html');
+    if (!res.ok) throw new Error('Failed to load templates/' + key + '.html: ' + res.status);
+    const html = await res.text();
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    const tplEl = tmp.querySelector('template');
+    if (!tplEl) throw new Error('No <template> in templates/' + key + '.html');
+    const data = {
+      title:   tplEl.dataset.title || '',
+      docx:    tplEl.dataset.docx  || '',
+      content: tplEl.innerHTML
+    };
+    docCache.set(key, data);
+    return data;
+  }
+
+  // ---------- modal open/close ----------
+  async function openDoc(key, callerBtn) {
+    lastFocus = document.activeElement;
+
+    // category & header meta from caller button
+    let num = '·', cat = 'accent', title = '';
+    if (callerBtn) {
+      num   = callerBtn.dataset.num   || '';
+      cat   = callerBtn.dataset.cat   || '';
+      title = callerBtn.dataset.title || '';
+    }
+
+    // synthesis cards (no num/cat) — use generic accent
+    const isPaper = !!num;
+    const headerCat = isPaper ? cat : '';
+    liveHeader.className = 'modal-header' + (headerCat ? ' ' + headerCat : '');
+    liveWindow.className = 'modal-window' + (headerCat ? ' cat-' + headerCat : '');
+    if (key.endsWith('_explanation') || key.endsWith('_explain')) {
+      liveWindow.classList.add('explain');
+    }
+    if (liveNum) {
+      if (num) { liveNum.textContent = num; liveNum.style.display = ''; }
+      else     { liveNum.style.display = 'none'; }
+    }
+
+    const isAnalysis = /_analysis$/.test(key);
+    const isExplain  = /_explanation$|_explain$/.test(key);
+    const kind = isAnalysis ? '분석 보고서' : (isExplain ? '비전공자 해설' : '');
+
+    // 키보드 네비게이션을 위한 컨텍스트 저장
+    currentDoc = {
+      num: num && num !== '·' ? num : null,
+      cat: cat || null,
+      kind: isAnalysis ? 'analysis' : (isExplain ? 'explanation' : null),
+      key: key
+    };
+
+    // Open with loading state
+    liveBody.innerHTML = '<p style="color:var(--muted); padding:24px;">불러오는 중…</p>';
+    liveTitle.innerHTML = title || (callerBtn ? (callerBtn.dataset.title || '') : '');
+    liveDl.hidden = true;
+    liveDl.removeAttribute('href');
+    liveModal.classList.add('open');
+    liveModal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => liveModal.focus());
+
+    try {
+      const doc = await loadTemplate(key);
+
+      // header title — paper or synthesis
+      if (isPaper) {
+        const docTitle = title || doc.title;
+        const parts = docTitle.split(' • ');
+        const author = parts[0] || '';
+        const rest = parts.slice(1).join(' • ');
+        liveTitle.innerHTML = '<strong>' + author + '</strong>' +
+                              (rest ? rest : '') +
+                              (kind ? '<span class="sep">·</span>' + kind : '');
+      } else {
+        liveTitle.innerHTML = '<strong>' + (doc.title || title) + '</strong>';
+      }
+
+      // download link
+      if (doc.docx) {
+        liveDl.href = doc.docx;
+        liveDl.download = doc.docx.split('/').pop() || 'document.docx';
+        liveDl.hidden = false;
+      }
+
+      // doc-title + doc-subtitle + content
+      let subtitle = '';
+      if (isPaper) {
+        const parts = (title || doc.title).split(' • ');
+        const author = parts[0] || '';
+        const rest = parts.slice(1).join(' • ');
+        subtitle = '<p class="doc-subtitle">' +
+                   (author ? '<span>' + author + '</span>' : '') +
+                   (rest ? '<span class="sep">·</span><span>' + rest + '</span>' : '') +
+                   (kind ? '<span class="sep">·</span><span>' + kind + '</span>' : '') +
+                   '</p>';
+      } else {
+        subtitle = '<p class="doc-subtitle"><span>' + (doc.title || title) + '</span></p>';
+      }
+
+      liveBody.innerHTML = subtitle + fixFootnotes(doc.content);
+
+      // footnote refs 접기
+      groupFootnotesIntoDetails(liveBody);
+
+      // mermaid
+      convertMermaidBlocks(liveBody);
+      if (typeof mermaid !== 'undefined') {
+        try { await mermaid.run({ querySelector: '#live-doc-wrap .mermaid' }); }
+        catch(e) { console.warn('mermaid render error', e); }
+      }
+
+      // glossary auto-mark
+      if (window.__SF_autoMarkGlossary) {
+        liveBody.classList.add('auto-glossary');
+        window.__SF_autoMarkGlossary(liveBody);
+      }
+
+      // scroll to top of body
+      const bodyEl = document.getElementById('live-modal-body');
+      if (bodyEl) bodyEl.scrollTop = 0;
+
+    } catch (err) {
+      console.error('openDoc failed:', err);
+      liveBody.innerHTML = '<div style="padding:24px; color:var(--offline);">' +
+        '<h2 style="margin-bottom:10px;">문서를 불러오지 못함</h2>' +
+        '<p style="color:var(--muted); line-height:1.7;">' + err.message + '</p>' +
+        '<p style="color:var(--muted); line-height:1.7; margin-top:10px;">' +
+        '로컬 서버에서 실행 중인지 확인. 예: <code>python -m http.server</code>' +
+        '</p></div>';
+    }
+  }
+
+  function closeModal() {
+    liveModal.classList.remove('open');
+    liveModal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    if (lastFocus && typeof lastFocus.focus === 'function') {
+      lastFocus.focus();
+    }
+    lastFocus = null;
+    currentDoc = null;
+  }
+
+  // 키보드 단축키: 모달 열린 상태에서만 동작
+  function navigateToPaper(num, kind) {
+    const padded = String(num).padStart(2, '0');
+    const card = document.getElementById('paper-' + padded);
+    if (!card) return false;
+    const selector = (kind === 'explanation') ? 'button:not(.primary)' : 'button.primary';
+    const btn = card.querySelector(selector);
+    if (btn) { btn.click(); return true; }
+    return false;
+  }
+
+  liveModal.addEventListener('click', (e) => { if (e.target === liveModal) closeModal(); });
+  document.addEventListener('keydown', (e) => {
+    if (!liveModal.classList.contains('open')) return;
+    if (e.key === 'Escape') { closeModal(); return; }
+    // 입력 요소에 포커스 있으면 단축키 무시
+    const tag = (document.activeElement && document.activeElement.tagName) || '';
+    if (tag === 'INPUT' || tag === 'TEXTAREA' || (document.activeElement && document.activeElement.isContentEditable)) return;
+    if (!currentDoc) return;
+    const isPaper = currentDoc.num && /^\d+$/.test(currentDoc.num);
+    // ←/→ 인접 논문 (분석/해설 종류 유지)
+    if (isPaper && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+      const dir = (e.key === 'ArrowRight') ? 1 : -1;
+      let n = parseInt(currentDoc.num, 10) + dir;
+      if (n < 1) n = 13;
+      if (n > 13) n = 1;
+      if (navigateToPaper(n, currentDoc.kind || 'analysis')) e.preventDefault();
+      return;
+    }
+    // A: 현재 논문의 분석 보고서, E: 비전공자 해설
+    if (isPaper && (e.key === 'a' || e.key === 'A')) {
+      if (navigateToPaper(parseInt(currentDoc.num, 10), 'analysis')) e.preventDefault();
+      return;
+    }
+    if (isPaper && (e.key === 'e' || e.key === 'E')) {
+      if (navigateToPaper(parseInt(currentDoc.num, 10), 'explanation')) e.preventDefault();
+      return;
+    }
+  });
+  window.openDoc = openDoc;
+  window.closeModal = closeModal;
+
+  // ---------- mindmap chip click → 해당 컬럼으로 스크롤 ----------
+  document.querySelectorAll('.mindmap-chips .chip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.targetCol;
+      const col = document.querySelector('.mindmap-col.' + target);
+      if (col) col.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  });
+
+  // ---------- mindmap node click → 해당 paper의 분석 보고서 모달 ----------
+  document.querySelectorAll('.mindmap-node').forEach(n => {
+    n.addEventListener('click', () => {
+      const id = n.dataset.paper;
+      if (!id) return;
+      // 카드의 분석 버튼을 찾아서 그 메타데이터로 모달 열기
+      const card = document.getElementById('paper-' + id);
+      if (card) {
+        const analysisBtn = card.querySelector('button.primary');
+        if (analysisBtn) {
+          analysisBtn.click();
+          // 카드도 살짝 스크롤
+          requestAnimationFrame(() => {
+            const overlay = document.getElementById('live-modal');
+            if (!overlay.classList.contains('open')) {
+              card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          });
+        }
+      }
+    });
+  });
+
+  // ---------- mindmap SVG: 동적 곡선 라인 (root → 각 컬럼 상단) ----------
+  // 컬럼 박스가 불투명 배경이라 컬럼 안으로 들어가는 선은 가려짐.
+  // 그래서 선은 root-pill에서 *각 컬럼의 상단 가운데* 까지만 그려, 위쪽 빈 공간에서 보이게 함.
+  function drawMindmapLines() {
+    const svg = document.getElementById('mindmap-svg');
+    const grid = document.getElementById('mindmap-grid');
+    const wrap = document.getElementById('mindmap');
+    if (!svg || !grid || !wrap) return;
+    if (window.matchMedia('(max-width: 720px)').matches) {
+      svg.innerHTML = ''; return;
+    }
+    const wrapRect = wrap.getBoundingClientRect();
+    svg.setAttribute('viewBox', `0 0 ${wrapRect.width} ${wrapRect.height}`);
+    svg.setAttribute('width', wrapRect.width);
+    svg.setAttribute('height', wrapRect.height);
+
+    const root = wrap.querySelector('.root-pill');
+    const rootRect = root.getBoundingClientRect();
+    const rx = rootRect.left + rootRect.width / 2 - wrapRect.left;
+    const ry = rootRect.bottom - wrapRect.top + 4;
+
+    let svgContent = `<circle cx="${rx}" cy="${ry}" r="3" />`;
+
+    grid.querySelectorAll('.mindmap-col').forEach(col => {
+      const cls = col.classList[1]; // classical / learning / hybrid / offline / nextgen
+      const r = col.getBoundingClientRect();
+      // 컬럼 상단 가운데 — 약간 위쪽으로 띄워 카드 보더와 겹치지 않게
+      const tx = r.left + r.width / 2 - wrapRect.left;
+      const ty = r.top - wrapRect.top - 2;
+      // bezier: root → 컬럼 상단
+      const dy = ty - ry;
+      const cp1x = rx;
+      const cp1y = ry + dy * 0.55;
+      const cp2x = tx;
+      const cp2y = ry + dy * 0.55;
+      svgContent += `<path class="${cls}" d="M ${rx} ${ry} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${tx} ${ty}" />`;
+      // 컬럼 상단의 화살촉 점
+      svgContent += `<circle class="${cls}" cx="${tx}" cy="${ty}" r="2.5" style="fill:currentColor"/>`;
+    });
+    svg.innerHTML = svgContent;
+  }
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(drawMindmapLines);
+    ro.observe(document.getElementById('mindmap'));
+  } else {
+    window.addEventListener('resize', drawMindmapLines);
+  }
+  window.addEventListener('load', () => setTimeout(drawMindmapLines, 50));
+  setTimeout(drawMindmapLines, 0);
+
+  // ---------- hash → paper card focus ----------
+  function focusCardFromHash() {
+    const id = (location.hash || '').slice(1);
+    if (!id || !id.startsWith('paper-')) return;
+    const target = document.getElementById(id);
+    if (target && target.scrollIntoView) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+  window.addEventListener('hashchange', focusCardFromHash);
+  if (location.hash) {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', focusCardFromHash);
+    } else {
+      focusCardFromHash();
+    }
+  }
+
+})();
+
+// =============================================================================
+// GLOSSARY HOVER CARD SYSTEM
+// =============================================================================
+(function(){
+  const G = window.__SF_GLOSSARY || {};
+  if (!Object.keys(G).length) return;
+
+  // alias → key (longer first)
+  const aliasMap = [];
+  Object.keys(G).forEach(key => {
+    const aliases = G[key].aliases || [key];
+    aliases.forEach(a => aliasMap.push({ alias: a, key }));
+  });
+  aliasMap.sort((a, b) => b.alias.length - a.alias.length);
+
+  const SKIP = new Set(['DFN', 'CODE', 'A', 'H1', 'H2', 'H3', 'H4', 'BUTTON', 'SCRIPT', 'STYLE', 'PRE', 'KBD']);
+  function escapeReg(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  function autoMark(root) {
+    if (!root) return;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(node) {
+        let p = node.parentNode;
+        while (p && p !== root) {
+          if (SKIP.has(p.nodeName)) return NodeFilter.FILTER_REJECT;
+          if (p.classList && p.classList.contains('gloss-term')) return NodeFilter.FILTER_REJECT;
+          p = p.parentNode;
+        }
+        return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const targets = [];
+    let n;
+    while ((n = walker.nextNode())) targets.push(n);
+
+    // 텍스트 노드별로: 모든 alias의 모든 occurrence를 수집 → 겹침 해소 → 마킹
+    targets.forEach(textNode => {
+      const text = textNode.nodeValue;
+      // 모든 alias 매칭 수집
+      const hits = []; // { start, end, key, matched, aliasLen }
+      for (const { alias, key } of aliasMap) {
+        const isWord = /^[A-Za-z0-9]/.test(alias) && /[A-Za-z0-9]$/.test(alias);
+        const re = isWord
+          ? new RegExp('(^|[^A-Za-z0-9_])(' + escapeReg(alias) + ')(?![A-Za-z0-9_])', 'g')
+          : new RegExp(escapeReg(alias), 'g');
+        let m;
+        while ((m = re.exec(text)) !== null) {
+          const idx = m.index + (isWord ? m[1].length : 0);
+          const matched = isWord ? m[2] : m[0];
+          hits.push({ start: idx, end: idx + matched.length, key, matched, aliasLen: alias.length });
+          // word match: m[1] could be empty (start) so manual advance
+          if (m.index === re.lastIndex) re.lastIndex++;
+        }
+      }
+      if (!hits.length) return;
+
+      // 겹침 해소: 긴 alias가 우선, 동률이면 먼저 발견된 것
+      hits.sort((a, b) => a.start - b.start || b.aliasLen - a.aliasLen);
+      const accepted = [];
+      let cursor = -1;
+      for (const h of hits) {
+        if (h.start < cursor) continue; // 이전 매칭과 겹침 → 버림
+        accepted.push(h);
+        cursor = h.end;
+      }
+      if (!accepted.length) return;
+
+      // 다시 시작 순으로 정렬 (이미 sort돼 있지만 안전하게)
+      accepted.sort((a, b) => a.start - b.start);
+
+      const frag = document.createDocumentFragment();
+      let pos = 0;
+      for (const h of accepted) {
+        if (h.start > pos) frag.appendChild(document.createTextNode(text.slice(pos, h.start)));
+        const dfn = document.createElement('dfn');
+        dfn.className = 'gloss-term';
+        dfn.dataset.term = h.key;
+        dfn.tabIndex = 0;
+        dfn.textContent = h.matched;
+        frag.appendChild(dfn);
+        pos = h.end;
+      }
+      if (pos < text.length) frag.appendChild(document.createTextNode(text.slice(pos)));
+      textNode.parentNode.replaceChild(frag, textNode);
+    });
+  }
+
+  document.querySelectorAll('.auto-glossary').forEach(autoMark);
+
+  // hover card singleton
+  const card = document.createElement('div');
+  card.className = 'gloss-card';
+  card.setAttribute('role', 'tooltip');
+  card.innerHTML =
+    '<div class="gc-head">' +
+      '<span class="gc-cat"></span>' +
+      '<button class="gc-pin" type="button" aria-label="고정" title="고정 (클릭)">⌥</button>' +
+      '<button class="gc-close" type="button" aria-label="닫기" title="닫기 (Esc)">×</button>' +
+    '</div>' +
+    '<h4></h4>' +
+    '<div class="gc-short"></div>' +
+    '<div class="gc-long"></div>' +
+    '<div class="gc-foot"><span class="gc-papers"></span><span class="gc-foot-spacer"></span><kbd>Esc</kbd> 닫기</div>';
+  document.body.appendChild(card);
+
+  let openTimer = null, closeTimer = null;
+  let activeTerm = null;
+  let pinned = false;
+
+  const elCat = card.querySelector('.gc-cat');
+  const elH4 = card.querySelector('h4');
+  const elShort = card.querySelector('.gc-short');
+  const elLong = card.querySelector('.gc-long');
+  const elPapers = card.querySelector('.gc-papers');
+  const btnPin = card.querySelector('.gc-pin');
+  const btnClose = card.querySelector('.gc-close');
+
+  function fillCard(key) {
+    const g = G[key];
+    if (!g) return false;
+    elCat.textContent = g.category || '';
+    elH4.textContent = g.label || key;
+    elShort.textContent = g.short || '';
+    // long이 short와 동일하거나 short를 prefix로 포함하면 중복 제거
+    const longRaw = g.long || '';
+    const longText = longRaw.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+    const shortText = (g.short || '').replace(/\s+/g, ' ').trim();
+    let renderedLong = '';
+    if (longText && shortText && longText.indexOf(shortText) === 0) {
+      // long이 short로 시작 — 나머지(잔여) 부분만 추출
+      const residual = longText.slice(shortText.length).trim();
+      if (residual) {
+        // long 원본에서 첫 문장(short 본문)을 잘라내어 추가 정보만 렌더
+        // 가장 단순한 안전 처리: 잔여 텍스트를 plain <p>로 렌더
+        renderedLong = '<p>' + residual.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+      }
+    } else if (longText && longText !== shortText) {
+      // 완전히 다른 long — 원본 HTML 그대로
+      renderedLong = longRaw;
+    }
+    if (renderedLong) {
+      elLong.innerHTML = renderedLong;
+      elLong.style.display = '';
+      card.classList.remove('no-long');
+    } else {
+      elLong.innerHTML = '';
+      elLong.style.display = 'none';
+      card.classList.add('no-long');
+    }
+    elPapers.innerHTML = '';
+    if (g.papers) {
+      const nums = String(g.papers).split(',').map(s => s.trim()).filter(Boolean);
+      nums.forEach(n => {
+        const b = document.createElement('span');
+        b.className = 'p-badge';
+        b.textContent = n;
+        b.title = '논문 ' + n + '에 등장';
+        elPapers.appendChild(b);
+      });
+    }
+    elLong.querySelectorAll('dfn[data-term]').forEach(d => {
+      d.classList.add('gloss-term');
+      d.tabIndex = 0;
+    });
+    return true;
+  }
+
+  function positionCard(targetEl) {
+    const r = targetEl.getBoundingClientRect();
+    card.style.left = '0px'; card.style.top = '0px';
+    card.style.visibility = 'hidden';
+    card.classList.add('open');
+    const cw = card.offsetWidth, ch = card.offsetHeight;
+    card.style.visibility = '';
+    const margin = 8;
+    let left = r.left + r.width / 2 - cw / 2;
+    let top  = r.bottom + margin;
+    if (left < margin) left = margin;
+    if (left + cw > window.innerWidth - margin) left = window.innerWidth - cw - margin;
+    if (top + ch > window.innerHeight - margin) top = r.top - ch - margin;
+    if (top < margin) top = margin;
+    card.style.left = left + 'px';
+    card.style.top  = top  + 'px';
+  }
+
+  function showCard(targetEl, key) {
+    if (!fillCard(key)) return;
+    if (activeTerm && activeTerm !== targetEl) activeTerm.removeAttribute('data-active');
+    activeTerm = targetEl;
+    targetEl.setAttribute('data-active', 'true');
+    positionCard(targetEl);
+    card.classList.add('open');
+  }
+
+  function hideCard(force) {
+    if (pinned && !force) return;
+    card.classList.remove('open', 'pinned');
+    pinned = false;
+    if (activeTerm) { activeTerm.removeAttribute('data-active'); activeTerm = null; }
+  }
+
+  function pinCard() { pinned = true; card.classList.add('pinned'); }
+
+  btnPin.addEventListener('click', (e) => { e.stopPropagation(); pinCard(); });
+  btnClose.addEventListener('click', (e) => { e.stopPropagation(); hideCard(true); });
+
+  // ---------- 드래그: 핀 상태에서 gc-head로 카드 이동 ----------
+  (function attachDrag(){
+    const head = card.querySelector('.gc-head');
+    let dragging = false;
+    let offsetX = 0, offsetY = 0;
+    function onDown(clientX, clientY, e) {
+      if (!pinned) return;
+      // 버튼은 드래그 트리거 아님
+      if (e.target.closest && e.target.closest('button')) return;
+      const r = card.getBoundingClientRect();
+      offsetX = clientX - r.left;
+      offsetY = clientY - r.top;
+      dragging = true;
+      card.classList.add('dragging');
+      e.preventDefault();
+    }
+    function onMove(clientX, clientY) {
+      if (!dragging) return;
+      const m = 8;
+      let left = clientX - offsetX;
+      let top  = clientY - offsetY;
+      const cw = card.offsetWidth, ch = card.offsetHeight;
+      if (left < m) left = m;
+      if (top  < m) top  = m;
+      if (left + cw > window.innerWidth - m)  left = window.innerWidth - cw - m;
+      if (top  + ch > window.innerHeight - m) top  = window.innerHeight - ch - m;
+      card.style.left = left + 'px';
+      card.style.top  = top  + 'px';
+    }
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      card.classList.remove('dragging');
+    }
+    head.addEventListener('mousedown', e => onDown(e.clientX, e.clientY, e));
+    document.addEventListener('mousemove', e => onMove(e.clientX, e.clientY));
+    document.addEventListener('mouseup', onUp);
+    head.addEventListener('touchstart', e => {
+      const t = e.touches[0]; if (t) onDown(t.clientX, t.clientY, e);
+    }, { passive: false });
+    document.addEventListener('touchmove', e => {
+      const t = e.touches[0]; if (t && dragging) { onMove(t.clientX, t.clientY); e.preventDefault(); }
+    }, { passive: false });
+    document.addEventListener('touchend', onUp);
+  })();
+
+  document.addEventListener('mouseover', (e) => {
+    const dfn = e.target.closest && e.target.closest('dfn.gloss-term[data-term]');
+    if (!dfn) return;
+    clearTimeout(closeTimer);
+    clearTimeout(openTimer);
+    openTimer = setTimeout(() => showCard(dfn, dfn.dataset.term), 180);
+  });
+  document.addEventListener('mouseout', (e) => {
+    const dfn = e.target.closest && e.target.closest('dfn.gloss-term[data-term]');
+    if (!dfn) return;
+    const to = e.relatedTarget;
+    if (to && (card.contains(to) || (to.closest && to.closest('dfn.gloss-term[data-term]')))) return;
+    clearTimeout(openTimer);
+    closeTimer = setTimeout(() => hideCard(false), 200);
+  });
+  card.addEventListener('mouseenter', () => clearTimeout(closeTimer));
+  card.addEventListener('mouseleave', () => {
+    if (pinned) return;
+    closeTimer = setTimeout(() => hideCard(false), 160);
+  });
+
+  document.addEventListener('click', (e) => {
+    const dfn = e.target.closest && e.target.closest('dfn.gloss-term[data-term]');
+    if (dfn) {
+      e.preventDefault();
+      showCard(dfn, dfn.dataset.term);
+      pinCard();
+      return;
+    }
+    if (pinned && !card.contains(e.target)) hideCard(true);
+  });
+
+  document.addEventListener('focusin', (e) => {
+    const dfn = e.target.closest && e.target.closest('dfn.gloss-term[data-term]');
+    if (dfn) showCard(dfn, dfn.dataset.term);
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && card.classList.contains('open')) hideCard(true);
+  });
+
+  window.__SF_autoMarkGlossary = autoMark;
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,263 @@
+<template id="doc-13_guitar_cello" data-title="일렉기타·첼로 페이지 터너 종합 옵션 카탈로그" data-docx="13_일렉기타_첼로_종합옵션.docx"><h1 id="일렉기타첼로-페이지-터너--종합-옵션-카탈로그-보수안부터-엽기안까지">일렉기타·첼로 페이지 터너 — 종합 옵션 카탈로그 (보수안부터 엽기안까지)</h1>
+<h2 id="도입-두-악기는-왜-어렵고-또-흥미로운가">도입: 두 악기는 왜 어렵고 또 흥미로운가</h2>
+<p>본 프로젝트의 13편 분석 + Tier 2/3 + 6종 신규 데이터셋을 통틀어 분명해진 사실 하나가 있다. <strong>분야는 피아노 90%, 그 외 10%로 자원이 비대칭</strong>이다. (n)ASAP·Batik·MAESTRO·Vienna4x22·MeSA-13·MSMD — 거의 모든 학습/평가 자원이 피아노 또는 키보드 작품이다. 본 문서가 다루는 두 악기 — <strong>일렉기타와 첼로</strong> — 는 분야의 빈 공간 한가운데에 위치한다. 그래서 보수적 안만으로는 사용 가능한 시스템을 만들기 어렵고, 동시에 그래서 새 시도를 할 여지가 가장 크다. 본 문서는 그 여지를 최대한 카탈로그화한다.</p>
+<p>두 악기는 따로 봐야 한다. 일렉기타는 <strong>신호 측면이 깨끗하다는 강점과 effects/distortion이라는 약점</strong>이 있고, MIDI pickup이라는 분야 어느 악기도 가지지 못한 우회로가 있다. 첼로는 <strong>monophonic 또는 weakly polyphonic이라 알고리즘 측면이 단순할 수 있다</strong>는 강점과 <strong>자유 템포·비브라토·즉흥성</strong>이라는 약점이 동시에 있다. 본 문서는 이 둘을 따로 묶기보다, 옵션 카탈로그를 다음 다섯 갈래로 분류한다 — (1) 보수안, (2) 검증된 컴포넌트의 새 결합, (3) 신선한 ML 접근, (4) 멀티모달·하드웨어, (5) 엽기적이거나 거의 엉뚱한 안들. 각 옵션마다 <strong>악기 적용성 (G=일렉기타 / C=첼로)</strong>, <strong>구현 난이도 (★~★★★★★)</strong>, <strong>분야 첫 시도 여부</strong>를 표기한다.</p>
+<h2 id="갈래-i--보수적-안-즉시-시작-가능">갈래 I — 보수적 안 (즉시 시작 가능)</h2>
+<h3 id="옵션-1-matchmaker--chroma의-baseline-일반화--gc">옵션 1. Matchmaker + chroma의 baseline 일반화 ★ G·C</h3>
+<p><strong>가장 빠른 출발점</strong>. 분석 10번 Matchmaker는 솔로 피아노로 학습/평가됐지만, OLTW-Arzt + chroma는 본질적으로 악기 무관이다. 첼로는 weakly polyphonic이고 일렉기타는 polyphonic이지만 chroma는 둘 다에 동작한다. 첫 4-6주 MVP로 권장. partitura가 MusicXML/MIDI 모두 받으므로 score 입력 호환성도 확보.</p>
+<h3 id="옵션-2-cowley-2025-gphmm--c">옵션 2. Cowley 2025 GP+HMM ★★ C</h3>
+<p>본 프로젝트가 다룬 18개월 동안 비-피아노에서 정량을 보고한 <strong>유일한</strong> 2025 작업. 바이올린·플루트·오보에 + 4성부 키보드 찬송가에서 평가. 첼로에 적용 가능성이 가장 검증된 baseline. arXiv:2502.10426. 단점은 코드 공개 여부가 명확치 않아 재구현 부담.</p>
+<h3 id="옵션-3-lee-2022-flippy분석-6번--bach10-cello-재현--c">옵션 3. Lee 2022 Flippy(분석 6번) — Bach10 cello 재현 ★★ C</h3>
+<p>분석 6번이 평가에 사용한 Bach10에는 첼로 솔로가 포함되어 있다. NSGT-CQT + OLTW가 첼로 환경에서 어떻게 동작하는지가 가장 가까운 baseline. 코드 공개되어 즉시 재현 가능.</p>
+<h3 id="옵션-4-transcribe-then-track--goat-fine-tune--g">옵션 4. transcribe-then-track + GOAT fine-tune ★★★ G</h3>
+<p>분석 11번의 transcribe-then-track 패러다임을 일렉기타에 그대로 적용. 핵심은 transcription 모듈을 GOAT(35.4 시간 일렉기타 + Guitar Pro 탭)으로 fine-tune하는 것. 분석 12번의 Causal-AMT 또는 Mobile-AMT를 출발점으로 fine-tune. 6-8주 GPU 작업.</p>
+<h3 id="옵션-5-pdmx-합성--자체-fine-tune--gc">옵션 5. PDMX 합성 + 자체 fine-tune ★★★ G·C</h3>
+<p>PDMX의 250K MusicXML에서 첼로/기타 작품을 추출하고 FluidSynth로 합성 audio 생성. 합성-실제 도메인 갭이 크지만 학습 신호로는 충분. Mobile-AMT의 acoustic distribution shift augmentation 사상과 결합하면 in-the-wild 강건성 회복 가능.</p>
+<h2 id="갈래-ii--검증된-컴포넌트의-새-결합">갈래 II — 검증된 컴포넌트의 새 결합</h2>
+<h3 id="옵션-6-matchmaker--분석-11번-transcribe-then-track--gc">옵션 6. Matchmaker + 분석 11번 transcribe-then-track ★★★ G·C</h3>
+<p><strong>분석 10번의 Processor 인터페이스에 분석 11번의 심볼 레벨 OLTW를 끼우기</strong>. 분석 10번은 모듈러 프레임워크고, 분석 11번은 새 OLTW 알고리즘이라 자연스럽게 결합 가능. 양쪽이 같은 그룹(JKU)이 같은 시기에 발표한 점도 결합 의도를 시사. 이 결합 자체가 분야에 정량 보고된 적은 없으므로 첫 시도가 학술적 가치도 가짐.</p>
+<h3 id="옵션-7-rumaa-사전-정렬--matchmaker-실시간--gc">옵션 7. RUMAA 사전 정렬 + Matchmaker 실시간 ★★★ G·C</h3>
+<p>분석 13번 RUMAA는 1분 청크 한정의 오프라인이지만 <strong>곡 추가 단계에 한 번만 실행</strong>하면 비용이 크지 않다. RUMAA로 사전 정렬 + 반복 구조 자동 파악 → 결과를 score의 unfolded 형태로 변환 → Matchmaker가 그 위에서 실시간 추적. 사용자 라벨링 없이도 반복 처리 가능한 흐름.</p>
+<h3 id="옵션-8-jltr-human-in-the-loop-ux-채택--gc">옵션 8. JLTR human-in-the-loop UX 채택 ★★ G·C</h3>
+<p>분석 9번 JLTR이 입증한 페이지당 6초 클릭으로 정확도 33→82% 도약 — 곡 추가 단계의 사용자 라벨링은 분야가 검증한 가장 강력한 비용-효용비. 첼로/기타에서도 거의 그대로 적용 가능. JLTR과 RUMAA(옵션 7) 둘 중 하나는 반복 처리에 반드시 필요.</p>
+<h3 id="옵션-9-piano-precision-스타일-사용자-수정-ui--gc">옵션 9. PIANO PRECISION 스타일 사용자 수정 UI ★★ G·C</h3>
+<p>SMC 2025 Yucong Jiang 작업(Tier 3)의 user study가 입증한 "탭 한 번으로 재동기화" 트리거. 정확도가 흔들리는 순간을 사용자가 빠르게 보정. 분석 11번 OLTW의 새 window 초기화로 자연스럽게 구현 가능.</p>
+<h3 id="옵션-10-tsai-2025-dense-sparse-dtw-for-협주곡-모드--c">옵션 10. Tsai 2025 Dense-Sparse DTW for 협주곡 모드 ★★★ C</h3>
+<p>ICASSP 2025의 새 DTW 변형. sparse onset peak를 dense 시퀀스에 정렬, 합주 환경에서 솔로만 추적. <strong>첼로 협주곡 사용자 시나리오의 직접적 답</strong>. GitHub <code>HMC-MIR/PianoConcertoAccompaniment</code> 위에서 첼로용 변형.</p>
+<h3 id="옵션-11-reformulated-soft-dtw로-약-라벨링-학습--gc">옵션 11. Reformulated Soft-DTW로 약 라벨링 학습 ★★★ G·C</h3>
+<p>Tier 2의 Zeitler-Müller ISMIR 2025. 첼로/기타는 음 단위 alignment ground truth가 부족 — 마디 단위만 있어도 학습 가능하게 만드는 corrected loss. PDMX(옵션 5) + 합성 audio + 마디 라벨로 학습할 때 권장 손실 함수.</p>
+<h3 id="옵션-12-crnn-post-dtw-murgul-2025-사상--gc">옵션 12. CRNN post-DTW (Murgul 2025 사상) ★★★ G·C</h3>
+<p>Tier 2의 Klangio + KIT 작업. 표준 DTW 결과를 piano roll + CQT 두 표상의 CRNN으로 fine-tune해 정확도 20% 개선. 첼로/기타 환경에서 baseline DTW 위에 얹는 보정 레이어로 활용 가능. Klangio의 augmentation도 학습에 유용.</p>
+<h3 id="옵션-13-midiogre로-augmentation--gc">옵션 13. MIDIOgre로 augmentation ★★ G·C</h3>
+<p>분석 8번 + Pillay 2025 (Tier 2)의 GitHub <code>a-pillay/MIDIOgre</code>. polyphonic MIDI augmentation 라이브러리로, 첼로/기타 학습 데이터를 인공적으로 변형 — 템포 변동, 음 누락, 옥타브 오류 — 해 강건성 학습.</p>
+<h2 id="갈래-iii--신선한-ml-접근-분야-첫-시도-가능-영역">갈래 III — 신선한 ML 접근 (분야 첫 시도 가능 영역)</h2>
+<h3 id="옵션-14-mertmuqmusicfm--score-following-분야-첫-시도--gc">옵션 14. MERT/MuQ/MusicFM × score following [분야 첫 시도] ★★★★ G·C</h3>
+<p><strong>본 프로젝트가 다룬 18개월 동안 분야가 시도하지 않은 가장 분명한 빈 공간</strong>. MERT-95M(2023), MusicFM(2024), MuQ(2024) 같은 음악 foundation model의 embedding을 Matchmaker의 Processor 자리에 chroma 대신 끼워 넣기. MERT는 다양한 악기로 학습되어 비-피아노 일반화에 강할 가능성이 높음. <strong>이 정량 비교만으로 ISMIR/SMC 발표 가능</strong>.</p>
+<h3 id="옵션-15-clip-style-대조-학습-audioscore--gc">옵션 15. CLIP-style 대조 학습 (audio↔︎score) ★★★★ G·C</h3>
+<p>audio chunk와 score chunk를 공통 embedding 공간으로 매핑하는 contrastive 학습. 학습 후 audio embedding을 score embedding sequence와 cosine similarity 비교 → 가장 가까운 위치가 답. 분야 적용 사례 매우 적음. PDMX + 합성 audio로 대규모 사전학습 가능.</p>
+<h3 id="옵션-16-contrastive-predictive-coding-cpc로-misalignment-신호--gc">옵션 16. Contrastive Predictive Coding (CPC)로 misalignment 신호 ★★★★ G·C</h3>
+<p>"앞으로 5초간 어떤 음이 올까"를 score로부터 예측 + 실제 audio와 비교 → 일치하면 정렬 정확, 불일치하면 misalignment. 표준 score follower의 출력을 보강하는 보조 confidence 신호로 활용. 또는 단독 follower로도 가능.</p>
+<h3 id="옵션-17-diffusion-기반-alignment-denoising-분야-첫-시도--gc">옵션 17. Diffusion 기반 alignment denoising [분야 첫 시도] ★★★★★ G·C</h3>
+<p><strong>본 프로젝트 18개월 동안 분야가 시도 안 한 또 하나의 빈 공간</strong>. 정렬 결과를 sequence of position estimates로 보고, diffusion 모델이 noisy alignment를 denoise하는 학습. RUMAA + 합성 noise 데이터로 학습 가능. 추론 시 너무 느릴 위험 — 그러나 곡 추가 단계의 사전 정렬에는 활용 가능.</p>
+<h3 id="옵션-18-score-graph-search-jump-aware--gc">옵션 18. Score graph search (jump-aware) ★★★★ G·C</h3>
+<p>Score를 그래프로 표현 — 노드 = 마디, 일반 엣지 = 다음 마디, 점프 엣지 = 반복/D.S./Coda. 매 시점 audio 특징을 받아 graph 위 가능한 모든 path에 대해 likelihood 계산 + Viterbi/Beam search. 분석 13번 RUMAA가 transformer로 학습한 것을 explicit graph로 풀이.</p>
+<h3 id="옵션-19-llm-as-score-follower-token-prediction-엽기-약간--gc">옵션 19. LLM-as-score-follower (token prediction) [엽기 약간] ★★★★ G·C</h3>
+<p>score를 ABC notation 텍스트로 표현(분석 13번 RUMAA 사상). 매 시점 audio를 token sequence로 변환(transcription) → LLM에 "지금 score의 어느 위치인가" 질문. Claude/GPT/오픈 LLM 모두 가능. 추론 비용이 크지만 곡 추가 단계나 1초 간격 sparse update에 활용 가능. <strong>엉뚱하지만 의외로 강력할 가능성</strong>.</p>
+<h3 id="옵션-20-few-shot-test-time-적응--gc">옵션 20. Few-shot test-time 적응 ★★★★ G·C</h3>
+<p><strong>사용자 개체차가 큰 비-피아노에 결정적</strong>. 곡 시작 후 첫 30초의 audio를 watching window로 두고, 사용자의 tempo/timbre/expression 분포를 fit한 뒤 그 다음부터 추적. MAML 또는 단순 online gradient descent로 구현 가능. 분야에서 score-following에 test-time adaptation을 본격적으로 시도한 사례 거의 없음.</p>
+<h3 id="옵션-21-self-supervised-pretraining-masked-prediction--gc">옵션 21. Self-supervised pretraining (masked prediction) ★★★ G·C</h3>
+<p>GOAT 35.4시간 + 자체 수집 첼로 데이터로 audio encoder를 self-supervised 사전학습. masked-spectrogram prediction (wav2vec 2.0 사상) 또는 contrastive (HuBERT 사상). 그 후 score-following 헤드만 fine-tune. 데이터 규모가 작은 첼로에 특히 유효.</p>
+<h3 id="옵션-22-symbolic-music-regression-엽기-약간--gc">옵션 22. Symbolic music regression [엽기 약간] ★★★★ G·C</h3>
+<p>N개 마디 위치 각각에 대해 "지금 이 위치일 확률"을 출력하는 회귀 모델. classifier가 아닌 regressor — 출력이 부드러운 분포라 사용자에게 "확률 70% 마디 12, 25% 마디 11, 5% 마디 13" 식의 정직한 불확실성 정보 제공. UX에 큰 영향.</p>
+<h3 id="옵션-23-curriculum-learning-쉬운-곡어려운-곡--gc">옵션 23. Curriculum learning (쉬운 곡→어려운 곡) ★★ G·C</h3>
+<p>Henle 난이도 1→9로 학습 데이터를 정렬, 단계적으로 학습. 본 프로젝트의 어떤 논문도 이를 명시적으로 사용 안 함. Matchmaker가 Henle 난이도와 정확도 상관 r=0.24를 보고했으므로, 난이도 의존성을 학습으로 줄일 여지.</p>
+<h3 id="옵션-24-federated-learning-개인정보-보호-강조--gc">옵션 24. Federated learning [개인정보 보호 강조] ★★★★ G·C</h3>
+<p>사용자 개인 연주 데이터를 서버에 보내지 않고 local에서 학습 → 모델 가중치 차이만 공유. 첼로/기타 사용자 데이터가 분야의 빈 공간이지만 사용자가 데이터 공유를 꺼릴 가능성. Federated 방식으로 우회. <strong>첫 federated music score-follower</strong> 가능.</p>
+<h3 id="옵션-25-continual-learning--곡마다-점진-학습--gc">옵션 25. Continual learning — 곡마다 점진 학습 ★★★ G·C</h3>
+<p>사용자가 곡을 추가할 때마다 그 곡 + 사용자 연주 패턴을 학습. catastrophic forgetting 방지를 위해 EWC(Elastic Weight Consolidation) 등 적용. 사용자가 시간이 지나면서 점점 정확해지는 시스템.</p>
+<h2 id="갈래-iv--멀티모달하드웨어-옵션">갈래 IV — 멀티모달·하드웨어 옵션</h2>
+<h3 id="옵션-26-태블릿-전면-카메라로-자세손활-보기--gc">옵션 26. 태블릿 전면 카메라로 자세/손/활 보기 ★★★ G·C</h3>
+<p>Tier 3의 Choi-Kwon-Nam 2025(플루티스트 onset 예측)와 PianoVAM(피아노 hand landmarks) 사상의 첼로/기타 적용. MediaPipe로 손/팔 자세 추정 → 활 방향(첼로) 또는 strumming 방향(기타) → tempo·onset 보조 단서. <strong>fermata/페이지 끝 마디에서 audio-only가 흔들릴 때 결정적</strong>.</p>
+<h3 id="옵션-27-활bow-imu-센서--c">옵션 27. 활(Bow) IMU 센서 ★★★★ C</h3>
+<p>첼로 활에 작은 IMU(MPU-6050 등) 부착 → 활의 up/down stroke·속도·가속도. <strong>첼로의 모든 음표는 활 움직임이 동반</strong>되므로 onset 검출의 거의 완벽한 보조 신호. 9축 센서 ~$5, Bluetooth 모듈 추가 시 ~$30. 하드웨어 진입 장벽 낮음.</p>
+<h3 id="옵션-28-활bow-압력-센서--c">옵션 28. 활(Bow) 압력 센서 ★★★★ C</h3>
+<p>활의 frog 부분에 압력 센서 — 사용자가 누르는 강도. velocity(셈여림) 정보. 옵션 27과 결합해 (방향, 속도, 압력)의 3차원 활 상태 → 첼로 음표 시작/끝의 거의 완전한 prior.</p>
+<h3 id="옵션-29-일렉기타-di-신호-직접-사용--g">옵션 29. 일렉기타 DI 신호 직접 사용 ★ G</h3>
+<p>일렉기타는 <strong>마이크 대신 DI(Direct Input) 또는 픽업 신호를 직접 받을 수 있다는 분야 어느 악기도 갖지 못한 강점</strong>. 룸 acoustics·잡음 제거되어 transcription 정확도가 1.5-2× 올라갈 수 있음. GOAT의 5.9시간 DI 데이터로 학습.</p>
+<h3 id="옵션-30-midi-pickup-하드웨어-jam-origin--boss-gp-10--g">옵션 30. MIDI Pickup 하드웨어 (Jam Origin / Boss GP-10) ★★ G</h3>
+<p>일렉기타용 MIDI pickup이 시중에 존재 — Jam Origin MIDI Guitar 2(소프트웨어)나 Boss GP-10(하드웨어). 픽업이 직접 음표를 검출해 MIDI 출력 → AMT 모듈 자체가 불필요. 분석 11번 transcribe-then-track의 transcription 단계를 외부 하드웨어가 대체. 지연 ~10ms.</p>
+<h3 id="옵션-31-마이크--스마트폰-imu-결합--gc">옵션 31. 마이크 + 스마트폰 IMU 결합 ★★★ G·C</h3>
+<p>사용자의 스마트폰을 보면대 또는 의자 옆에 두면 가속도계가 연주자 박자감을 감지. 머리 끄덕임·발 박자가 모두 IMU에 잡힘. 옵션 26과 결합한 multi-modal sensor fusion. 추가 하드웨어 없이 즉시 가능.</p>
+<h3 id="옵션-32-시선-추적-tabone-2020-후속--gc">옵션 32. 시선 추적 (Tabone 2020 후속) ★★★★ G·C</h3>
+<p>Tabone 2020(웹캠 시선 추적 페이지 터너)의 정확한 후속이 본 프로젝트 18개월 동안 없었음. 사용자의 시선이 페이지 끝 마디에 도달했을 때 페이지 전환 신호 — audio와 독립적인 두 번째 단서. WebGazer.js 같은 오픈 라이브러리로 즉시 구현 가능.</p>
+<h3 id="옵션-33-스마트워치-햅틱-알림--gc">옵션 33. 스마트워치 햅틱 알림 ★★ G·C</h3>
+<p>페이지 전환 30초 전부터 약한 햅틱 진동 → 10초 전 강한 진동. 사용자가 화면 안 보고도 페이지 전환 시점을 알 수 있게. Apple Watch / Wear OS API 사용. UX 측면 큰 차별화.</p>
+<h3 id="옵션-34-음성-명령-오버라이드--gc">옵션 34. 음성 명령 오버라이드 ★★ G·C</h3>
+<p>"Next" "Back" "Repeat from measure twelve" 음성 명령으로 fallback. Web Speech API 또는 on-device speech recognition. 첼로처럼 양손이 묶인 악기에 특히 유효.</p>
+<h3 id="옵션-35-발foot-페달-결합--gc">옵션 35. 발(Foot) 페달 결합 ★★ G·C</h3>
+<p>MIDI 발 페달 또는 Bluetooth 페달. 사용자가 "다음 페이지" "이전 페이지" "여기서 재시작" 트리거. 가장 확실한 fallback. 옵션 33의 햅틱 → 페달 → 자동 추적의 3단계 안전망.</p>
+<h3 id="옵션-36-emg-근전도-센서-엽기-약간--c">옵션 36. EMG 근전도 센서 [엽기 약간] ★★★★★ C</h3>
+<p>첼로 활 손목에 EMG 센서 → 손가락 굴곡근 활성. 활의 다음 stroke 시작 직전 약 50ms의 EMG 활성이 있음(motor preparation) → audio onset보다 먼저 onset 예측 가능. 50ms 미래 예측 = 자동 반주에서 결정적. 의료용 EMG 센서 ~$200.</p>
+<h3 id="옵션-37-호흡-센서-piezo-가슴-띠-엽기-약간--c">옵션 37. 호흡 센서 (piezo 가슴 띠) [엽기 약간] ★★★★★ C</h3>
+<p>첼로/기타 둘 다 연주자 호흡이 phrasing의 자연스러운 마커. 가슴 piezo 또는 호흡 마이크 → 호흡 패턴 → tempo 보조. Choi-Kwon-Nam 2025 플루티스트 모델의 호흡 단서 사상을 비-관악기로 확장. 매우 novel.</p>
+<h3 id="옵션-38-심박수-apple-watch-tempo-proxy-엽기--gc">옵션 38. 심박수 (Apple Watch) tempo proxy [엽기] ★★★ G·C</h3>
+<p><strong>연주자 심박수가 곡의 tempo와 약하게 상관</strong>된다는 것이 일부 음악 심리학 연구에 시사. 빠른 패시지에서 심박이 오르고, 느린 패시지에서 떨어짐 (또는 반대). 단독 사용은 불가하지만 audio 기반 추적의 prior로 활용 가능. 학술적으로 탐구 가치.</p>
+<h3 id="옵션-39-ar-글래스--vision-pro-위에-score-표시--gc">옵션 39. AR 글래스 / Vision Pro 위에 score 표시 ★★★★★ G·C</h3>
+<p>태블릿 자체를 없애고 AR 안경에 score를 띄움. 시선이 자동으로 다음 마디로 가면 자연스럽게 페이지 전환. 무대 시각적 깔끔함. 비용은 매우 큼($3500). 그러나 분야 첫 사례.</p>
+<h3 id="옵션-40-스마트-픽--스마트-활-custom-hardware--gc">옵션 40. 스마트 픽 / 스마트 활 (custom hardware) ★★★★★ G·C</h3>
+<p>일렉기타 픽 또는 첼로 활의 frog에 microcontroller(예: Seeed XIAO BLE) + IMU + 압력센서 + Bluetooth. 옵션 27/28의 통합 + 사용자가 별도 장착 안 해도 되는 자연스러운 통합. <strong>분야 최초의 instrumented bow/pick</strong>일 가능성. 학술 논문 + Kickstarter 가능.</p>
+<h2 id="갈래-v--엽기적이거나-거의-엉뚱한-안들">갈래 V — 엽기적이거나 거의 엉뚱한 안들</h2>
+<h3 id="옵션-41-audio-watermark-사전-인쇄--gc">옵션 41. Audio watermark 사전 인쇄 ★★★★ G·C</h3>
+<p>악보 위에 "이 마디부터 이 마디까지의 reference audio"를 사전 합성한 뒤, <strong>사람 귀에는 안 들리는 18-22 kHz 대역에 watermark click track을 삽입</strong>해 헤드폰으로 들려준다. 사용자가 그 click을 따라 연주하면 시스템은 watermark가 어디에 있는지 정확히 알므로 정렬이 거의 완벽. 단점: 사용자가 메트로놈 듣는 느낌이 들 수 있음.</p>
+<h3 id="옵션-42-연주자-자신의-학습된-timing-분포-엽기-약간--gc">옵션 42. 연주자 자신의 학습된 timing 분포 [엽기 약간] ★★★★ G·C</h3>
+<p>사용자의 과거 연주를 모아 <strong>그 사용자만의 tempo curve / expression 분포</strong>를 학습. 특정 작곡가/특정 곡/특정 패시지에서 그 사용자가 평소 어떻게 연주하는지의 prior. test-time에 audio + score + 사용자 prior 셋을 결합. <strong>개인화의 극단적 형태</strong>. Continual learning(옵션 25)의 강화판.</p>
+<h3 id="옵션-43-score-graph-llm-symbolic-verification--gc">옵션 43. Score graph LLM symbolic verification ★★★★ G·C</h3>
+<p>Score graph search(옵션 18)의 출력을 LLM에 "이 path가 음악적으로 말이 되는가" 검증 받기. 음악 이론 이해가 있는 LLM(GPT-4, Claude 등)이 "이 화성 진행은 비-바흐스럽다"든가 "이 리듬 패턴은 곡의 양식과 안 맞는다"고 plausibility 점수를 줄 수 있음. <strong>음악 이론 추론을 LLM에 위임</strong>.</p>
+<h3 id="옵션-44-quantum-inspired-superposition-tracker-엽기--gc">옵션 44. Quantum-inspired superposition tracker [엽기] ★★★★★ G·C</h3>
+<p>분석 1번 Arzt의 multi-agent hypothesis tracking을 극단으로 — N개 위치 가설을 정확한 확률 분포로 유지하다가, 사용자의 명시적 신호(페달 누름, 사용자 응시, 100% 확신 임계값) 시 한 위치로 "collapse". 양자역학 비유는 약하지만 <strong>probability collapse UX</strong>가 흥미. 사용자에게 "당신이 어디 있는지 시스템이 모를 때 명시적으로 알려달라"는 사용자 모델.</p>
+<h3 id="옵션-45-score를-audio-fingerprint-db로--shazam-변형--gc">옵션 45. Score를 audio fingerprint DB로 — Shazam 변형 ★★★★ G·C</h3>
+<p>분석 1번 Arzt의 symbolic fingerprinting의 audio 변형. <strong>score를 합성한 reference audio를 microsecond 단위 fingerprint DB로 변환</strong> → 라이브 audio의 매 chunk를 DB에서 검색 → 가장 잘 매치되는 위치가 답. Shazam과 같은 알고리즘이지만 같은 곡 내 위치 검색. transcription·OLTW 모두 우회.</p>
+<h3 id="옵션-46-looper-detection-일렉기타-전용--g">옵션 46. Looper detection (일렉기타 전용) ★★★ G</h3>
+<p>일렉기타 연주자가 자주 사용하는 looper pedal — 같은 구간을 반복 녹음. 시스템이 looper 사용 중임을 감지하면 <strong>score를 진행시키지 말고 같은 위치에 머무르기</strong>. 분석 8번 Pillay 2024가 인지하지 못한 일렉기타 특유의 시나리오. spectral repetition detection로 구현.</p>
+<h3 id="옵션-47-effects-aware-feature-extraction-일렉기타-전용--g">옵션 47. Effects-aware feature extraction (일렉기타 전용) ★★★★ G</h3>
+<p>distortion·overdrive·chorus·delay 같은 effects가 spectrum을 변형해도 <strong>fundamental frequency·onset 정보는 보존</strong>됨. effects pedal 종류를 명시적으로 인식하거나, distortion-invariant feature를 학습. GOAT의 29.5 시간 재앰핑 데이터로 distortion-invariant representation 학습 가능.</p>
+<h3 id="옵션-48-클릭-트랙-자동-동기화-엽기-약간--gc">옵션 48. 클릭 트랙 자동 동기화 [엽기 약간] ★★★ G·C</h3>
+<p>사용자가 곡 시작 전 4박 카운트인을 손가락으로 두드리면, 그 박자에 맞춰 시스템이 score의 metronome BPM을 보정. 가장 단순한 calibration이지만 의외로 효과적. 옵션 35(발 페달)의 변형.</p>
+<h3 id="옵션-49-반복-횟수-학습--사용자별--gc">옵션 49. 반복 횟수 학습 — 사용자별 ★★ G·C</h3>
+<p>어떤 사용자는 반복 기호를 항상 두 번 연주하고, 어떤 사용자는 한 번만 연주한다. 같은 곡을 두세 번 연주한 데이터에서 <strong>이 사용자의 반복 습관</strong>을 학습. 다음에는 사용자가 라벨 안 줘도 자동 추정 가능. JLTR(분석 9번)을 넘어선 단계.</p>
+<h3 id="옵션-50-body-sway--자세-fusion-엽기-약간--gc">옵션 50. Body sway / 자세 fusion [엽기 약간] ★★★★ G·C</h3>
+<p>첼로/기타 연주자의 몸 흔들림은 곡의 phrasing과 강하게 상관됨(음악 인지학 연구). 태블릿 카메라(옵션 26)의 자세 추정 → body sway frequency → tempo 보조 단서. 음향 단서가 약한 fermata에서 결정적.</p>
+<h3 id="옵션-51-stem-separation-후-정렬--c">옵션 51. Stem separation 후 정렬 ★★★★ C</h3>
+<p>첼로 협주곡 같은 합주 환경 — 첼로 솔로만 stem separation으로 분리한 뒤 그 위에서 정렬. Demucs/Hybrid Transformer Demucs 같은 SOTA stem separation 모델. 옵션 10(Tsai Dense-Sparse DTW)과 결합 가능.</p>
+<h3 id="옵션-52-backtracking-정렬-엽기-약간--gc">옵션 52. Backtracking 정렬 [엽기 약간] ★★★ G·C</h3>
+<p>정렬 confidence가 임계값 아래로 떨어지면 <strong>N초 전으로 돌아가 다시 결정</strong>. 표준 OLTW는 forward-only지만, 사용자 화면을 잠깐 흔드는 비용을 받아들이면 정확도가 크게 오를 가능성. 분석 1번 Arzt의 backward path 사상의 강화판.</p>
+<h3 id="옵션-53-multi-tracker-ensemble-vote--gc">옵션 53. Multi-tracker ensemble (vote) ★★★ G·C</h3>
+<p>N개 follower(예: chroma + transcribe-then-track + MERT + 활 IMU + 시선)를 병렬 실행 → 매 시점 vote/median으로 최종 위치 결정. 단일 모듈의 개별 실패를 다른 모듈이 메움. 가장 정직한 robustness 향상 전략.</p>
+<h3 id="옵션-54-친구--선생님-원격-페이지-터너--gc">옵션 54. 친구 / 선생님 원격 페이지 터너 ★ G·C</h3>
+<p><strong>기술적으론 0이지만 UX 측면에서 흥미로운 안</strong>. 화상 통화 중 친구나 선생님이 원격에서 페이지 넘김 — 사용자는 그냥 연주만 함. 이 안의 가치는, 현재의 자동 페이지 터너가 풀려는 문제가 사실 "사람의 도움을 5분만 받으면 해결되는 문제"임을 직시하게 만든다는 것. 모든 옵션의 비교 baseline으로 사용.</p>
+<h3 id="옵션-55-voice-command-현재-어디--ai-설명--gc">옵션 55. Voice command "현재 어디?" — AI 설명 ★★★ G·C</h3>
+<p>사용자가 "현재 어디?" 음성 묻기 → 시스템이 "마디 12 박자 3, 신뢰도 87%, 가장 가능성 있는 다음 페이지 전환은 8초 후"로 답. 사용자가 시스템의 내부 상태를 ad-hoc 검증할 수 있게. <strong>explainable AI for music</strong>. 시스템 신뢰 측면 큰 이득.</p>
+<h3 id="옵션-56-박수--손가락-튕김-명시-동기화--gc">옵션 56. 박수 / 손가락 튕김 명시 동기화 ★★ G·C</h3>
+<p>곡 시작 전 또는 중간 사용자가 박수 두 번 치면 → 시스템이 그 박수의 spectral signature를 detect → 미리 정해진 위치(예: 마디 1, 또는 사용자가 화면에 표시한 마디)로 자동 jump. 음성 명령(옵션 34) 변형이지만 더 빠르고 자연스러움.</p>
+<h3 id="옵션-57-무대-조명-색깔-fusion--gc">옵션 57. 무대 조명 색깔 fusion ★★★★★ G·C</h3>
+<p><strong>완전 엽기</strong>. 무대 조명이 곡 진행에 따라 색을 바꾸도록 사전에 설정. 시스템이 그 조명 색을 감지(태블릿 후면 카메라) → score 위치 보조 단서. 콘서트 응용 한정. 분야 최초이자 마지막일 가능성이 높지만 강한 도메인에서는 작동.</p>
+<h3 id="옵션-58-청중-박수-detection--곡-끝-트리거--gc">옵션 58. 청중 박수 detection — 곡 끝 트리거 ★★★ G·C</h3>
+<p>협주곡 사이 또는 곡 마지막 청중 박수가 시작되면 시스템은 자동으로 다음 곡으로 넘어감. 라이브 콘서트 응용. 음향 분류로 박수 spectrum 검출.</p>
+<h3 id="옵션-59-한-손-키보드-단축키-소켓--gc">옵션 59. 한 손 키보드 단축키 (소켓) ★★ G·C</h3>
+<p>첼로 연주자가 안 쓰는 한 발의 옆에 매우 큰 단일 버튼(또는 두 버튼) 장치. 페이지 전환 / 페이지 되돌리기. 발 페달(옵션 35)보다 정밀하지만 더 느림. 옵션 35와 거의 동일.</p>
+<h3 id="옵션-60-사용자-흥얼거림-cue--gc">옵션 60. 사용자 흥얼거림 cue ★★★★ G·C</h3>
+<p>첼로 연주자가 다음 phrase를 미리 흥얼거리는 습관이 종종 있음. <strong>그 흥얼거림을 따로 검출</strong>하면 시스템에 "지금 새 phrase 시작" 신호로 활용 가능. 음성 활동 감지(VAD) + pitch tracking. 자연스러우면서도 분야 최초.</p>
+<h3 id="옵션-61-cv-기반-fingering-직접-인식-기타--g">옵션 61. CV 기반 fingering 직접 인식 (기타) ★★★★★ G</h3>
+<p>태블릿 후면 카메라 또는 외부 웹캠으로 일렉기타 fretboard 직접 보고 fingering 인식. 어느 fret/string이 눌렸는지 → 음표 추정 → score 매칭. 옵션 26의 강화판. 학습 데이터 부족이 문제 — Guitar-TECHS의 multi-mic 채널과 동기 video가 있다면 가능.</p>
+<h3 id="옵션-62-score를-색깔모양-mnemonic로-변환-엽기--ux-혁신--gc">옵션 62. Score를 색깔/모양 mnemonic로 변환 [엽기 + UX 혁신] ★★★ G·C</h3>
+<p>음표 시각화를 표준 staff notation 대신 <strong>사용자 친화적 색깔/모양 mnemonic</strong>(Synthesia 스타일 또는 색깔별 음명)으로 변환. 사용자가 "이 사람은 이 mnemonic으로 연주가 더 잘 됨"을 학습. 페이지 터너의 내부 표상은 변하지 않으나 사용자 UI만 바꿈.</p>
+<h3 id="옵션-63-nime-2026-user-study--논문--gc">옵션 63. NIME 2026 user study + 논문 ★★ G·C</h3>
+<p><strong>옵션 1+8+9+33+35의 가장 단순한 조합</strong>으로 빠르게 MVP를 만들고, NIME 2026이나 CHI 2026에 user study 논문 투고. 본 프로젝트가 18개월 동안 없는 빈 공간을 응용 개발의 자연스러운 부산물로 채움. 학술적 가치가 분명.</p>
+<h3 id="옵션-64-zerodim-첼로-합성-엽기--c">옵션 64. ZeroDIM 첼로 합성 [엽기] ★★★★★ C</h3>
+<p>첼로 학습 데이터 부족을 ZeroSeq + DiffWave + 첼로 음색 transfer로 무한 합성 데이터 생성으로 풀기. 합성 첼로가 진짜 첼로와 얼마나 유사한가가 결정적이지만, 분야 첫 시도.</p>
+<h3 id="옵션-65-brain-computer-interface-bci--eeg-완전-엽기--gc">옵션 65. Brain-computer interface (BCI) — EEG [완전 엽기] ★★★★★ G·C</h3>
+<p>연주자 두피 EEG → motor cortex 활성 → 다음 음표 onset 예측. 50-200ms 미래 예측. EMG(옵션 36)의 한 단계 위. 의료용 EEG ~$1000-3000. <strong>거의 SF지만 알고리즘적으론 가능성 있음</strong>.</p>
+<h3 id="옵션-66-분야-다른-음악-이론-시스템--carnatic-jazz-k-pop--gc">옵션 66. 분야 다른 음악 이론 시스템 — Carnatic, Jazz, K-pop ★★★ G·C</h3>
+<p>score-following이 거의 모두 서양 클래식 5선보 표기를 가정. 대안 표기 시스템(Carnatic notation, Nashville Number System, K-pop 기타 코드 차트, 화성 표 등)을 native로 받는 follower. 분야 적용 사례 거의 없음. 일렉기타 사용자가 K-pop 코드 차트로 연주하는 시나리오.</p>
+<h3 id="옵션-67-라이브-코칭--스튜디오-협업-모드--gc">옵션 67. 라이브 코칭 / 스튜디오 협업 모드 ★★ G·C</h3>
+<p>원격 선생님이 학생의 페이지 터너에 접속해 "여기서 잠깐 멈추고 다시 시작" 같은 명령 실시간 전송. 옵션 54의 디지털화. 코로나 이후 음악 교육 트렌드와 부합.</p>
+<h3 id="옵션-68-페이지-터너의-능동-학습--어려운-패시지-표시--gc">옵션 68. 페이지 터너의 능동 학습 — 어려운 패시지 표시 ★★★ G·C</h3>
+<p><strong>시스템이 추적이 어려운 패시지를 학습</strong>해, 사용자에게 "이 부분에서 자주 잃어버립니다, 추가 라벨을 주세요"라고 능동 요청. JLTR의 사용자 라벨링 사상 + active learning. 자동화율을 점진적으로 올림.</p>
+<h3 id="옵션-69-무대-위-음악인-인터넷--청중-모바일-sync--gc">옵션 69. 무대 위 음악인 인터넷 — 청중 모바일 sync ★★★★★ G·C</h3>
+<p><strong>완전 엽기 응용</strong>. 청중이 콘서트 직전 앱을 열면, 청중 휴대폰에 연주자의 score(저작권 OK인 경우)가 동기화되어 표시됨. 청중도 어느 마디가 연주 중인지 봄. 클래식 콘서트 새 UX 가능. 페이지 터너의 인접 응용으로 동기화 인프라가 같음.</p>
+<h3 id="옵션-70-신경계-직접-자극--apple-airpods-pro-adaptive-transparency-엽기-약간--gc">옵션 70. 신경계 직접 자극 — Apple AirPods Pro adaptive transparency [엽기 약간] ★★★ G·C</h3>
+<p>연주자의 AirPods Pro가 청중 박수·옆 연주자 소리를 selectively transparent하게 처리해주는 동안, <strong>score 위치 변화를 미세한 spatial audio cue로 전달</strong>(왼쪽에서 오른쪽으로 스쳐가는 톤). 사용자 청각이 자연스럽게 score 위치 정보를 받음. 시각 페이지 전환을 보완.</p>
+<h2 id="시스템-아키텍처--옵션을-어떻게-결합할-것인가">시스템 아키텍처 — 옵션을 어떻게 결합할 것인가</h2>
+<p>위 70개 옵션 중 어떤 조합이 사용자의 일렉기타·첼로 페이지 터너에 가장 적합한가? 세 가지 대안 아키텍처를 제시한다.</p>
+<h3 id="아키텍처-a-보수적-mvp-4-6주-단독-개발자-가능">아키텍처 A: 보수적 MVP (4-6주, 단독 개발자 가능)</h3>
+<pre class="mermaid"><code>flowchart TB
+    Mic[마이크 / DI] --&gt; MM[Matchmaker OLTW-Arzt + chroma]
+    Score[MusicXML / Guitar Pro] --&gt; MM
+    Repeat[JLTR repeat 라벨 UX] --&gt; Logic[unfolded score]
+    Logic --&gt; MM
+    MM --&gt; Pos[현재 위치]
+    Pos --&gt; Tablet[태블릿 페이지 전환]
+    Pos --&gt; Watch[Apple Watch 햅틱 30초 전]
+    Pedal[발 페달 fallback] --&gt; Tablet
+    Voice[음성 명령 fallback] --&gt; Tablet
+</code></pre>
+<p><strong>채택 옵션</strong>: 1, 8, 33, 34, 35 <strong>장점</strong>: 즉시 구현, 신뢰 가능, 학술 검증된 컴포넌트만 <strong>단점</strong>: 정확도 향상은 보수적, 분야 기여 작음 <strong>대상 시나리오</strong>: 일렉기타 클린 톤, 첼로 솔로 클래식</p>
+<h3 id="아키텍처-b-멀티모달-확장-3-6개월-1-2명-팀">아키텍처 B: 멀티모달 확장 (3-6개월, 1-2명 팀)</h3>
+<pre class="mermaid"><code>flowchart TB
+    Mic[마이크 / DI] --&gt; AMT[Causal-AMT GOAT fine-tune]
+    AMT --&gt; Symbol[음표 시퀀스]
+    Cam[태블릿 전면 카메라] --&gt; Pose[MediaPipe 자세/활/손]
+    Pose --&gt; Fusion
+    IMU[활 IMU 또는 픽 IMU] --&gt; Fusion[멀티모달 sensor fusion]
+    Symbol --&gt; Fusion
+    Score[MusicXML + 사용자 라벨] --&gt; SymOLTW[심볼 레벨 OLTW Peter 2025]
+    Fusion --&gt; SymOLTW
+    SymOLTW --&gt; Pos[현재 위치 + confidence]
+    Pos --&gt; UI[Tablet + AR + Watch 햅틱]
+    UI --&gt; Voice[음성 &#39;Where am I?&#39; 응답]
+    Pos --&gt; Adapt[Test-time adaptation 옵션 20]
+    Adapt --&gt; SymOLTW
+</code></pre>
+<p><strong>채택 옵션</strong>: 4, 6, 11, 20, 26, 27, 30 (기타 한정), 33, 53, 55 <strong>장점</strong>: 비-피아노에 강건, 분야 최초의 multi-modal 결합 <strong>단점</strong>: 하드웨어 추가 비용 ($30-200), 캘리브레이션 필요 <strong>대상 시나리오</strong>: 진지한 연주자, 학생, 협주곡, 거실/홀 양쪽</p>
+<h3 id="아키텍처-c-연구-지향--분야-첫-시도-노리기-6-12개월">아키텍처 C: 연구 지향 — 분야 첫 시도 노리기 (6-12개월)</h3>
+<pre class="mermaid"><code>flowchart TB
+    Mic[Audio in] --&gt; MERT[MERT-95M / MuQ embedding&lt;br/&gt;옵션 14]
+    MERT --&gt; Track[Score-following head&lt;br/&gt;학습된 알고리즘]
+    Score[ABC notation + repeat] --&gt; M3[CLaMP2 M3 encoder&lt;br/&gt;옵션 7 차용]
+    M3 --&gt; Track
+    Cam[Camera] --&gt; Pose
+    IMU[Bow / Pick IMU] --&gt; Sensor
+    Pose --&gt; Sensor
+    Sensor --&gt; Track
+    Track --&gt; Pos[Position]
+    Pos --&gt; Diffu[Diffusion denoiser&lt;br/&gt;옵션 17]
+    Diffu --&gt; PosFinal[Refined position]
+    PosFinal --&gt; UI
+    Track -.User feedback.-&gt; AL[Active learning&lt;br/&gt;옵션 68]
+    AL --&gt; Track
+    User[Federated learning&lt;br/&gt;옵션 24] -.gradients.-&gt; Track
+</code></pre>
+<p><strong>채택 옵션</strong>: 14, 17, 24, 27, 36, 53, 68 <strong>장점</strong>: ISMIR/NIME 발표 가능 가치 다수 (옵션 14, 17, 24가 특히) <strong>단점</strong>: 6개월+ 연구 시간, 정량 평가 데이터 자체 수집 필요 <strong>대상</strong>: 응용 + 분야 기여를 동시에 노리는 사용자</p>
+<h2 id="추천-결정-프레임워크">추천 결정 프레임워크</h2>
+<p>선택은 <strong>사용 시나리오 × 시간 예산 × 학술 야망</strong>의 곱이다.</p>
+<table>
+<thead>
+<tr class="header">
+<th>시나리오</th>
+<th>추천 아키텍처</th>
+<th>우선 옵션</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>가정 연습용 일렉기타 페이지 터너</td>
+<td>A</td>
+<td>1, 4, 8, 30, 33, 35</td>
+</tr>
+<tr class="even">
+<td>무대 클래식 첼로 솔로</td>
+<td>B</td>
+<td>6, 9, 11, 26, 27, 33, 53</td>
+</tr>
+<tr class="odd">
+<td>첼로 협주곡 (오케스트라 반주)</td>
+<td>B + 옵션 10·51</td>
+<td>10, 27, 51, 53</td>
+</tr>
+<tr class="even">
+<td>일렉기타 즉흥 / 잼 세션</td>
+<td>A + Tier 2 Jiang ICASSP</td>
+<td>30, 46, 47</td>
+</tr>
+<tr class="odd">
+<td>음악 교습용 (선생-학생 원격)</td>
+<td>A + 옵션 67</td>
+<td>9, 33, 67</td>
+</tr>
+<tr class="even">
+<td><strong>연구 야망</strong>(ISMIR 발표)</td>
+<td>C</td>
+<td>14, 17, 24, 27</td>
+</tr>
+<tr class="odd">
+<td><strong>엽기 야망</strong>(NIME or art piece)</td>
+<td>옵션 39, 41, 65, 69 자유 결합</td>
+<td>자유</td>
+</tr>
+</tbody>
+</table>
+<h2 id="단계별-권장-우선순위-단일-개발자-1년-가정">단계별 권장 우선순위 (단일 개발자 1년 가정)</h2>
+<p><strong>1-2개월</strong>: 아키텍처 A 완성 + 첼로 사용자 데이터 수집 시작 (옵션 25, 42 위한 토양) <strong>3-4개월</strong>: 옵션 26 (카메라 자세 추정) + 옵션 33 (워치 햅틱) — 무하드웨어 멀티모달 <strong>5-6개월</strong>: 옵션 27 또는 30 (Bow IMU 또는 MIDI pickup) — 하드웨어 1개 추가 <strong>7-8개월</strong>: 옵션 14 (MERT × score following) — <strong>분야 첫 정량 비교 발표</strong> <strong>9-12개월</strong>: 옵션 53 (multi-tracker ensemble) + NIME 2027 user study 논문</p>
+<h2 id="분야-첫-시도-후보--학술-환원-가능-4지점">분야 첫 시도 후보 — 학술 환원 가능 4지점</h2>
+<p>본 프로젝트가 다룬 18개월 동안 분야가 <em>시도하지 않은</em> 흐름들. 응용 개발의 부산물로 자연스럽게 채울 수 있다.</p>
+<ol>
+<li><strong>MERT/MusicFM/MuQ × score following</strong> (옵션 14) — 첫 정량 비교</li>
+<li><strong>Diffusion-based alignment denoising</strong> (옵션 17) — 분야 새 패러다임</li>
+<li><strong>Audio-driven page turner의 user study</strong> (옵션 63) — Tabone 2020 이후 5년 부재</li>
+<li><strong>첼로/일렉기타 paired audio-score 데이터셋</strong> — 옵션 42·25의 자연스러운 부산물</li>
+<li><strong>Instrumented bow / smart pick</strong> (옵션 40) — NIME 발표 가능</li>
+<li><strong>Federated learning for personalized score-following</strong> (옵션 24) — privacy 시대의 분야 첫</li>
+</ol>
+<h2 id="한-줄-결론">한 줄 결론</h2>
+<p><strong>일렉기타 페이지 터너는 GOAT + Causal-AMT + DI 신호의 3종 결합이 1순위, 첼로 페이지 터너는 활 IMU + Cowley GP+HMM baseline + 사용자 데이터 점진 수집의 결합이 1순위</strong>다. 둘 다 분야의 빈 공간 한가운데에 있어, 단순한 응용 개발도 자연스럽게 학술 기여로 환원된다. 70개 옵션 중 가장 가치 있는 단일 한 발자국은 <strong>옵션 14 (MERT × score following)</strong> — 분야가 18개월 동안 안 한 가장 분명한 빈 공간이며, 응용에 즉시 가치가 있고, 정량 비교 자체가 ISMIR 발표 가치를 가진다. 그 다음은 <strong>옵션 27 (Bow IMU)</strong> — 첼로의 자연스러운 단서를 audio가 아닌 곳에서 찾는 첫 본격 시도.</p>
+</template>

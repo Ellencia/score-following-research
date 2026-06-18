@@ -1,0 +1,1061 @@
+<template id="doc-00_glossary" data-title="마스터 용어집" data-docx="00_마스터_용어집.docx"><h1 id="score-following-연구-마스터-용어집">Score Following 연구 마스터 용어집</h1>
+<p>이 용어집은 Score Following 분야의 13편 논문 해설 문서에서 사용된 핵심 용어를 통합·정리한 자료다. 1984년 이후 약 40년에 걸쳐 발전한 이 분야는 고전적 신호 처리·통계 모델에서 시작해 오늘날에는 딥러닝, 강화학습, 객체 검출, 그리고 transformer + native MusicXML 결합까지 흡수하면서 빠르게 진화하고 있다. 그 결과 같은 "악보 따라가기"라는 한 가지 문제를 두고 매우 다른 어휘가 함께 등장한다. 9번째 논문(Bukey 2024, JLTR)은 실시간 score following이 아닌 <strong>오프라인 audio-to-score alignment</strong>를 다루어, 연주가 끝난 뒤 녹음 전체를 보고 가장 정확한 정렬을 만들어 내는 인간 개입 학습(human-in-the-loop) 접근을 제시한다. 10-13번 논문(Park 2025 Matchmaker, Peter 2025 Transcribe-and-Track, Hu 2025 Low-Latency AMT, Chang 2025 RUMAA)은 2025년 분야의 흐름을 결정하는 네 갈래 — 표준화된 평가 인프라, transcribe-then-track 패러다임, 저지연 AMT, transformer 통합 모델 — 을 각각 대표한다.</p>
+<p>각 용어는 일상에서 끌어올 수 있는 비유와 함께 설명했고, 어떤 논문에서 등장했는지를 끝 컬럼에 표시했다. 등장 논문 번호는 1=Arzt2016, 2=Dorfer2016, 3=Dorfer2018, 4=Henkel2020, 5=Henkel2021, 6=Lee2022, 7=Zeitler2024, 8=Pillay2024, 9=Bukey2024, 10=Park2025_Matchmaker, 11=Peter2025_TranscribeTrack, 12=Hu2025_LowLatencyAMT, 13=Chang2025_RUMAA 순이다. 비전공자가 한 분야를 처음 훑어볼 때, 이 용어집을 옆에 두고 각 논문 해설을 읽으면 낯선 단어 때문에 막히는 일이 줄어들 것이다.</p>
+<h2 id="1-문제-정의-관련-용어">1. 문제 정의 관련 용어</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+<th>등장 논문</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>악보 따라가기 / 음악 추적</td>
+<td>Score Following / Music Tracking</td>
+<td>컴퓨터가 마이크로 들어오는 라이브 연주를 들으며, 매 순간 연주자가 악보의 어느 마디·어느 음을 치고 있는지 실시간으로 짚어내는 기술. 노래방 화면이 가사를 따라가는 것의 음악 버전이라고 보면 된다.</td>
+<td>1,2,3,4,5,6,7,8</td>
+</tr>
+<tr class="even">
+<td>작품 식별</td>
+<td>Score Identification</td>
+<td>들리는 음악이 도대체 어느 작품인지 자체를 알아내는 단계. 곡명을 모를 때 도서관에서 곡 제목부터 찾아주는 사서의 일에 해당한다.</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>악보 위치</td>
+<td>Score Position</td>
+<td>특정 작품 안에서의 정확한 마디·박자 좌표. 지도로 치면 도시 이름을 넘어 그 도시의 어느 골목 어느 번지수까지 찍는 일이다.</td>
+<td>1,2,4,5,8</td>
+</tr>
+<tr class="even">
+<td>오디오–악보 정렬</td>
+<td>Audio-to-Score Alignment</td>
+<td>녹음된 음악과 악보 위 위치를 짝짓는 일. 영화의 자막을 장면과 맞추는 일의 음악 버전이다. 오프라인 정렬(녹음 전체를 보고 사후에 가장 정확하게 맞춤, 본 분야의 9번째 논문 Bukey 2024가 대표)과 온라인 정렬(실시간 score following)로 나뉜다.</td>
+<td>1,2,6,7,9</td>
+</tr>
+<tr class="odd">
+<td>오디오 동기화</td>
+<td>Audio Synchronization</td>
+<td>같은 곡의 두 녹음(또는 악보와 녹음)을 같은 시간자 위에 올려놓고, "여기 이 시점이 저쪽 그 시점"이라고 대응시키는 작업.</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td>자동 페이지 넘김</td>
+<td>Automatic Page Turning (APT)</td>
+<td>손이 바쁜 연주자를 위해 태블릿이 알아서 악보를 넘겨주는 기능. 이 분야의 가장 친숙한 응용 중 하나다.</td>
+<td>1,3,4,5,6,8</td>
+</tr>
+<tr class="odd">
+<td>컴퓨터 반주</td>
+<td>Computer Accompaniment</td>
+<td>사람이 솔로를 치면 컴퓨터가 반주를 따라 쳐 주는 시스템. 1984년 이 분야의 출발점이 되었다.</td>
+<td>1,3,5,6,8</td>
+</tr>
+<tr class="even">
+<td>다성 음악</td>
+<td>Polyphonic Music</td>
+<td>여러 성부 또는 여러 음이 동시에 울리는 음악. 피아노가 대표적이다. 단성 매칭만으로는 따라잡기 어렵다.</td>
+<td>3,5,6,8</td>
+</tr>
+<tr class="odd">
+<td>단성 음악</td>
+<td>Monophonic Music</td>
+<td>한 번에 한 음만 울리는 멜로디. 누가 휘파람을 부는 상황을 떠올리면 된다. 트럼펫·플루트·사람 목소리가 대표적이다.</td>
+<td>2,3,8</td>
+</tr>
+<tr class="even">
+<td>자연 환경</td>
+<td>In-the-Wild</td>
+<td>합성 MIDI나 깨끗한 스튜디오 녹음 같은 인공 데이터가 아니라, 실제 콘서트 녹음 + 사람이 스캔한 종이 악보처럼 잡음과 변형이 섞인 진짜 데이터를 가리키는 표현. Bukey 2024는 이 환경의 오프라인 정렬을 목표로 한다.</td>
+<td>9</td>
+</tr>
+<tr class="odd">
+<td>반복 기호 / 점프</td>
+<td>Repeat Sign / Jump</td>
+<td>악보에서 "이 부분을 다시 한 번", "처음으로 돌아가서"를 뜻하는 기호. 같은 마디 그림이 시간선상 두 번 이상 연주되게 만들어, 정렬 시 "녹음의 어느 구간이 몇 번째 연주인지"를 가려내야 하는 문제를 일으킨다.</td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-고전적-정렬추적-알고리즘">2. 고전적 정렬·추적 알고리즘</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+<th>등장 논문</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>동적 시간 휨</td>
+<td>Dynamic Time Warping (DTW)</td>
+<td>두 시계열을 시간 축에서 늘리고 줄이며 가장 잘 겹치게 맞추는 방법. 같은 곡이라도 사람마다 빠르기가 달라 길이가 다른데, 한쪽 시간 축을 고무줄처럼 늘려 다른 쪽과 정렬한다. 1970년대 음성 인식에서 출발했다.</td>
+<td>1,2,3,6,7,9</td>
+</tr>
+<tr class="even">
+<td>실시간 DTW</td>
+<td>On-line DTW (OLTW)</td>
+<td>일반 DTW가 녹음 끝난 뒤 전체를 한 번에 정렬하는 데 비해, 들어오는 신호에 즉시 한 프레임씩 정렬을 갱신하는 변형. 2005년 Dixon이 제안했고 score following의 1세대 강력한 베이스라인이다.</td>
+<td>1,6,8</td>
+</tr>
+<tr class="odd">
+<td>역방향 경로</td>
+<td>Backward Path</td>
+<td>정렬 결과를 현재 시점에서 거꾸로 거슬러 그려본 자취. 앞만 보고 추정하기보다 한 박자 늦게라도 뒤를 돌아보면 템포를 더 정확히 가늠할 수 있다는 직관을 활용한다.</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>멀티스케일 DTW</td>
+<td>MrMsDTW</td>
+<td>큰 단위에서 거친 정렬을 잡고 점점 세밀하게 좁혀가는 효율적 변형. Sync Toolbox에 구현되어 있다.</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>은닉 마르코프 모델</td>
+<td>Hidden Markov Model (HMM)</td>
+<td>보이지 않는 상태(악보 위치)를 확률적으로 추정하는 고전 통계 모델. 음표 진행을 상태 전이로 본다.</td>
+<td>2,8</td>
+</tr>
+<tr class="even">
+<td>근사 문자열 매칭</td>
+<td>Approximate String Matching (ASM)</td>
+<td>두 문자열의 거의 비슷한 매칭을 찾는 알고리즘. 자동 맞춤법 검사기처럼 음표 줄을 글자열로 보고 닮은 짝짓기를 찾는다. Needleman-Wunsch 같은 편집 거리 계열이 대표적이다.</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>템포 모델</td>
+<td>Tempo Model</td>
+<td>지금 연주가 빠른지 느린지를 추정하고 다음 위치 예측에 반영하는 보조 장치. 메트로놈을 머릿속에 굴리는 부지휘자의 역할이다.</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>템포 곡선</td>
+<td>Tempo Curve</td>
+<td>한 곡이 진행되는 동안 빠르기가 어떻게 변했는지를 그린 그래프. 같은 쇼팽 곡이라도 연주자마다 곡선 모양이 꽤 다르다.</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>박 추적</td>
+<td>Beat Tracking</td>
+<td>음악에서 박이 어디 있는지 찾는 일. 사용자가 휴대폰을 박자에 맞춰 흔드는 식으로 직접 알려주는 단순 형태도 있다.</td>
+<td>6</td>
+</tr>
+<tr class="even">
+<td>다중 에이전트 가설 추적</td>
+<td>Multi-agent Hypothesis Tracking</td>
+<td>여러 가능성을 동시에 살려 두고 시간이 지나면서 점수가 높은 가설만 남기는 방식. 형사 여러 명이 동시에 다른 용의자를 탐문하다 증거가 쌓이는 쪽으로 수사력을 모으는 모습과 비슷하다.</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>휴리스틱</td>
+<td>Heuristic</td>
+<td>"보통은 이렇다"는 상식적 규칙. 단조 증가, 변화율 제한 등이 score follower의 휴리스틱으로 자주 쓰인다.</td>
+<td>8</td>
+</tr>
+</tbody>
+</table>
+<h2 id="3-신호-처리특징량">3. 신호 처리·특징량</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+<th>등장 논문</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>스펙트로그램</td>
+<td>Spectrogram</td>
+<td>시간이 가로축, 주파수가 세로축인 소리의 사진. 1초 분량의 소리가 어떻게 변했는지를 한 장의 이미지로 볼 수 있다. 신경망이 오디오를 "이미지처럼" 다룰 때 표준 표현이다.</td>
+<td>2,3,4,5</td>
+</tr>
+<tr class="even">
+<td>FFT/STFT</td>
+<td>(Short-Time) Fast Fourier Transform</td>
+<td>소리를 시간 구간별로 잘라 어떤 주파수가 얼마만큼 들어 있는가를 보여주는 사진을 만드는 기법. 일반 스펙트로그램이 그 결과다.</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>크로마 특징</td>
+<td>Chroma Feature</td>
+<td>12음(도, 도샵, 레, ...)이 매 시점에 얼마나 강하게 들리는지 숫자로 나타낸 표현. 옥타브 차이는 무시해서 음악적 화성을 부각시킨다.</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td>상수 Q 변환</td>
+<td>Constant-Q Transform (CQT)</td>
+<td>사람이 음을 옥타브 단위로 듣는다는 점을 반영해, 낮은 음에는 큰 창, 높은 음에는 작은 창을 쓰는 특수한 주파수 분석. 균등한 비율로 음을 본다.</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>슬라이스 CQT</td>
+<td>sliCQ / NSGT-CQT</td>
+<td>일반 CQT를 실시간으로 돌릴 수 있도록 작은 조각으로 잘라 처리하는 알고리즘. 비-정상 가버 변환에 기반한다.</td>
+<td>6</td>
+</tr>
+<tr class="even">
+<td>음표 시작점</td>
+<td>Onset</td>
+<td>건반이 눌리는 그 순간. 피아노에서는 박자감을 결정하는 가장 또렷한 시간 단서다.</td>
+<td>1,7,9</td>
+</tr>
+<tr class="odd">
+<td>프레임 활성</td>
+<td>Frame Activity</td>
+<td>어느 시점에 어떤 음이 울리고 있는가(시작이 아닌 지속). 오랫동안 누른 건반은 onset은 한 번이지만 frame은 길게 이어진다.</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td>화성 특징</td>
+<td>Harmonic Feature</td>
+<td>어떤 음들이 함께 울려 만드는 화음 색을 나타내는 특징. 정규화된 onset 특징과 결합해 안정적인 정렬에 쓰인다.</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>특징량 정규화</td>
+<td>Feature Normalization</td>
+<td>들어오는 소리에서 뽑은 수치들을 일정 스케일로 맞춰 두는 작업. 마이크가 갑자기 커지거나 음 하나가 유난히 강해도 알고리즘이 흔들리지 않게 만든다.</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>원시 특징</td>
+<td>Raw Feature</td>
+<td>신경망이 0/1 결정을 내리기 직전, 마지막 층에서 흘러나오는 0~1 사이 연속 확률값. 이산화하면서 잃어버리는 모호함의 정보까지 그대로 살린다.</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>심볼릭 특징</td>
+<td>Symbolic Feature (SYM)</td>
+<td>raw 확률에 임계값을 적용해 0/1로 잘라낸 결과. 깔끔하지만 모호함이 사라진다.</td>
+<td>7</td>
+</tr>
+<tr class="even">
+<td>피아노 롤</td>
+<td>Piano Roll</td>
+<td>가로축 시간, 세로축 128개 MIDI 음 번호로 음을 표시한 격자. 다성 음악의 표현이 자연스럽다.</td>
+<td>8,9</td>
+</tr>
+<tr class="odd">
+<td>음표 시작 확률</td>
+<td>Raw Onset Probability</td>
+<td>채보 신경망(예: Onsets and Frames)이 "이 시점에 이 음이 시작될 가능성"으로 출력한 0~1 사이 연속 확률값. Bukey 2024는 이 값을 임계값으로 0/1 piano roll로 자르지 않고 그대로 DTW 입력으로 사용해, 정보 손실을 줄이고 정렬 정확도를 크게 높였다(MAcc 0.46 → 0.88).</td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<h2 id="4-딥러닝신경망-관련-용어">4. 딥러닝/신경망 관련 용어</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+<th>등장 논문</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>합성곱 신경망</td>
+<td>Convolutional Neural Network (CNN)</td>
+<td>사진을 작은 패치 단위로 훑으며 특징을 잡아내는 신경망. 글자 모양 → 단어 → 문장 순으로 점차 큰 의미를 잡는 것과 비슷하다.</td>
+<td>2,3,4,8</td>
+</tr>
+<tr class="even">
+<td>멀티모달</td>
+<td>Multi-modal</td>
+<td>그림과 소리, 두 감각을 한꺼번에 쓰는 사람처럼 서로 다른 종류의 입력을 동시에 다루는 방식.</td>
+<td>2,4,5</td>
+</tr>
+<tr class="odd">
+<td>인코더–디코더</td>
+<td>Encoder–Decoder</td>
+<td>인코더가 이미지를 작게 압축해 의미를 뽑고, 디코더가 다시 원래 크기로 복원하면서 픽셀별 답을 만드는 구조.</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>U-Net</td>
+<td>U-Net</td>
+<td>인코더와 디코더 사이를 건너뛰기 연결로 이어 위치 정보를 잃지 않게 만든 segmentation 전용 신경망. 원래는 의료영상용.</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>LSTM</td>
+<td>Long Short-Term Memory</td>
+<td>시간 순서가 있는 데이터에서 지금까지 무슨 일이 있었는지를 기억하는 순환 신경망. 오디오의 장기 맥락 담당.</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>임베딩</td>
+<td>Embedding</td>
+<td>그림이나 소리 같은 복잡한 입력을 짧은 숫자 벡터로 압축한 표현. 각자 키워드 메모를 만든다고 보면 된다.</td>
+<td>2,4</td>
+</tr>
+<tr class="odd">
+<td>잠재 표현</td>
+<td>Latent Representation</td>
+<td>신경망이 데이터를 압축해 만들어 둔, 핵심만 남긴 숫자 벡터. 비교가 빠르고 노이즈에 둔감해진다.</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>종단간 학습</td>
+<td>End-to-End</td>
+<td>입력에서 출력까지 전 과정을 데이터로부터 한꺼번에 배우는 방식. 사람이 중간 규칙을 손으로 만들지 않는다.</td>
+<td>2,3,4</td>
+</tr>
+<tr class="odd">
+<td>FiLM 조건화</td>
+<td>Feature-wise Linear Modulation</td>
+<td>한쪽 신경망(오디오)의 출력으로 다른 쪽(악보)의 내부 특징 지도를 곱하고 더해 주의를 돌리는 트릭. 색 필터 안경을 갈아 끼우는 일에 비유된다.</td>
+<td>4,5</td>
+</tr>
+<tr class="even">
+<td>강화학습</td>
+<td>Reinforcement Learning (RL)</td>
+<td>시행착오로 점수를 최대화하는 행동을 배우는 기계학습. 알파고가 바둑을 배운 방법, 아타리 게임을 익힌 방법이다.</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>에이전트 / 환경 / 상태 / 행동 / 보상</td>
+<td>Agent / Environment / State / Action / Reward</td>
+<td>강화학습의 5요소. 게임 속 주인공(에이전트)이 무대(환경)에서 자기 시야(상태)를 보고 선택지(행동)를 골라 점수(보상)를 받는다.</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>정책 / 가치 함수</td>
+<td>Policy / Value Function</td>
+<td>어떤 상태에서 어떤 행동을 고를지 정하는 규칙(정책)과, 지금 상태가 앞으로 점수를 얼마나 받을 수 있는 좋은 상태인지 평가하는 함수(가치).</td>
+<td>3</td>
+</tr>
+<tr class="odd">
+<td>A2C</td>
+<td>Advantage Actor-Critic</td>
+<td>정책망(액터)과 가치망(크리틱)을 함께 학습시키는 강화학습 알고리즘. 16개 게임을 병렬로 플레이해 안정적으로 빠르게 학습된다.</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>객체 검출 / 경계 상자</td>
+<td>Object Detection / Bounding Box</td>
+<td>이미지에서 어떤 것이 어디에 있는지 동시에 찾아내는 분야. 얼굴 인식의 노란 박스가 대표 사례. score following에서는 음표·화음을 감싸는 박스를 그리고, Bukey 2024에서는 마디(measure)의 사각 경계를 표시하는 데 쓰인다.</td>
+<td>5,9</td>
+</tr>
+<tr class="odd">
+<td>좌표 회귀</td>
+<td>Coordinate Regression</td>
+<td>그림 위 (x, y) 좌표를 신경망이 직접 숫자로 출력하는 방식. 점 하나로 콕 찍는 것이라 출력의 명료함이 떨어질 수 있다.</td>
+<td>4</td>
+</tr>
+<tr class="even">
+<td>IoU</td>
+<td>Intersection over Union</td>
+<td>예측 박스와 정답 박스가 겹치는 면적을 두 박스 합집합으로 나눈 비율. 0이면 안 겹친 것, 1이면 완벽히 겹친 것.</td>
+<td>5</td>
+</tr>
+<tr class="odd">
+<td>YOLO</td>
+<td>You Only Look Once</td>
+<td>이미지를 한 번에 훑어 박스와 신뢰 점수를 동시에 뽑아내는 빠른 객체 검출 모델 계열. 실시간 응용에 적합.</td>
+<td>5</td>
+</tr>
+<tr class="even">
+<td>자동 채보</td>
+<td>Automatic Music Transcription (AMT)</td>
+<td>오디오 녹음을 듣고 어떤 음을 언제 쳤는지를 음표(또는 MIDI)로 받아쓰는 인공지능.</td>
+<td>7,8,9</td>
+</tr>
+<tr class="odd">
+<td>Onsets and Frames</td>
+<td>Onsets and Frames</td>
+<td>음표 시작점과 지속 프레임을 동시에 예측하는 대표적인 채보 신경망. raw feature 추출 모델로도 자주 쓰인다.</td>
+<td>7,9</td>
+</tr>
+<tr class="even">
+<td>BasicPitch</td>
+<td>BasicPitch</td>
+<td>Spotify가 공개한 가벼운 다성 채보 모델. 오디오를 받아 음을 자동으로 받아쓴다.</td>
+<td>8</td>
+</tr>
+<tr class="odd">
+<td>교차상관</td>
+<td>Cross-correlation</td>
+<td>작은 패턴이 큰 신호 어디에 가장 잘 맞나를 모든 위치에서 비교하는 신호처리 기본 연산. score follower에서는 컨텍스트와 윈도우의 매칭 위치를 찾는 데 쓴다.</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>미세조정</td>
+<td>Fine-tuning</td>
+<td>이미 잘 학습된 모델을 새 데이터에 짧게 재훈련해 적응시키는 기법. 까다로운 옛날 녹음에 모델을 길들일 때 쓴다.</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>데이터 증강</td>
+<td>Data Augmentation</td>
+<td>학습 데이터를 일부러 변형해 불려 모델이 다양한 상황에 강해지도록 하는 기법. IR 잔향, MIDI 변형 등이 사례다.</td>
+<td>5,8</td>
+</tr>
+<tr class="even">
+<td>부틀렉 악보</td>
+<td>Bootleg Score</td>
+<td>악보 이미지에서 음표 머리(notehead)와 오선(staff line)만 추려 만든 단순 흑백 격자 표현. 정식 OMR 전체보다 가볍고 인쇄·스캔 변형에 강건하다. Bukey 2024는 마디 단위로 잘라 동일 크기로 리사이즈한 뒤 그 위에서 검출해 일관성을 높였다.</td>
+<td>9</td>
+</tr>
+<tr class="odd">
+<td>음표 검출 모델</td>
+<td>Transcription Model</td>
+<td>오디오를 입력받아 어떤 음표가 언제 시작·지속되는지를 예측하는 신경망. AMT의 핵심 부품으로, 본 분야에서는 Onsets and Frames, BasicPitch 등이 자주 쓰인다. Bukey 2024는 그 출력 확률을 정렬 입력으로 직접 사용한다.</td>
+<td>7,8,9</td>
+</tr>
+</tbody>
+</table>
+<h2 id="5-데이터평가-관련-용어">5. 데이터·평가 관련 용어</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+<th>등장 논문</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>MSMD</td>
+<td>Multi-modal Sheet Music Dataset</td>
+<td>악보 이미지와 그에 대응하는 합성 피아노 오디오·MIDI를 정렬해 놓은 공개 데이터셋. 시각·청각 멀티모달 학습의 표준 벤치마크다.</td>
+<td>4,5</td>
+</tr>
+<tr class="even">
+<td>MAESTRO</td>
+<td>MAESTRO Dataset</td>
+<td>약 200시간의 피아노 연주를 MIDI와 오디오로 정밀 정렬한 공개 데이터셋. Disklavier 녹음으로 만들어졌다.</td>
+<td>6,8</td>
+</tr>
+<tr class="odd">
+<td>Nottingham</td>
+<td>Nottingham Dataset</td>
+<td>영국 민요 단성 멜로디 모음. 강화학습 score follower의 비교적 쉬운 출발 데이터셋으로 자주 쓰인다.</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>(n)ASAP</td>
+<td>(n)ASAP Dataset</td>
+<td>큰 템포 변동과 다양한 숙련도를 포함한 평가용 데이터셋. Aligned Scores and Performances.</td>
+<td>7,8</td>
+</tr>
+<tr class="odd">
+<td>Bach10</td>
+<td>Bach10 Dataset</td>
+<td>4성부 합창곡 10곡으로 구성된, 정량 평가의 사실상 표준이 된 데이터셋.</td>
+<td>6</td>
+</tr>
+<tr class="even">
+<td>BPSD</td>
+<td>Beethoven Piano Sonata Dataset</td>
+<td>베토벤 32 소나타 1악장을 11명의 연주자가 친 녹음 모음. 모던 스튜디오부터 1935년 vinyl까지 음향 다양성이 큰 도전적 셋.</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>QualScofo</td>
+<td>QualScofo Dataset</td>
+<td>Lee 2022가 만들어 공개한 정성 평가용 음악 데이터셋. 첼로 솔로부터 로맨틱 오케스트라까지 16곡.</td>
+<td>6</td>
+</tr>
+<tr class="even">
+<td>MIREX</td>
+<td>Music Information Retrieval Evaluation eXchange</td>
+<td>음악 정보 검색 분야의 공식 평가 대회. 2018년 이후 score following 분야 참가가 사실상 끊겼다.</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>정렬 오차</td>
+<td>Alignment Error</td>
+<td>정렬 결과가 정답에서 얼마나 시간적으로 떨어져 있는지 측정한 값(밀리초 단위). 낮을수록 좋다.</td>
+<td>3,4,5,7,8</td>
+</tr>
+<tr class="even">
+<td>추적 비율 / 정밀률</td>
+<td>Tracking Ratio / Total Precision Rate (rpt)</td>
+<td>임계값(예: 300 ms) 안에서 맞춘 음표의 비율. 본 분야에서 가장 많이 쓰는 단일 점수다.</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>미스얼라인 비율</td>
+<td>Misalignment Rate</td>
+<td>정해진 허용 오차(예: 100 ms)를 넘긴 음의 비율. 낮을수록 좋다.</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>허용 오차창</td>
+<td>Tolerance Window / Misalignment Threshold (θe)</td>
+<td>정답에서 몇 ms까지 벗어나도 맞다고 칠 것인가의 기준선. 표준은 300 ms다.</td>
+<td>6,8</td>
+</tr>
+<tr class="odd">
+<td>정규화 픽셀 거리</td>
+<td>Normalized Pixel Distance</td>
+<td>예측 점과 진짜 점 사이의 거리를 이미지 가로폭으로 나눈 값. 종이 크기에 상관없이 비교할 수 있다.</td>
+<td>2</td>
+</tr>
+<tr class="even">
+<td>살리언시 맵</td>
+<td>Saliency Map</td>
+<td>신경망이 결정을 내리며 어떤 픽셀에 주의를 더 두었는지 색으로 표시한 그림. 채점할 때 어디를 읽었는지 형광펜으로 칠하는 셈이다.</td>
+<td>2</td>
+</tr>
+<tr class="odd">
+<td>마디 단위 정렬 정확도</td>
+<td>Measure-level Alignment Accuracy (MAcc)</td>
+<td>정렬 결과를 마디(measure) 단위로 평가한 지표. 예측한 마디가 정답 마디와 일치하는 비율로, 시간 기준 ms 오차와 달리 "몇 번째 마디인가"의 정답률을 직접 잰다. Bukey 2024가 핵심 지표로 보고한다(33% → 82%).</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>MeSA-13</td>
+<td>MeSA-13 Dataset</td>
+<td>Bukey 2024가 평가에 사용한 13곡 규모의 in-the-wild audio + scanned PDF 악보 데이터셋. 이 중 반복 기호를 포함한 곡은 2곡으로 작은 표본이지만, 반복 처리의 효과를 직접 확인할 수 있다.</td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<h2 id="6-시스템응용-관련-용어">6. 시스템·응용 관련 용어</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+<th>등장 논문</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>기호적 지문</td>
+<td>Symbolic Fingerprinting</td>
+<td>음표 패턴을 곡마다 고유한 지문으로 압축해 두는 기법. Shazam이 노래를 알아내는 방식의 악보판 사촌이다.</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>실연주 참조</td>
+<td>Real-performance Reference</td>
+<td>컴퓨터 합성 MIDI 대신 사람이 실제로 녹음한 연주를 비교 기준으로 쓰는 방식. 교과서 발음 대신 원어민 발음으로 외국어를 배우는 셈이다.</td>
+<td>1</td>
+</tr>
+<tr class="odd">
+<td>MIDI</td>
+<td>Musical Instrument Digital Interface</td>
+<td>음을 어떤 음을 언제 누르고 떼었는지의 숫자로 표현하는 형식. 오디오가 아닌 악보에 가까운 데이터다.</td>
+<td>6</td>
+</tr>
+<tr class="even">
+<td>MusicXML</td>
+<td>MusicXML</td>
+<td>악보를 XML 텍스트로 표기한 형식. 화면에 그릴 수 있는 디지털 악보의 표준 중 하나.</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>OMR</td>
+<td>Optical Music Recognition</td>
+<td>악보 이미지를 읽어 디지털 악보(MIDI 등)로 변환하는 기술. 종종 오류가 생겨 추적의 약점이 된다. Bukey 2024는 OMR 전체 대신 마디 검출 + bootleg score만으로 단순화한다.</td>
+<td>4,9</td>
+</tr>
+<tr class="even">
+<td>Disklavier</td>
+<td>Disklavier</td>
+<td>야마하의 자동 연주/녹음 피아노. 연주자가 친 음을 정확한 MIDI로 동시에 기록할 수 있어 정답 라벨 생성에 자주 쓰인다.</td>
+<td>7</td>
+</tr>
+<tr class="odd">
+<td>도메인 시프트 / 합성-실제 갭</td>
+<td>Domain Shift / Synthetic-to-Real Gap</td>
+<td>학습 데이터와 실제 사용 데이터 분포 차이. 예: 모던 스튜디오 녹음으로만 배운 모델이 1958년 vinyl을 만나면 성능이 떨어지는 현상.</td>
+<td>5,7</td>
+</tr>
+<tr class="even">
+<td>임펄스 응답 / IR 증강</td>
+<td>Impulse Response / IR Augmentation</td>
+<td>어떤 공간이 짧은 자극에 어떻게 반응하는지를 기록한 짧은 소리. 학습 도중 곱해 주면 그 공간에서 녹음한 듯한 효과를 모사할 수 있다.</td>
+<td>5</td>
+</tr>
+<tr class="odd">
+<td>슬라이딩 윈도</td>
+<td>Sliding Window</td>
+<td>긴 악보 이미지에서 현재 위치 주변만 잘라낸 작은 창. 에이전트가 보는 범위에 해당한다.</td>
+<td>3</td>
+</tr>
+<tr class="even">
+<td>페이지 단위 추적</td>
+<td>Page-level Tracking</td>
+<td>한 줄 짜리 조각이 아니라 악보 한 페이지 전체를 한꺼번에 보여주고 위치를 찾게 하는 방식. 한 줄에서 길을 잃어도 다른 줄에서 회복할 수 있다.</td>
+<td>4</td>
+</tr>
+<tr class="odd">
+<td>OSC / DAW</td>
+<td>Open Sound Control / Digital Audio Workstation</td>
+<td>OSC는 음악 장비/소프트웨어 사이에 메시지를 주고받는 네트워크 프로토콜. DAW는 Logic·Cubase·Ableton 같은 디지털 음악 작업 소프트웨어로 반주 생성을 담당한다.</td>
+<td>8</td>
+</tr>
+<tr class="even">
+<td>Testbench</td>
+<td>Testbench</td>
+<td>평가 도구. 다른 연구자가 자기 시스템을 끼워 넣기만 하면 같은 기준으로 점수를 매겨 주는 표준화된 환경.</td>
+<td>6</td>
+</tr>
+<tr class="odd">
+<td>동기화 시각화</td>
+<td>Concert Synchronization</td>
+<td>콘서트홀에서 청중에게 라이브 음악과 동기화된 악보·영상·자막을 실시간으로 보여주는 응용. 2016년 콘세르트헤바우 시연이 대표적이다.</td>
+<td>1</td>
+</tr>
+<tr class="even">
+<td>마디 검출</td>
+<td>Measure Detection</td>
+<td>악보 이미지에서 각 마디(bar)의 사각 경계 상자를 자동으로 찾아 주는 시스템 모듈. Bukey 2024는 기존 마디 검출기[21]의 출력을 받아 그 안에서 bootleg score를 만들고, 사용자가 클릭한 반복 정보를 마디 좌표에 매핑한다.</td>
+<td>9</td>
+</tr>
+<tr class="odd">
+<td>인간 개입 학습</td>
+<td>Human-in-the-Loop</td>
+<td>알고리즘이 자동으로 풀기 어려운 부분만 사람이 짧게 라벨링해 주고 나머지는 시스템이 처리하는 협업 방식. Bukey 2024는 페이지당 6초 미만의 사람 클릭(반복 시작·끝)으로 정렬 정확도를 33%에서 82%로 끌어올린다.</td>
+<td>9</td>
+</tr>
+<tr class="even">
+<td>오프라인 정렬</td>
+<td>Offline Alignment</td>
+<td>연주가 끝난 뒤 녹음 파일과 악보 전체를 모두 가지고 있는 상태에서 가장 정확한 정렬 결과를 만들어 내는 방식. 실시간 score following과 대비되며, 학습용 정답 데이터 생성·후처리·아카이빙에 쓴다. Bukey 2024가 대표적이다.</td>
+<td>9</td>
+</tr>
+</tbody>
+</table>
+<h2 id="7-2025-2026-신규-개념">7. 2025-2026 신규 개념</h2>
+<p>10-13번 논문에서 등장한 새 어휘를 별도 카테고리로 묶었다. 이 용어들은 분야가 2025년에 들어 채택한 새 패러다임 — transcribe-then-track, 저지연 real-time, transformer + native MusicXML — 을 이해하는 데 필수다.</p>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+<th>등장 논문</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Matchmaker 라이브러리</td>
+<td>Matchmaker</td>
+<td>KAIST + JKU 공동의 오픈 소스 Python score-following 라이브러리. pip install + 두 줄 API. OLTW-Dixon, OLTW-Arzt, HMM 세 알고리즘을 동일 인터페이스로 제공. partitura를 통해 MusicXML/MIDI/MEI 모두 지원.</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>OLTW-Arzt</td>
+<td>OLTW-Arzt variant</td>
+<td>Arzt-Widmer 2008-2015의 backward-forward 전략 + tempo-aware 확장을 따른 OLTW. Cython 구현으로 0.07 ms 지연. Matchmaker 평가에서 가장 강한 baseline.</td>
+<td>10</td>
+</tr>
+<tr class="odd">
+<td>log-spectral energy (LSE)</td>
+<td>Log-spectral energy</td>
+<td>Dixon 2005에 영감받은 단순 STFT 기반 onset-sensitive 특징. Matchmaker의 5종 특징 비교에서 정확도와 지연 모두에서 가장 균형.</td>
+<td>10</td>
+</tr>
+<tr class="even">
+<td>transcribe-then-track</td>
+<td>Transcribe-then-track paradigm</td>
+<td>"오디오를 한 번 음표 시퀀스로 변환한 뒤 그 위에서 정렬"하는 접근. 분석 11번이 audio OLTW의 정확도 plateau를 정량으로 입증하면서 분야의 새 패러다임으로 정착.</td>
+<td>11</td>
+</tr>
+<tr class="odd">
+<td>심볼 레벨 트래커</td>
+<td>Symbol-level tracker</td>
+<td>transcribe-then-track의 두 번째 단계. transcribed 심볼 시퀀스와 score 심볼 시퀀스 간의 정렬을 직접 수행. 분석 11번이 새 OLTW 변형으로 구현.</td>
+<td>11</td>
+</tr>
+<tr class="even">
+<td>경로별 템포 행렬</td>
+<td>Path-wise tempo matrix</td>
+<td>OLTW의 각 cell에 그 cell로 도달하기까지의 추정 tempo를 저장하는 새 자료구조. 외부 tempo 모델 없이 multiple alternative paths가 각자의 tempo를 동시 추적 가능.</td>
+<td>11</td>
+</tr>
+<tr class="odd">
+<td>Pairwise distance metric (pitch + time)</td>
+<td>Pairwise pitch+time distance</td>
+<td>분석 11번의 새 거리 함수 — pitch error(이산) + 시간 error(연속) × timing weight c. Peter 2023 ISMIR의 pitch-set 거리에서 확장.</td>
+<td>11</td>
+</tr>
+<tr class="even">
+<td>정확도 plateau</td>
+<td>Accuracy plateau</td>
+<td>분야가 audio OLTW로 도달한 한계. 2005년 Dixon-OLTW 이후 약 10년간 chroma·CQT 같은 hand-crafted 특징과 휴리스틱 강화로는 더 큰 도약이 어렵다는 정량 진단(분석 11번).</td>
+<td>11</td>
+</tr>
+<tr class="odd">
+<td>online vs real-time</td>
+<td>Online vs real-time AMT</td>
+<td>분석 12번의 핵심 구분. Online은 청크로 받아 점진 출력(100-300 ms 가능), real-time은 30 ms 이하 지연. 분야 통념의 무비판적 사용을 정조준.</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>Mobile-AMT</td>
+<td>Mobile-AMT</td>
+<td>Kusaka-Maezawa EUSIPCO 2024의 SOTA online AMT. depthwise-separable conv + MobileNet V3 + SE. 174 ms 지연 보고. 분석 12번의 출발점이자 분석 11번의 transcription 모듈 후보.</td>
+<td>11,12</td>
+</tr>
+<tr class="odd">
+<td>Causal-AMT</td>
+<td>Causal-AMT</td>
+<td>분석 12번의 최종 모델. 모든 conv를 strict causal로, SE 층 제거, acoustic stack 공유로 모델 크기 절반(160 GFLOPs). 30 ms 지연에서 비-causal 베이스라인 수준 정확도.</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>Strict causality</td>
+<td>Strict causality</td>
+<td>신경망과 후처리 모두에서 미래 정보를 일절 사용하지 않는 처리 방식. 음악적 인터랙션의 필수 조건.</td>
+<td>12</td>
+</tr>
+<tr class="odd">
+<td>Squeeze-Excitation (SE)</td>
+<td>Squeeze-Excitation layer</td>
+<td>MobileNet V3의 채널 재가중 모듈. spatial 평균을 보므로 본질적으로 비-causal. 분석 12번이 Mobile-AMT의 숨은 10 초 lookahead 출처로 지적.</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>Shifted asymmetric STFT window</td>
+<td>Shifted asymmetric window</td>
+<td>Hann 같은 대칭 윈도우 대신 reference point 미래 쪽으로 작게(예: 10 ms) 두는 비대칭 윈도우. lookahead를 줄이면서 최근 샘플 정보를 유지.</td>
+<td>12</td>
+</tr>
+<tr class="odd">
+<td>Triangular vs binary point target</td>
+<td>Regression target shapes</td>
+<td>onset 주변에 삼각형으로 펼친 학습 target은 sub-frame 정확도를 가능하게 하나 lookahead 필요. 한 프레임만 1로 두는 binary target은 strict causal 가능.</td>
+<td>12</td>
+</tr>
+<tr class="even">
+<td>Shift-tolerant loss</td>
+<td>Shift-tolerant loss</td>
+<td>±N 프레임 오차를 허용하는 BCE 변형. Foscarin et al. 2024 Beat this!에서 차용. 분석 12번이 strict causal 모델에서는 systematic delay 위험으로 채택 안 함.</td>
+<td>12</td>
+</tr>
+<tr class="odd">
+<td>RUMAA 통합 모델</td>
+<td>RUMAA unified model</td>
+<td>QMUL의 transformer로 alignment + transcription + mistake detection 세 task를 한 forward pass에 처리. 사전학습 score encoder(M3) + audio encoder(YourMT3+) + 6-block decoder.</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>Hierarchical cross-attention</td>
+<td>Hierarchical cross-attention</td>
+<td>RUMAA의 핵심 — self-attention 후 audio cross-attention, 그 다음 score cross-attention의 두 단계. 단순 concatenation 대비 1% 정확. "transcribe first, then align"의 인지적 절차 모사.</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>Tri-stream parallel decoding</td>
+<td>Tri-stream parallel decoding</td>
+<td>RUMAA가 한 번의 forward pass로 세 채널(연주 transcription, 악보 alignment, edit operation)을 동시 생성. CP-Words(Hsiao 2021) 확장.</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>MusicXML repeat 처리 (native)</td>
+<td>Native MusicXML repeat handling</td>
+<td>사람이 미리 unfold한 score 없이 ":</td>
+<td></td>
+</tr>
+<tr class="odd">
+<td>ABC notation</td>
+<td>ABC notation</td>
+<td>MusicXML보다 훨씬 간결한 텍스트 기반 음악 표기. 마디당 64자 정도면 거의 모든 클래식 악보 표현 가능. RUMAA의 score encoder 입력.</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>Bar-level patching</td>
+<td>Bar-level patching</td>
+<td>Character-level tokenizer로 받은 ABC를 마디 단위로 묶어 한 토큰으로 패킹하는 기법. RUMAA의 M3 score encoder가 사용. 768-dim bar-level token.</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>Pre-trained score encoder (M3)</td>
+<td>M3 score encoder</td>
+<td>CLaMP2(Wu et al. 2024)에서 가져온 사전학습 character-level + bar-level transformer. 다국어 multimodal MIR용. RUMAA의 score encoder.</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>Pre-trained audio encoder (YourMT3+)</td>
+<td>YourMT3+ audio encoder</td>
+<td>Chang et al. MLSP 2024의 multi-instrument transcription transformer. RUMAA의 frozen audio encoder.</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>Proxy task</td>
+<td>Proxy task</td>
+<td>진짜 풀고 싶은 task의 대리 task. RUMAA가 세 proxy task(T1: Score-Aligned Performance Transcription, T2: Performance-Aligned Score Conversion, T3: Edit Operation Tagging)로 task 상호의존성 학습.</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>F_align</td>
+<td>F_align</td>
+<td>RUMAA가 사용한 정렬 평가 지표. 매치+삽입+삭제 = TP, 미매치 예측 = FP, 미매치 정답 = FN. ±50 ms tolerance.</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>Mistake detection</td>
+<td>Mistake detection</td>
+<td>연주에서 누락된 음(missed)·잘못 추가된 음(extra)·정확히 친 음(correct)을 가려내는 task. RUMAA가 alignment·transcription과 통합.</td>
+<td>13</td>
+</tr>
+<tr class="even">
+<td>Score-informed transcription</td>
+<td>Score-informed transcription</td>
+<td>악보 정보를 활용해 audio→음표 변환의 정확도를 높이는 채보. RUMAA가 score-free 모드 대비 F_on 96.1 → 99.1로 향상 입증.</td>
+<td>13</td>
+</tr>
+<tr class="odd">
+<td>Reformulated Soft-DTW</td>
+<td>Reformulated Soft-DTW</td>
+<td>Zeitler-Müller ISMIR 2025의 corrected loss. 약 라벨링(예: 마디 단위) audio↔︎score 데이터로 신경망 정렬 모델을 학습할 때 권장. 본 프로젝트의 Tier 2 정리.</td>
+<td>(Tier 2)</td>
+</tr>
+<tr class="even">
+<td>Path-wise vs frame-wise tempo</td>
+<td>Path-wise vs frame-wise tempo</td>
+<td>분석 11번의 path-wise는 OLTW 경로별로 tempo 추정, 외부 tempo 모델 의존 제거. 기존 Arzt 2010의 frame-wise tempo model과 대비.</td>
+<td>11</td>
+</tr>
+<tr class="odd">
+<td>Foundation model × score following</td>
+<td>MERT/MusicFM/MuQ × alignment</td>
+<td>본 프로젝트가 다룬 18개월 동안 등장하지 않은 흐름. 음악 foundation model의 embedding을 Matchmaker의 Processor 자리에 끼워 넣는 정량 비교가 분야의 분명한 빈 공간.</td>
+<td>(공백 영역)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="부록-알파벳가나다순-색인">부록: 알파벳·가나다순 색인</h2>
+<h3 id="가나다순-한글-색인">가나다순 한글 색인</h3>
+<ul>
+<li>강화학습 → §4</li>
+<li>객체 검출 → §4</li>
+<li>경계 상자 → §4</li>
+<li>교차상관 → §4</li>
+<li>광학 음악 인식(OMR) → §6</li>
+<li>근사 문자열 매칭(ASM) → §2</li>
+<li>기호적 지문 → §6</li>
+<li>다성 음악 → §1</li>
+<li>다중 에이전트 가설 추적 → §2</li>
+<li>단성 음악 → §1</li>
+<li>데이터 증강 → §4</li>
+<li>도메인 시프트 → §6</li>
+<li>동적 시간 휨(DTW) → §2</li>
+<li>동기화 시각화 → §6</li>
+<li>마디 검출 → §6</li>
+<li>마디 단위 정렬 정확도(MAcc) → §5</li>
+<li>멀티모달 → §4</li>
+<li>멀티스케일 DTW → §2</li>
+<li>미세조정 → §4</li>
+<li>미스얼라인 비율 → §5</li>
+<li>박 추적 → §2</li>
+<li>반복 기호 / 점프 → §1</li>
+<li>부틀렉 악보 → §4</li>
+<li>살리언시 맵 → §5</li>
+<li>상수 Q 변환(CQT) → §3</li>
+<li>스펙트로그램 → §3</li>
+<li>슬라이딩 윈도 → §6</li>
+<li>슬라이스 CQT(sliCQ) → §3</li>
+<li>실시간 DTW(OLTW) → §2</li>
+<li>실연주 참조 → §6</li>
+<li>심볼릭 특징 → §3</li>
+<li>악보 따라가기 → §1</li>
+<li>악보 위치 → §1</li>
+<li>에이전트/환경/상태/행동/보상 → §4</li>
+<li>오디오 동기화 → §1</li>
+<li>오디오–악보 정렬 → §1</li>
+<li>오프라인 정렬 → §6</li>
+<li>원시 특징(Raw Feature) → §3</li>
+<li>음표 시작점(Onset) → §3</li>
+<li>음표 시작 확률 → §3</li>
+<li>음표 검출 모델 → §4</li>
+<li>인간 개입 학습 → §6</li>
+<li>인코더–디코더 → §4</li>
+<li>임베딩 → §4</li>
+<li>임펄스 응답(IR) → §6</li>
+<li>자동 채보(AMT) → §4</li>
+<li>자동 페이지 넘김(APT) → §1</li>
+<li>자연 환경(In-the-wild) → §1</li>
+<li>잠재 표현 → §4</li>
+<li>작품 식별 → §1</li>
+<li>정렬 오차 → §5</li>
+<li>정책/가치 함수 → §4</li>
+<li>종단간 학습 → §4</li>
+<li>좌표 회귀 → §4</li>
+<li>추적 비율(rpt) → §5</li>
+<li>컴퓨터 반주 → §1</li>
+<li>크로마 특징 → §3</li>
+<li>템포 곡선 → §2</li>
+<li>템포 모델 → §2</li>
+<li>특징량 정규화 → §3</li>
+<li>페이지 단위 추적 → §6</li>
+<li>프레임 활성 → §3</li>
+<li>피아노 롤 → §3</li>
+<li>합성-실제 갭 → §6</li>
+<li>합성곱 신경망(CNN) → §4</li>
+<li>허용 오차창 → §5</li>
+<li>화성 특징 → §3</li>
+<li>휴리스틱 → §2</li>
+<li>은닉 마르코프 모델(HMM) → §2</li>
+<li>역방향 경로 → §2</li>
+</ul>
+<p>신규(2025-2026) — §7</p>
+<ul>
+<li>경로별 템포 행렬 → §7</li>
+<li>마디 단위 패치(Bar-level patching) → §7</li>
+<li>비대칭 STFT 윈도우 → §7</li>
+<li>사전학습 audio encoder(YourMT3+) → §7</li>
+<li>사전학습 score encoder(M3) → §7</li>
+<li>심볼 레벨 트래커 → §7</li>
+<li>음표 시작 target 모양(triangular/binary) → §7</li>
+<li>자동 채보(online vs real-time) → §7</li>
+<li>정확도 plateau → §7</li>
+<li>통합 모델(RUMAA) → §7</li>
+<li>트라이 스트림 병렬 디코딩 → §7</li>
+<li>페어와이즈 거리(pitch+time) → §7</li>
+<li>프록시 태스크 → §7</li>
+<li>헤드별 cross-attention(hierarchical) → §7</li>
+<li>무브일-AMT (Mobile-AMT) → §7</li>
+<li>코잘-AMT (Causal-AMT) → §7</li>
+<li>매치메이커 (Matchmaker) → §7</li>
+<li>트랜스크라이브-덴-트랙 → §7</li>
+<li>ABC notation → §7</li>
+<li>F_align → §7</li>
+<li>LSE (log-spectral energy) → §7</li>
+<li>OLTW-Arzt → §7</li>
+<li>Reformulated Soft-DTW → §7</li>
+<li>Score-informed transcription → §7</li>
+<li>Shift-tolerant loss → §7</li>
+<li>Squeeze-Excitation (SE) → §7</li>
+<li>Strict causality → §7</li>
+</ul>
+<h3 id="알파벳-색인">알파벳 색인</h3>
+<ul>
+<li>A2C → §4</li>
+<li>AMT (Automatic Music Transcription) → §4</li>
+<li>APT (Automatic Page Turning) → §1</li>
+<li>ASM (Approximate String Matching) → §2</li>
+<li>Bach10 → §5</li>
+<li>BasicPitch → §4</li>
+<li>Bootleg Score → §4</li>
+<li>BPSD (Beethoven Piano Sonata Dataset) → §5</li>
+<li>Bounding Box → §4</li>
+<li>Chroma Feature → §3</li>
+<li>CNN (Convolutional Neural Network) → §4</li>
+<li>Coordinate Regression → §4</li>
+<li>Cross-correlation → §4</li>
+<li>CQT (Constant-Q Transform) → §3</li>
+<li>DAW (Digital Audio Workstation) → §6</li>
+<li>Data Augmentation → §4</li>
+<li>Disklavier → §6</li>
+<li>Domain Shift → §6</li>
+<li>DTW (Dynamic Time Warping) → §2</li>
+<li>Embedding → §4</li>
+<li>Encoder–Decoder → §4</li>
+<li>End-to-End → §4</li>
+<li>FFT/STFT → §3</li>
+<li>FiLM (Feature-wise Linear Modulation) → §4</li>
+<li>Fine-tuning → §4</li>
+<li>Frame Activity → §3</li>
+<li>Harmonic Feature → §3</li>
+<li>Heuristic → §2</li>
+<li>HMM (Hidden Markov Model) → §2</li>
+<li>Human-in-the-Loop → §6</li>
+<li>Impulse Response → §6</li>
+<li>In-the-Wild → §1</li>
+<li>IoU (Intersection over Union) → §4</li>
+<li>LSTM → §4</li>
+<li>Latent Representation → §4</li>
+<li>MAESTRO → §5</li>
+<li>MAcc (Measure-level Alignment Accuracy) → §5</li>
+<li>Measure Detection → §6</li>
+<li>MeSA-13 → §5</li>
+<li>MIDI → §6</li>
+<li>MIREX → §5</li>
+<li>Misalignment Rate → §5</li>
+<li>Monophonic → §1</li>
+<li>MrMsDTW → §2</li>
+<li>MSMD (Multi-modal Sheet Music Dataset) → §5</li>
+<li>Multi-agent Hypothesis Tracking → §2</li>
+<li>Multi-modal → §4</li>
+<li>MusicXML → §6</li>
+<li>(n)ASAP → §5</li>
+<li>Normalized Pixel Distance → §5</li>
+<li>Nottingham → §5</li>
+<li>Object Detection → §4</li>
+<li>Offline Alignment → §6</li>
+<li>OLTW (On-line Time Warping) → §2</li>
+<li>OMR (Optical Music Recognition) → §6</li>
+<li>Onset → §3</li>
+<li>Onsets and Frames → §4</li>
+<li>OSC (Open Sound Control) → §6</li>
+<li>Page-level Tracking → §6</li>
+<li>Piano Roll → §3</li>
+<li>Policy / Value Function → §4</li>
+<li>Polyphonic → §1</li>
+<li>QualScofo → §5</li>
+<li>Raw Feature → §3</li>
+<li>Raw Onset Probability → §3</li>
+<li>Real-performance Reference → §6</li>
+<li>Reinforcement Learning (RL) → §4</li>
+<li>Repeat Sign / Jump → §1</li>
+<li>Saliency Map → §5</li>
+<li>Score Following → §1</li>
+<li>Score Identification → §1</li>
+<li>Score Position → §1</li>
+<li>Sliding Window → §6</li>
+<li>sliCQ / NSGT-CQT → §3</li>
+<li>Spectrogram → §3</li>
+<li>Symbolic Feature (SYM) → §3</li>
+<li>Symbolic Fingerprinting → §6</li>
+<li>Synthetic-to-Real Gap → §6</li>
+<li>Tempo Curve → §2</li>
+<li>Tempo Model → §2</li>
+<li>Testbench → §6</li>
+<li>Tolerance Window (θe) → §5</li>
+<li>Tracking Ratio (rpt) → §5</li>
+<li>Transcription Model → §4</li>
+<li>U-Net → §4</li>
+<li>YOLO → §4</li>
+</ul>
+<p>신규(2025-2026) — §7</p>
+<ul>
+<li>ABC notation → §7</li>
+<li>Accuracy plateau → §7</li>
+<li>Bar-level patching → §7</li>
+<li>Causal-AMT → §7</li>
+<li>F_align → §7</li>
+<li>Foundation model × score following → §7</li>
+<li>Hierarchical cross-attention → §7</li>
+<li>Log-spectral energy (LSE) → §7</li>
+<li>M3 score encoder → §7</li>
+<li>Matchmaker → §7</li>
+<li>Mistake detection → §7</li>
+<li>Mobile-AMT → §7</li>
+<li>MusicXML native repeat handling → §7</li>
+<li>OLTW-Arzt → §7</li>
+<li>Online vs Real-time AMT → §7</li>
+<li>Pairwise pitch+time distance → §7</li>
+<li>Path-wise tempo matrix → §7</li>
+<li>Pre-trained audio encoder (YourMT3+) → §7</li>
+<li>Pre-trained score encoder (M3) → §7</li>
+<li>Proxy task → §7</li>
+<li>Reformulated Soft-DTW → §7</li>
+<li>RUMAA unified model → §7</li>
+<li>Score-informed transcription → §7</li>
+<li>Shifted asymmetric STFT window → §7</li>
+<li>Shift-tolerant loss → §7</li>
+<li>Squeeze-Excitation (SE) → §7</li>
+<li>Strict causality → §7</li>
+<li>Symbol-level tracker → §7</li>
+<li>Transcribe-then-track paradigm → §7</li>
+<li>Triangular vs binary point target → §7</li>
+<li>Tri-stream parallel decoding → §7</li>
+<li>YourMT3+ audio encoder → §7</li>
+</ul></template>

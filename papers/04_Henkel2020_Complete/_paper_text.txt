@@ -1,0 +1,512 @@
+                                                                  LEARNING TO READ AND FOLLOW MUSIC IN
+                                                                      COMPLETE SCORE SHEET IMAGES
+
+                                                                 Florian Henkel1         Rainer Kelz2           Gerhard Widmer1
+                                                       1
+                                                         Institute of Computational Perception, Johannes Kepler University Linz, Austria
+                                                         2
+                                                           Austrian Research Institute for Artificial Intelligence (OFAI), Vienna, Austria
+                                                                                                  florian.henkel@jku.at
+
+
+
+                                                                    ABSTRACT                                       to locally constrained systems that only look at snippets.
+                                                                                                                       To the best of our knowledge, we present the first sys-
+                                         This paper addresses the task of score following in sheet                 tem that requires neither OMR nor any other form of score
+                                         music given as unprocessed images. While existing work                    pre-processing and directly follows musical performances
+                                         either relies on OMR software to obtain a computer-                       in full sheet images in an end-to-end fashion. 1
+                                         readable score representation, or crucially relies on pre-                    Specifically, we formulate score following as a refer-
+arXiv:2007.10736v1 [cs.LG] 21 Jul 2020
+
+
+
+
+                                         pared sheet image excerpts, we propose the first system                   ring image segmentation task and introduce an appropriate
+                                         that directly performs score following in full-page, com-                 model architecture in Section 3, including a conditioning
+                                         pletely unprocessed sheet images. Based on incoming au-                   mechanism in the form of a Feature-wise Linear Modu-
+                                         dio and a given image of the score, our system directly pre-              lation (FiLM) layer [7] as a central building block. In
+                                         dicts the most likely position within the page that matches               Section 4, we demonstrate the system on polyphonic pi-
+                                         the audio, outperforming current state-of-the-art image-                  ano music, taken from the MSMD dataset [8]. To ana-
+                                         based score followers in terms of alignment precision. We                 lyze its generalization capabilities, we also test it on real
+                                         also compare our method to an OMR-based approach and                      musical performances taken from the MSMD test split, in
+                                         empirically show that it can be a viable alternative to such              Section 5. The results will show that our model outper-
+                                         a system.                                                                 forms current state-of-the-art image based trackers in terms
+                                                                                                                   of alignment precision, but also that it currently lacks ro-
+                                                              1. INTRODUCTION                                      bustness across different audio conditions.
+
+                                         Score following is a fundamental task in MIR and the basis
+                                                                                                                                      2. RELATED WORK
+                                         for applications such as automatic accompaniment [1, 2],
+                                         automatic page turning [3] or the synchronization of live                 Score following approaches can be broadly categorized
+                                         performances to visualizations [4, 5]. These applications                 into those that rely on the presence of a computer-readable
+                                         require a real-time capable system that aligns a musical                  score representation, such as MusicXML or MIDI, and
+                                         performance to a symbolic score representation in an on-                  those that try to do without such a symbolic represen-
+                                         line fashion. To solve this, existing systems either require              tation. In the former category, techniques like Dynamic
+                                         a computer-readable score representation (e. g. extracted                 Time Warping (DTW) [4, 9, 10] and Hidden Markov Mod-
+                                         using Optical Music Recognition (OMR) [6]) or rely on                     els (HMMs) [11–13] are applied to achieve robust and reli-
+                                         fixed-size (small) snippets of sheet images.                              able tracking results. The main issue with these approaches
+                                             Models from the latter category are by design only ca-                is the need for computer-readable score representations,
+                                         pable of handling fixed-sized excerpts of the sheet image                 which must either be created manually in a tedious and
+                                         due to a limited action space to predict the next position                time consuming process, or automatically extracted using
+                                         in the score. This is a severe constraint, as the sheet im-               OMR. In the OMR case, the faithfulness of the symbolic
+                                         age snippet has to (at least partly) correspond to the in-                score to what is depicted on the sheet image strongly de-
+                                         coming audio excerpt. If it does not match the audio any-                 pends on the quality of the OMR system, which may in-
+                                         more (due to some tracking error), no proper prediction                   troduce errors that impede the actual score following task.
+                                         can be formed. To overcome this limitation, we attempt                    Empirical evidence for this claim was published in [14],
+                                         score following directly in the full sheet image, enabling                where a DTW-based score following system that relied on
+                                         the system to observe the whole page at any given time.                   MIDI scores extracted via an OMR system had difficulties
+                                         This makes the problem significantly more challenging,                    tracking synthetically created test data.
+                                         e. g., due to repetitive musical score structures, compared                   Several recent publications deal with the latter cate-
+                                                                                                                   gory, and investigate score following in the context of
+                                                       c F. Henkel, R. Kelz, and G. Widmer. Licensed under a       non-computer-readable score representations, represented
+                                         Creative Commons Attribution 4.0 International License (CC BY 4.0).
+                                                                                                                   as raw sheet images. In [15], the authors propose a multi-
+                                         Attribution: F. Henkel, R. Kelz, and G. Widmer, “Learning to Read and
+                                         Follow Music in Complete Score Sheet Images”, in Proc. of the 21st Int.     1 Code and data will be made available on-line: https://github.
+                                         Society for Music Information Retrieval Conf., Montréal, Canada, 2020.    com/CPJKU/audio_conditioned_unet
+                                        Target Frame
+
+
+
+
+Figure 1. Score Following Task as modelled in this work: Given a score (sheet image) and an incoming musical performance (audio),
+the goal is to predict the current location in the score in real time. The audio is fed to the tracker frame by frame and the system processes
+the last 40 frames to predict the position for the latest frame (the Target Frame marked red in (a)). The ground truth (bounding box around
+current score position; see (a)) is given as a binary segmentation mask. The system predicts a probability for each pixel to correspond to
+the current audio; thus it highlights those regions that are most likely to match the correct location. Ideally, this should be only a single
+region. However, in (b) we see that such a prediction is not perfect: while the highest probability is assigned to the correct position in
+staff four, there is also a small likelihood in the last staff, as the notes are the same for both locations. To predict the location correctly,
+the system needs to consider the whole audio up to the current point in time, which motivates our design choices introduced in Section 3.
+
+
+modal deep neural network to predict the position within                   precisely, our modeling setup is as follows: based on the
+a sheet snippet based on a short audio excerpt. In [16]                    incoming musical performance up to the current point in
+and [14], score following is formulated as a reinforcement                 time, the task of the model is to predict a segmentation
+learning (RL) problem, where the RL agent’s task is to                     mask for the given score that corresponds to this currently
+adapt its reading speed in an unrolled sheet image, con-                   played music, as shown in Figure 1. The ground truth for
+ditioned on an audio excerpt. One of the limitations of all                this task is chosen to be a region around the current posi-
+these methods is that they require the score to be repre-                  tion in the score with a fixed width and a height depending
+sented in an unrolled form, i. e., staves need to be detected              on the height of the staff. While the size of this mask can
+in the sheet image, cut out and presented to the score fol-                be arbitrarily chosen, we define it such that it provides a
+lowing system in sequence.                                                 meaningful learning target first and foremost.
+    To overcome this, [17] introduced a system that directly                   A challenging question arising with such a setup is how
+infers positions within full sheet images for monophonic                   to combine the different input modalities, audio and score.
+piano music. However, the temporal aspect of score fol-                    While [14–16] learn a latent representation for both input
+lowing was neglected altogether — based on an audio ex-                    modalities which are subsequently concatenated and fur-
+cerpt all possible matching positions in the full sheet image              ther processed, we follow the direction of [17] instead, and
+are highlighted, including those that were already played                  employ a conditioning mechanism that directly modulates
+— making it interesting preliminary work, but not a rea-                   the activity of feature detectors that process the score im-
+sonable score following system. In the following we build                  age. The former setup would be problematic due to the
+upon their foundation and incorporate long term audio con-                 increasing number of parameters. Furthermore, this de-
+text, proposing the first fully capable score following sys-               sign is able to retain the fully-convolutional property of our
+tem that works on entire sheet images, without needing any                 model, i. e., if desired one could process sheet images of ar-
+pre-processing steps.                                                      bitrary resolution. 2 In contrast to [17], we apply the con-
+                                                                           ditioning mechanism on top of a recurrent layer to provide
+                                                                           a longer temporal context. This permits the audio input up
+    3. SCORE FOLLOWING AS A REFERRING
+                                                                           until the current point in time to guide the segmentation
+         IMAGE SEGMENTATION TASK
+                                                                           towards the corresponding position in the score image. We
+Similarly to [17], we model score following as an image                    argue that it is necessary for this task to have such a long
+segmentation task — more specifically, as a referring im-                  temporal audio context in order to form more reliable pre-
+age segmentation task. In computer vision, the goal of re-                 dictions. For example, it is common to have repeating note
+ferring image segmentation is to identify a certain region                 patterns in the score spanning over a longer period of time
+or object within an image based on some language expres-                   in the audio. Existing trackers that use only a fixed-size au-
+sion [18, 19]. It shows similar characteristics as the multi-              dio input are not able to distinguish between such patterns,
+modal approach to score following — we want to locate the                  if they exceed the given audio context.
+position in the sheet image that the incoming audio refers
+to, meaning we treat the audio as the language expression,                    2 Note that while we do not investigate this further and work with
+and the score image as the entity to reason about. More                    fixed-sized sheets, this could be useful in a real world application.
+                                                                      background [23]. This fits naturally to our interpretation
+                                                                      of the score following task, as a process of segmenting the
+                                                                      sheet image into a region that corresponds to the current
+                                                                      position in the audio input and labelling everything else as
+                                                                      background. The overall architecture, shown in Figure 3,
+                                                                      resembles the one proposed in [17], with several impor-
+Figure 2. Sketch of the FiLM layer [7]. The layer scales and          tant differences. Based on the empirical findings reported
+translates the feature maps x using learned functions s(z) and
+t(z), respectively. z is an additional, external input carrying the   in [17], we decide to incorporate conditioning information
+conditioning information.                                             from the audio input in blocks B-H, leaving only blocks
+                                                                      A and I without conditioning. However, we substitute the
+                 Audio (Spectrogram) 78 × 40                          transposed convolutions in the decoder part of the network
+          2 x ( Conv(3, 1, 1)-24 - LN - ELU ) - MP(2)                 with bilinear upsampling operations with a factor of two,
+          2 x ( Conv(3, 1, 1)-48 - LN - ELU ) - MP(2)                 followed by a 1 × 1 convolution, both aimed at reducing
+          2 x ( Conv(3, 1, 1)-96 - LN - ELU ) - MP(2)                 checkerboard artifacts in the segmentation [24]. Due to the
+          2 x ( Conv(3, 1, 1)-96 - LN - ELU ) - MP(2)                 small batch size used during training (cf. Section 4.3) as
+                  Conv(1, 0, 1)-96 - LN - ELU                         well as the presence of the recurrent layer, we replace batch
+                    Dense(32) - LN - ELU
+                                                                      normalization with layer normalization [20].
+                                                                          For deriving the conditioning information from the au-
+Table 1. The context-based encoder used for the experiments.
+Conv(f , p, s)-k denotes a convolutional layer with k f × f ker-
+                                                                      dio input, we test two different spectrogram encoders. One
+nels, padding of p and stride s. We use layer normalization           takes a spectrogram snippet with a length of 40 frames,
+(LN) [20], ELU activation [21] and max pooling (MP) with a            corresponding to two seconds of audio; the spectrogram
+pool size of 2 × 2. The output of the last layer is fed into a LSTM   is processed by the network shown in Table 1, which is
+as shown in Figure 3. The network resembles the one used in [8].      roughly similar to the one used in [8]. The other version
+                                                                      takes as input a single spectrogram frame, using a dense
+3.1 Feature-wise Linear Modulation
+                                                                      layer with 32 units, layer normalization and ELU activa-
+The Feature-wise Linear Modulation (FiLM) layer is a                  tion function. The output of the encoders is fed to an
+simple linear affine transformation of feature maps, con-             LSTM [25] layer with 128 units and its hidden state is then
+ditioned on an external input [7]. The purpose of using               used as the external input z in the FiLM layers.
+this layer is to directly interfere with the learned represen-
+tation of the sheet image by modulating its feature maps,                                4. EXPERIMENTS
+assisting the convolutional neural network to focus only on
+those parts that are required for a correct segmentation. In          To study the properties of our proposed approach, we con-
+our case, the external input z is the hidden state of a re-           duct experiments on polyphonic piano music provided by
+current layer that takes as input an encoded representation           the MSMD [8] dataset. While this section is mainly con-
+of an audio excerpt. This encoded representation is cre-              cerned with comparing data augmentation and different ar-
+ated by a neural network, e. g., as depicted in Table 1. The          chitectures, later on in Section 5 we will investigate the
+FiLM layer itself is defined as                                       generalization capabilities of the system in terms of 16 real
+                                                                      piano recordings from the MSMD test split. We will also
+                 fFiLM (x) = s(z) · x + t(z),                  (1)    contextualize the proposed system with related work de-
+                                                                      scribed in [14], which we use as baselines for comparison.
+where s(·) (for scaling) and t(·) (for translation) are arbi-
+trary vector-valued functions implemented as neural net-
+                                                                      4.1 Data
+works. Their values depend on the conditioning vector z,
+and together they define an affine transform of the tensor            We use the Multi-modal Sheet Music Dataset (MSMD)
+x which refers to the collection of feature maps of a par-            [8], a standard dataset for such evaluations, comprising
+ticular convolutional layer, after normalization. The affine          polyphonic piano music from various composers including
+transformation is performed per feature map, meaning that             Bach, Mozart, and Beethoven. The sheet music is typeset
+each feature map k is scaled and translated by sk (·) and             with Lilypond 3 and the audio tracks are synthesized from
+tk (·), respectively, with k identifying the k-th output of           MIDI using Fluidsynth 4 together with a piano sound font.
+the two functions. The number of output values for s(·)               The original MSMD splits used by [14] encompass 354
+and t(·) is the same as the number of feature maps con-               train, 19 validation and 94 test pieces. The precise align-
+tained in x, denoted by K (cf. Figure 2).                             ments between audio and sheet music in this dataset are
+                                                                      created automatically. Despite that, it turned out that some
+3.2 Model Architecture                                                of the pieces still contain alignment errors. We manually
+Our model is based on a U-Net architecture similar to the             identified and fixed most of these errors, including wrongly
+one used in [22] for detecting musical symbols in sheet               aligned notes and missing or wrongly detected staves. One
+images. U-Nets were originally introduced for medical                 piece from the train set was removed, because we were not
+image segmentation, to segment an image into different                  3 http://lilypond.org/
+
+parts, by classifying each pixel into either foreground or              4 http://www.fluidsynth.org/
+                                                                                    Probability Map (1x393x278)
+               Input Sheet Image (1x393x278)
+                                                                                                                  +    Elementwise Sum
+
+                                                    +                                                                  2x2 Max Pooling
+
+                                                                                                                       Upsampling and 1x1 Convolution
+
+                                                                                                                       1x1 Convolution, Sigmoid
+
+                                                                                                                      U-Net-Block
+                                                    +                                                                            ELU
+
+                                                                                                                               FiLM Layer
+
+
+                                                                                                                       3x3 Convolution, LayerNorm          LSTM
+
+                                                    +
+                                                                                                                                 ELU                Encoded Spectrogram
+
+
+
+                                                    +                                                                  3x3 Convolution, LayerNorm
+
+
+
+
+Figure 3. Audio-Conditioned U-Net architecture. Each block (A-I) consists of two convolutional layers with ELU activation and layer
+normalization. The FiLM layer is placed before the last activation function. The spectrogram encoding given by the output of the network
+shown in Table 1 is passed through a recurrent layer. The hidden state of this recurrent layer is then used for conditioning in the FiLM
+layer. Each symmetric block has the same number of filters starting with 8 in block A and increasing with depth to 128 in block E.
+
+
+able to fix it. Thus, the cleaned dataset consists of 353                     utive frames (two seconds of audio) or a single frame at
+train, 19 validation, and 94 test pieces, which will be made                  a time. We use the madmom python library for all signal
+publicly available. If a piece consists of several pages, each                processing related computations [27].
+page is treated as a single piece and the original MIDI
+information is partitioned accordingly. 5 Altogether, we                      4.2 Baselines and Evaluation Measures
+have 945 train, 28 validation and 125 test pages. The ren-
+dered score images have a resolution of 1181 × 835 pixels,                    In the following, we will present a series of experiments,
+are downscaled by a factor of three to 393 × 278 pixels,                      comparing the new proposed full-page tracking system to
+and are used as the input to the U-Net. Preliminary tests                     several baselines (in order to better understand the impor-
+showed that the downscaling does not significantly impact                     tance of some of our design choices) as well as to related
+the performance, and benefits the speed of the training pro-                  state-of-the-art approaches from the literature.
+cess. For the ground truth annotations, we rely on the auto-                      First, we evaluate two different spectrogram encoders,
+matic notehead alignment described in [8]. The notehead                       as introduced in Section 3.2, vis-à-vis a baseline version of
+alignments yield (x, y) coordinate pairs in the sheet image,                  our system that does not have the capability to summarize
+which are further adjusted for our purposes such that the y                   all the audio up to the current point in time, i. e., that does
+coordinates correspond to the middle of the staff the re-                     not have memory in the form of an RNN. We do this in
+spective note belongs to. Given these coordinates, we cre-                    order to obtain empirical evidence for our argument that
+ate a binary mask with a width of 10 pixels and an adaptive                   having access to long term temporal information is highly
+height depending on the height of the staff (see Figure 1).                   beneficial for obtaining good approximate solutions to the
+The task of the U-Net is now to infer a segmentation mask                     score following task. The two different encoders are de-
+given the image of the score together with the condition-                     noted as context-based (CB) and frame-based (FB), using
+ing information derived from the audio input. Note that                       40 spectrogram frames and a single frame, respectively.
+in theory it should be possible to directly predict x and y                   The baseline without temporal context uses the CB en-
+coordinates instead of a segmentation mask, however as                        coder and replaces the RNN layer with a fully connected
+shown in [26] this is a much harder task, and we were not                     layer of the same size. In the following this baseline will
+able to achieve acceptable performance so far, even using                     be denoted as NTC (no temporal context).
+their proposed CoordConv layer.                                                   The evaluation measures used for this comparison are
+    The audio is sampled with 22.05 kHz and processed at a                    of a geometric kind (bounding box pixel error and dis-
+frame rate of 20 frames per second. The DFT is computed                       tance on printed score page), in order to focus on the new
+for each frame with a window size of 2048 samples and                         challenge of full-page orientation: we measure the pixel-
+then transformed with a semi-logarithmic filterbank that                      wise evaluation metrics Precision, Recall and F1 -score that
+processes frequencies between 60 Hz and 6 kHz, yielding                       were also used in [17], and the mean and median alignment
+78 log-frequency bins. Lastly, the spectrogram bins are                       error between ground truth and prediction in centimeters,
+standardized to zero mean and unit variance. The audio                        both with the network output thresholded at 0.5. To cal-
+conditioning network is presented either with 40 consec-                      culate the alignment error between the ground truth and
+   5 This is mainly done to facilitate the training procedure. In an appli-
+                                                                              the predicted probability mask (recall Figure 1), we calcu-
+cation, this could be solved by some simple ‘hack’ that turns pages when      late the center of mass over all pixels for both masks and
+the score follower reaches the end of a page.                                 compute the euclidean distance between the two centers to
+obtain the alignment error in pixels. Given a resolution of     tant background pixels than regions of interest. To opti-
+72 dpi, the error is converted to centimeter using a factor     mize this target we use Adam [30] with default parame-
+of 0.0352 cm/pixel, under the assumption that the score         ters, an initial learning rate of 1e−4 and L2 weight decay
+image is printed on a sheet of DIN A4 paper.                    with a factor of 1e−5 . If the conditioning architecture in-
+    In the second experiment we compare our system to           volves an LSTM, we use a batch-size of 4 and a sequence
+alternative state-of-the-art approaches from the literature:    length of 16. For the audio conditioning model without a
+the first approach is based on an OMR system that ex-           temporal context we use a batch size of 64. The weights
+tracts symbolic MIDI information from the sheet image.          of the network are initialized orthogonally [31] and the bi-
+The symbolic MIDI information is then synthesized to au-        ases are set to zero. If the loss on the validation set does
+dio. The system subsequently computes chroma features           not decrease for 5 epochs, we halve the learn rate and stop
+with a feature rate of 20 Hz from both the synthesized and      training altogether when the validation loss does not de-
+the performance audio, and applies audio-to-audio align-        crease over a period of 10 epochs or the maximum number
+ment using a form of online DTW [28]. This is the method        of 100 epochs is reached. The model parameters with the
+described in [14] and will be abbreviated as OMR in the         lowest validation loss are used for the final evaluation on
+upcoming result table. The second and third approach, de-       the test set. Similar to [17], we perform data augmentation
+scribed in Section 2, are a multi-modal localization net-       in the image domain by shifting the score images along the
+work (MM-Loc) [15] and a Reinforcement Learning (RL)            x and y axis. To investigate whether tempo augmentation
+agent [14, 16], both working with sheet image snippets.         improves model performance, we train all models with-
+    The evaluation measure for this will be of a more           out tempo augmentation as well as with 7 different tempo
+music-related kind (temporal tracking error in the perfor-      change factors ranging from 0.5 up to 1.5.
+mance), reflecting the intended purpose of the systems
+(score following), and permitting a direct comparison with      4.4 Results
+alternative methods. Similarly to [9, 10], we compute,
+for each note onset, the absolute time difference between       In Table 2, we compare different conditioning architec-
+prediction and ground truth. We set 5 threshold values,         tures, no long term temporal context (NTC), a context of
+ranging from 0.05 to 5 seconds, and report the cumulative       40 frames (CB) and a single frame (FB) in combination
+percentage of notes tracked with an error up to the given       with an LSTM, respectively. We observe that the NTC
+threshold. Given the ground truth alignment from note on-       model has the lowest performance, both in terms of the
+sets to the corresponding notehead coordinates in the sheet     pixel-wise measures, as well as in terms of its alignment
+image, we can interpolate from the predicted positions in       error. A possible reason for this could be ambiguities in the
+the sheet image back to the time domain. This is straight-      sheet image, since audio excerpts could match several po-
+forward for MM-Loc and the RL agent, because they both          sitions in the score. The results for CB and FB support our
+already use an unrolled score derived from the groundtruth,     initial claim that a long term temporal context is required
+whereas the proposed method requires further processing.        for this task. While both models achieve a good perfor-
+We first need to compute the center of mass of the seg-         mance, CB outperforms FB in all measures. On average,
+mented region to obtain x, y coordinates. We map the y          the alignment error is around 1.25 cm and the median is at
+coordinate to the closest staff, and apply a similar interpo-   0.51 cm, meaning that half of the time our model is less
+lation as before in an unrolled score to get the time differ-   than 0.51 cm away from the true position. Furthermore,
+ence between the predicted and actual position in the score.    we observe that tempo augmentation improves the results
+    For evaluating the OMR baseline we face a problem that      for all models.
+has already been noted in [14] — we do not have the re-             In Table 3, we compare our best model from Table 2
+quired groundtruth alignment between the OMR-extracted          to several baselines from the literature in terms of the cu-
+score and the performance. Given that only onset posi-          mulative percentage of onsets that are tracked with an error
+tions are evaluated, we are justified to assume a perfect       below a given threshold. We observe that the context-based
+alignment between score and audio, if for each unit of          proposed model (CB) outperforms all baselines except for
+time in the audio a constant distance in the score sheet is     the highest threshold. This suggests that our method is very
+travelled. If the OMR system makes no errors, the align-        precise on one hand, but on the other hand is not able to
+ment between OMR score and performance is a diagonal in         track all onsets with a timing error below five seconds.
+the DTW global cost matrix, correcting the overall tempo
+difference by a linear factor. As in [14], we evaluate the                    5. REAL PERFORMANCES
+OMR-based system by measuring the offset of the actual
+tracking position relative to the perfect alignment.            To test the generalization capabilities of the system under
+                                                                real recording conditions, we evaluate our best model on
+                                                                the 16 piano recordings (corresponding to 25 score pages)
+4.3 Experimental Setup
+                                                                from the MSMD test split introduced in [14], for which we
+All models are trained using the same procedure. We op-         also manually corrected some of the alignments. We com-
+timize the Dice coefficient loss [29], which is more suit-      pare again to the baselines introduced in Section 4.2, which
+able than e. g., binary cross-entropy, as we are facing an      are likewise evaluated using the corrected alignments. In
+imbalanced segmentation problem with far more unimpor-          line with [14], we compare four different settings with in-
+                    MSMD (125 test pages)                            Err. [sec]    OMR [14]     MM-Loc [32]       RL [14]      CB
+              TA      P       R         F1     dcm      d
+                                                        e cm
+                                                                                  Original MIDI Synthesized (Score = Performance)
+              7     0.696    0.665    0.678    3.70     2.37         ≤ 0.05          37.1%          41.6%         36.5%      69.8%
+     NTC
+              3     0.770    0.740    0.754    2.78     1.61         ≤ 0.10          46.1%          44.2%         38.2%      70.6%
+              7     0.810    0.790    0.799    1.62     0.73         ≤ 0.50          74.9%          77.6%         72.9%      80.6%
+     CB                                                              ≤ 1.00          86.8%          79.9%         79.8%      82.4%
+              3     0.854    0.835    0.843    1.25     0.51
+                                                                     ≤ 5.00          99.6%          90.3%         96.5%      89.1%
+              7     0.790    0.768    0.778    1.82     1.21
+     FB                                                                                             Performance MIDI Synthesized
+              3     0.820    0.816    0.816    1.58     0.80
+                                                                     ≤ 0.05          28.9%          47.2%         23.4%      56.5%
+Table 2.      Different conditioning architectures with/without      ≤ 0.10          39.8%          49.0%         24.8%      58.1%
+tempo augmentation (TA): no temporal context (NTC), context-         ≤ 0.50          71.7%          83.2%         54.5%      80.9%
+based (CB) and frame-based (FB). For each model the parameters       ≤ 1.00          83.4%          86.1%         64.0%      84.4%
+with lowest validation loss are chosen for evaluation on the test    ≤ 5.00          98.8%          96.0%         81.2%      90.1%
+set. Measures: pixel-wise precision (P), recall (R) and F1 , and                                                          Direct Out
+mean (dcm ) and median (decm ) of alignment error in centimeters.
+                                                                     ≤ 0.05          22.6%          33.8%         27.7%      40.0%
+                                                                     ≤ 0.10          33.0%          35.4%         29.1%      41.6%
+                     MSMD (125 test pages)                           ≤ 0.50          70.3%          59.7%         60.7%      64.2%
+ Err. [sec]   OMR [14]      MM-Loc [32]       RL [14]      CB        ≤ 1.00          83.9%          63.4%         73.3%      69.3%
+                                                                     ≤ 5.00          99.3%          75.3%         95.5%      81.1%
+ ≤ 0.05           44.7%         44.6%         40.9%       73.3%
+ ≤ 0.10           51.9%         49.2%         43.3%       74.7%                                                    Room Recording
+ ≤ 0.50           76.0%         82.2%         79.7%       85.2%      ≤ 0.05          22.6%          20.7%         19.2%       9.4%
+ ≤ 1.00           85.0%         86.0%         87.8%       88.5%      ≤ 0.10          32.2%          24.3%         20.6%      10.5%
+ ≤ 5.00           97.4%         92.0%         97.2%       93.7%      ≤ 0.50          70.2%          54.1%         46.6%      21.5%
+                                                                     ≤ 1.00          82.7%          57.3%         58.7%      26.2%
+                                                                     ≤ 5.00          97.4%          70.2%         89.1%      44.3%
+Table 3. Our best model (CB) vs. existing baselines, in terms
+of onsets tracked with an error below a given threshold. For the
+RL agent we report the average over 10 runs due to its stochastic   Table 4. Comparing best performing model to several baselines
+policy. In contrast to [14], OMR, MM-Loc and RL do not stop         on a set of 16 real piano recordings (25 pages) from the MSMD
+tracking if they fall out of a given tracking window.               test split. Model evaluation is as described in Table 3, with the
+                                                                    difference that for the RL agent we report the average over 50
+creasing difficulty. The first is the same synthetic setting        runs due to its stochastic policy and the smaller sample size.
+as in Section 4. The second setting uses the performance
+                                                                            6. DISCUSSION AND CONCLUSION
+MIDI synthesized with the same piano synthesizer used
+during training. The third uses the audio of the “direct            We have proposed the first end-to-end trained score follow-
+out” audio output of the “Yamaha AvantGrand N2” hybrid              ing system that directly works on full sheet images. The
+piano used for recording, and the last one uses the audio           system is real-time capable due to a constant runtime per
+recorded via a room microphone.                                     step, it compares favorably with existing baselines on syn-
+    Table 4 summarizes the results. Overall, we observe             thetic polyphonic piano music, and sets the new state of
+that the proposed system (CB) achieves more precise re-             the art for sheet-image-based score following in terms of
+sults in terms of time difference (i.e., higher percentages         temporal alignment error. However, there are still gener-
+for the tighter error thresholds) in three out of four settings.    alization problems for real piano recordings. While the
+For the last setting we observe a worse performance, which          model shows a much more precise alignment in most sce-
+indicates that our model has possibly overfit to the synthe-        narios, we see a performance deterioration over different
+sized audio and is not yet robust enough. OMR yields very           recording conditions. This will need to be solved in the
+robust results in all scenarios, which is possibly due to the       future, either with a more robust audio model, or a data
+used chroma features. While the results are not as precise,         augmentation strategy that incorporates reverberation ef-
+it outperforms the other methods for higher threshold val-          fects. Future work will also require testing on scanned or
+ues.                                                                photographed sheet images, to gauge generalization capa-
+    A possible explanation for this is that our model has           bilities of the system in the visual domain as well. As there
+more freedom in being able to perform big jumps on the              is currently no dataset consisting of scanned sheet images
+sheet image paper, thus increasing the error possibility.           with precise notehead to audio alignments, it will be nec-
+Models relying on sheet snippets are not designed to per-           essary to curate a test set. The next step towards a system
+form such jumps and thus can also not make very extreme             with greater capabilities, is to either explicitly or implicitly
+errors. Furthermore, our model is more sensitive to the au-         incorporate a mechanism to handle repetitions in the score
+dio representation fed into the conditioning mechanism, as          as well as in the performance. We assume that the pro-
+it influences the convolutional filters in multiple layers that     posed method will be able to acquire this capability quite
+process the sheet image. Overall, we assume that this is            naturally from properly prepared training data, although
+an issue of the synthetic dataset which can be tackled by           we suspect its performance will heavily depend on its im-
+training on more diverse performances and a more robust             plicit encoding of the audio history so far, i. e., how large
+audio model for the conditioning mechanism.                         an auditory context the recurrent network is able to store.
+               7. ACKNOWLEDGMENTS                                 [12] N. Orio, S. Lemouton, and D. Schwarz, “Score Follow-
+                                                                       ing: State of the Art and New Developments,” in Proc.
+ This project has received funding from the European Re-
+                                                                       of the International Conference on New Interfaces for
+ search Council (ERC) under the European Union’s Hori-
+                                                                       Musical Expression (NIME), Montreal, Canada, 2003,
+ zon 2020 research and innovation program (grant agree-
+                                                                       pp. 36–41.
+ ment number 670035, project "Con Espressione").
+                                                                  [13] E. Nakamura, P. Cuvillier, A. Cont, N. Ono, and
+                     8. REFERENCES                                     S. Sagayama, “Autoregressive Hidden Semi-Markov
+                                                                       Model of Symbolic Music for Score Following,” in
+ [1] C. Raphael, “Music Plus One and Machine Learning,”                Proc. of the International Society for Music Infor-
+     in Proc. of the International Conference on Machine               mation Retrieval Conference (ISMIR), Málaga, Spain,
+     Learning (ICML), Haifa, Israel, 2010, pp. 21–28.                  2015, pp. 392–398.
+ [2] A. Cont, “A Coupled Duration-Focused Architec-               [14] F. Henkel, S. Balke, M. Dorfer, and G. Widmer, “Score
+     ture for Real-Time Music-to-Score Alignment,” IEEE                Following as a Multi-Modal Reinforcement Learning
+     Transactions on Pattern Analysis and Machine Intelli-             Problem,” Transactions of the International Society for
+     gence, vol. 32, no. 6, pp. 974–987, 2010.                         Music Information Retrieval, vol. 2, no. 1, 2019.
+ [3] A. Arzt, G. Widmer, and S. Dixon, “Automatic Page            [15] M. Dorfer, A. Arzt, and G. Widmer, “Towards Score
+     Turning for Musicians via Real-Time Machine Listen-               Following in Sheet Music Images,” in Proc. of the
+     ing,” in Proc. of the European Conference on Artificial           International Society for Music Information Retrieval
+     Intelligence (ECAI), Patras, Greece, 2008, pp. 241–               Conference (ISMIR), New York, USA, 2016, pp. 789–
+     245.                                                              795.
+ [4] A. Arzt, H. Frostel, T. Gadermaier, M. Gasser,
+                                                                  [16] M. Dorfer, F. Henkel, and G. Widmer, “Learning to
+     M. Grachten, and G. Widmer, “Artificial Intelligence in
+                                                                       Listen, Read, and Follow: Score following as a Re-
+     the Concertgebouw,” in Proc. of the International Joint
+                                                                       inforcement Learning Game,” in Proc. of the Interna-
+     Conference on Artificial Intelligence (IJCAI), Buenos
+                                                                       tional Society for Music Information Retrieval Confer-
+     Aires, Argentina, 2015, pp. 2424–2430.
+                                                                       ence (ISMIR), Paris, France, 2018, pp. 784–791.
+ [5] M. Prockup, D. Grunberg, A. Hrybyk, and Y. E. Kim,
+                                                                  [17] F. Henkel, R. Kelz, and G. Widmer, “Audio-
+     “Orchestral Performance Companion: Using Real-
+                                                                       Conditioned U-Net for Position Estimation in Full
+     Time Audio to Score Alignment,” IEEE Multimedia,
+                                                                       Sheet Images,” in Proc. of the 2nd International Work-
+     vol. 20, no. 2, pp. 52–60, 2013.
+                                                                       shop on Reading Music Systems, Delft, The Nether-
+ [6] J. Calvo-Zaragoza, J. Hajič jr., and A. Pacha, “Under-           lands, 2019, pp. 8–11.
+     standing Optical Music Recognition,” Computer Re-
+                                                                  [18] J. Mao, J. Huang, A. Toshev, O. Camburu, A. L.
+     search Repository, abs/1908.03608, 2019.
+                                                                       Yuille, and K. Murphy, “Generation and Comprehen-
+ [7] E. Perez, F. Strub, H. De Vries, V. Dumoulin, and                 sion of Unambiguous Object Descriptions,” in Proc. of
+     A. Courville, “FiLM: Visual reasoning with a general              the IEEE Conference on Computer Vision and Pattern
+     conditioning layer,” in 32nd AAAI Conference on Arti-             Recognition (CVPR), Las Vegas, USA, 2016, pp. 11–
+     ficial Intelligence, New Orleans, USA, 2018.                      20.
+
+ [8] M. Dorfer, J. Hajič jr., A. Arzt, H. Frostel, and G. Wid-   [19] L. Ye, M. Rochan, Z. Liu, and Y. Wang, “Cross-Modal
+     mer, “Learning Audio–Sheet Music Correspondences                  Self-Attention Network for Referring Image Segmen-
+     for Cross-Modal Retrieval and Piece Identification,”              tation,” in Proc. of the IEEE Conference on Computer
+     Transactions of the International Society for Music In-           Vision and Pattern Recognition (CVPR), Long Beach,
+     formation Retrieval, vol. 1, no. 1, 2018.                         USA, 2019, pp. 10 502–10 511.
+
+ [9] A. Arzt, “Flexible and Robust Music Tracking,” Ph.D.         [20] J. L. Ba, J. R. Kiros, and G. E. Hinton, “Layer Normal-
+     dissertation, Johannes Kepler University Linz, 2016.              ization,” arXiv preprint arXiv:1607.06450, 2016.
+[10] S. Dixon, “An On-Line Time Warping Algorithm for             [21] D. Clevert, T. Unterthiner, and S. Hochreiter, “Fast
+     Tracking Musical Performances,” in Proc. of the In-               and Accurate Deep Network Learning by Exponen-
+     ternational Joint Conference on Artificial Intelligence           tial Linear Units (ELUs),” in Proc. of the Interna-
+     (IJCAI), Edinburgh, Scotland, 2005, pp. 1727–1728.                tional Conference on Learning Representations (ICLR)
+                                                                       (arXiv:1511.07289), San Juan, Puerto Rico, 2016.
+[11] A. Cont, “Realtime Audio to Score Alignment for
+     Polyphonic Music Instruments using Sparse Non-               [22] J. Hajič jr., M. Dorfer, G. Widmer, and P. Pecina, “To-
+     Negative Constraints and Hierarchical HMMS,” in                   wards Full-Pipeline Handwritten OMR with Musical
+     Proc. of the IEEE International Conference on Acous-              Symbol Detection by U-Nets.” in Proc. of the Interna-
+     tics, Speech, and Signal Processing (ICASSP), vol. 5,             tional Society for Music Information Retrieval Confer-
+     Toulouse, France, 2006, pp. 245–248.                              ence (ISMIR), Paris, France, 2018, pp. 225–232.
+[23] O. Ronneberger, P. Fischer, and T. Brox, “U-net: Con-
+     volutional Networks for Biomedical Image Segmenta-
+     tion,” in International Conference on Medical Image
+     Computing and Computer-Assisted Intervention (MIC-
+     CAI). Munich, Germany: Springer, 2015, pp. 234–
+     241.
+
+[24] A. Odena, V. Dumoulin, and C. Olah, “De-
+     convolution and Checkerboard Artifacts,” Distill,
+     2016. [Online]. Available: http://distill.pub/2016/
+     deconv-checkerboard
+
+[25] S. Hochreiter and J. Schmidhuber, “Long Short-Term
+     Memory,” Neural computation, vol. 9, no. 8, pp. 1735–
+     1780, 1997.
+
+[26] R. Liu, J. Lehman, P. Molino, F. P. Such, E. Frank,
+     A. Sergeev, and J. Yosinski, “An intriguing failing of
+     convolutional neural networks and the CoordConv so-
+     lution,” in Advances in Neural Information Process-
+     ing Systems (NeurIPS), Montréal, Canada, 2018, pp.
+     9605–9616.
+
+[27] S. Böck, F. Korzeniowski, J. Schlüter, F. Krebs, and
+     G. Widmer, “Madmom: A new python audio and mu-
+     sic signal processing library,” in Proc. of the 24th ACM
+     International Conference on Multimedia, Amsterdam,
+     The Netherlands, 2016, pp. 1174–1178.
+
+[28] M. Müller, Fundamentals of Music Processing.
+     Springer Verlag, 2015.
+
+[29] F. Milletari, N. Navab, and S.-A. Ahmadi, “V-net:
+     Fully convolutional neural networks for volumetric
+     medical image segmentation,” in 2016 Fourth Interna-
+     tional Conference on 3D Vision (3DV). IEEE, 2016,
+     pp. 565–571.
+
+[30] D. Kingma and J. Ba, “Adam: A Method for
+     Stochastic Optimization,” in Proc. of the Interna-
+     tional Conference on Learning Representations (ICLR)
+     (arXiv:1412.6980), San Diego, USA, 2015.
+
+[31] A. M. Saxe, J. L. McClelland, and S. Ganguli, “Ex-
+     act solutions to the nonlinear dynamics of learn-
+     ing in deep linear neural networks,” arXiv preprint
+     arXiv:1312.6120, 2013.
+
+[32] M. Dorfer, “Multimodal Deep Representation Learn-
+     ing and its Application to Audio and Sheet Music,”
+     Ph.D. dissertation, Johannes Kepler Universität Linz,
+     2018.
+

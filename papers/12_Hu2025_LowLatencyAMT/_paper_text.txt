@@ -1,0 +1,533 @@
+                                                            EXPLORING SYSTEM ADAPTATIONS FOR
+                                                      MINIMUM LATENCY REAL-TIME PIANO TRANSCRIPTION
+
+                                                        Patricia Hu1      Silvan David Peter1      Jan Schlüter1     Gerhard Widmer1,2
+                                                        1
+                                                          Institute of Computational Perception, Johannes Kepler University Linz, Austria
+                                                                        2
+                                                                          LIT AI Lab, Linz Institute of Technology, Austria
+                                                                                   patricia.hu@jku.at
+
+
+                                                                      ABSTRACT                                        training, and a novel regression-based target encoding ap-
+                                                                                                                      proach, leading to higher-resolution piano transcription.
+                                          Advances in neural network design and the availability of                       Progress in automatic piano transcription has focused
+                                          large-scale labeled datasets have driven major improve-                     almost exclusively on offline methods, with only a few
+arXiv:2509.07586v1 [eess.AS] 9 Sep 2025
+
+
+
+
+                                          ments in piano transcription. Existing approaches target                    investigations attempting to solve this task online [5–7].
+                                          either offline applications, with no restrictions on compu-                 These online systems typically reconfigure offline ap-
+                                          tational demands, or online transcription, with delays of                   proaches for block-wise updates while keeping audio rep-
+                                          128–320 ms. However, most real-time musical applica-                        resentations and network structure, and achieve latencies
+                                          tions require latencies below 30 ms. In this work, we in-                   between 128 and 320 ms. Latency values in the hun-
+                                          vestigate whether and how the current state-of-the-art on-                  dreds of milliseconds are suitable for musical applications
+                                          line transcription model can be adapted for real-time pi-                   such as subtitling, page turning, or visualizations. How-
+                                          ano transcription. Specifically, we eliminate all non-causal                ever, most interactive musical applications require lower
+                                          processing, and reduce computational load through shared                    latencies, e.g., for digital instruments, a commonly named
+                                          computations across core model components and varia-                        bound is 10 ms [8–10], and for networked ensemble play-
+                                          tions in model size. Additionally, we explore different                     ing latencies of up to 30 ms are acceptable [11–13]. A
+                                          pre- and postprocessing strategies, and related label en-                   real-time transcription model should enable fluent musi-
+                                          coding schemes, and discuss their suitability for real-time                 cal interaction, for which we take 30 ms as a minimal re-
+                                          transcription. Evaluating the adaptions on the MAESTRO                      quirement, and 10 ms as a goal for imperceptible latency.
+                                          dataset, we find a drop in transcription accuracy due to                    Latency stems from various sources: audio buffering, pre-
+                                          strictly causal processing as well as a tradeoff between the                processing, model inference and postprocessing. For an
+                                          preprocessing latency and prediction accuracy. We release                   automatic piano transcription system to perform inference
+                                          our system as a baseline to support researchers in designing                in real-time, it must minimize latency in all sources. It
+                                          models towards minimum latency real-time transcription.                     should adhere to strict causality requirements in both the
+                                                                                                                      model architecture and the postprocessing, ensuring that
+                                                               1. INTRODUCTION                                        both rely exclusively on past information.
+                                          Automatic music transcription (AMT) is the task of trans-                       In this work, we adapt a state-of-the-art model for real-
+                                          forming audio signals into their symbolic music represen-                   time transcription towards minimal latency. We do so by
+                                          tation, and is commonly referred to as one of the holy grails               allowing only causal processing within the model and re-
+                                          in Music Information Retrieval (MIR), given its role in                     ducing computational load by sharing computations across
+                                          linking the audio and symbolic domain, as well as its rel-                  core components of the model. We further investigate the
+                                          evance to various downstream tasks and musical applica-                     latencies incurred by widely used pre- and postprocessing
+                                          tions [1,2]. The transcription of piano solo music is among                 strategies, and explore options to mitigate these using a
+                                          the most extensively studied tasks, driven by the instru-                   combination of adapted STFT processing, label encoding
+                                          ment’s well-defined onset characteristics and the availabil-                schemes, loss functions, and causal post-processing. Our
+                                          ity of large-scale, strongly labeled training data [1]. Conse-              contribution is two-fold: First, we examine the sources of
+                                          quently, research on automatic piano transcription has seen                 latency and causality violations in the current state-of-the-
+                                          substantial progress. Notable contributions include [1–4],                  art system in online piano transcription, and propose and
+                                          with the former two setting new benchmarks by leveraging                    evaluate changes in the modeling and pre- and postprocess-
+                                          larger architectures, increased model complexity, extended                  ing stages for efficient real-time transcription. Second, we
+                                                                                                                      provide an open-source basis for a low-latency, real-time
+                                                                                                                      automatic piano transcription, inviting further research and
+                                                       © P. Hu, S. Peter, J. Schlüter and G. Widmer. Licensed un-     development in this area.
+                                          der a Creative Commons Attribution 4.0 International License (CC BY
+                                          4.0). Attribution: P. Hu, S. Peter, J. Schlüter and G. Widmer, “Exploring
+                                                                                                                          The remainder of this article is structured as follows: In
+                                          System Adaptations for Minimum Latency Real-Time Piano Transcrip-           Section 2 we point to related work, one of which will form
+                                          tion”, in Proc. of the 26th Int. Society for Music Information Retrieval    the our starting point for our adaptations towards mini-
+                                          Conf., Daejeon, South Korea, 2025.                                          mum latency, which we will therefore focus on in greater
+detail in Section 3. In Section 4 we present our latency-        separable convolutions that reduce computational com-
+minimizing adaptations and report the experiments con-           plexity while maintaining representational power. Addi-
+ducted to assess their effect transcription accuracy. We dis-    tionally, Mobile-AMT removes all bi-directional flows in
+cuss the challenges and lessons learned, and an outlook for      recurrent model layers, and drops one of originally four
+future work in Section 5.                                        acoustic model core stacks (the one for note offset predic-
+                                                                 tion, which is instead conditioned on the frame and onset
+                                                                 output 1 ). All optimization and activation layers are re-
+                  2. RELATED WORK
+                                                                 tained from the original offline model. With these modi-
+As outlined in the previous section, both online and real-       fications, the authors report a resulting latency of 174 ms,
+time transcription remain largely unexplored. We will dis-       and argue their model to be capable of real-time inference.
+cuss three noteworthy contributions [5–7].                           Apart from depthwise separable convolutions, Mobile-
+    Fernandez [6] proposes a purely convolutional model-         AMT also adopts MobileNet’s Squeeze-and-Excitation
+ing approach that focuses solely on onset and velocity pre-      (SE) layers to dynamically recalibrate channel-wise fea-
+diction, achieving a latency between 4 and 9 seconds.            tures. The squeeze operation involves global pooling over
+    Kwon et al. [7, 14, 15] propose an autoregressive neu-       all spatial dimensions, and therefore relies on information
+ral network for efficient online piano transcription. The        from the entire feature map, making the operation non-
+architecture comprises two main components: an acoustic          causal. As Mobile-AMT processes its input in 10-second
+module consisting of a stack of convolutional layers with        blocks, the squeeze operation adds 10 seconds of latency,
+frequency-conditioned FiLM layers, and a note sequence           which is not accounted for in the authors’ calculations.
+module consisting of pitchwise LSTMs, a multi-state soft-
+max output (for different note states: onset, sustain, re-       3.2 Postprocessing
+onset, offset, and off), and an autoregressive connection        Mobile-AMT uses the same regression target encoding for-
+from the note state output of the previous time step to the      mat as its underlying offline transcription model [2], result-
+current sequence module input. The authors propose vari-         ing in incrementally increasing and decreasing onset and
+ous architectures that balance accuracy and latency. Over-       offset targets over a sequence of frames instead of binary,
+all, their models achieve latencies from 128 to 320 ms.          pointwise classification targets.
+    Kusaka and Maezawa [5] introduce Mobile-AMT, a                   While this target encoding format allows for high, sub-
+framework designed to tackle both real-time processing           frame resolution for onset and offset detection, it neces-
+and generalization to unseen recording environments in           sitates non-causal postprocessing, as the detection of an
+automatic piano transcription. They optimize a state-of-         onset/offset relies on both past and future frames. The au-
+the-art offline transcription model [2] by replacing its con-    thors of Mobile-AMT adopt the same postprocessing strat-
+ventional convolutional components with lightweight, ef-         egy as [2], and account for it in their overall latency calcu-
+ficient alternatives [16] and train it using a data augmen-      lation.
+tation scheme that simulates four distinct acoustic distri-
+bution shifts. The resulting model sets the current state        3.3 Training and Evaluation Setup
+of the art in online automatic piano transcription, achiev-
+ing F1 scores comparable to offline state-of-the-art models      Mobile-AMT is trained on 10-second segments of 16 kHz
+while being robust to in-the-wild recordings. Its latency is     audio, which are transformed into 229-binned mel spec-
+reported as 174 ms – but an apparent oversight in the ar-        trograms after an STFT with a 2048-sample Hann window
+chitecture increases latency to 10 s. We use this method as      and a hop size of 320 samples. The loss function for the on-
+our starting point and detail it in the next section.            set, offset and frame targets is binary cross-entropy (BCE),
+                                                                 and velocities are trained using mean squared error (MSE).
+                                                                     Mobile-AMT proposes a data augmentation scheme for
+                 3. STARTING POINT                               training to enhance robustness to real-world, in-the-wild
+As Mobile-AMT [5] represents the current state of the art        recordings, therefore training duration depends on the data
+in real-time piano transcription, we use this method as the      augmentations applied. For the non-augmented baseline,
+foundation and reference method for our adaptations to-          Mobile-AMT is trained for 3000 epochs on the MAESTRO
+wards minimum-latency transcription. To provide context          dataset [1] with a batch size of 16 and uses the Adam opti-
+for these modifications, we first outline the structure of the   mizer with a learning rate of 0.001 annealed to 0 following
+model, and particularly focus on the modeling aspects that       a cosine schedule [12].
+violate causality requirements for real-time systems and
+necessitate adaptation.                                                       4. REAL-TIME ADAPTATIONS
+                                                                 As our main contribution, we implement and evaluate
+3.1 Model Architecture
+                                                                 adaptations of the starting point that aim to reduce the
+Mobile-AMT [5] is a lightweight adaptation of the state-         system’s latency. We form three groups of experiments:
+of-the-art offline piano transcription model by Kong et al.         1 The offset prediction is omitted during inference, but no additional
+[2]. It replaces all conventional convolutional blocks with      details are provided on whether or how the postprocessing is adjusted to
+MobileNet [16] equivalents, which consist of depthwise           account for this missing information.
+adapting the training and postprocessing, adapting the au-        Tolerance      10 ms             20 ms             30 ms
+dio preprocessing, and adapting the network architecture.         Exp.        Postprocessing onset threshold: 0.45
+We conduct each experiment with a reduced training time           TP1           9.58 ±2.29    25.80 ± 4.83      47.44 ± 7.30
+of 500 epochs (30k updates, approximately one-sixth of            TP2          29.84 ±8.37    47.64 ± 11.76     50.28 ± 11.83
+the total training time reported in our reference method [5])     TP3          13.95 ±4.91    34.34 ± 8.05      45.10 ± 8.33
+                                                                  TP4          27.24 ±7.47    55.49 ± 9.73      64.95 ± 10.06
+to save computational resources, as most effects become           TP5          16.00 ±5.32    41.02 ± 8.50      55.40 ± 8.53
+evident already during the early training stages. We per-
+                                                                  Exp.        Postprocessing onset threshold: 0.55
+form one final comparison of a model in which we com-
+bine selected modifications, and compare this to our refer-       TP1          13.42 ±2.60    35.07 ± 5.31      56.02 ± 8.14
+                                                                  TP2          23.56 ±8.41    35.50 ± 11.44     36.87 ± 11.49
+ence method, with both models trained for 2000 epochs.            TP3          17.04 ±5.52    40.54 ± 8.26      51.46 ± 8.29
+    For all our experiments, unless otherwise noted, we           TP4          27.42 ±7.52    54.95 ± 10.18     63.67 ± 10.72
+train on 3-second segments of audio at 16 kHz, trans-             TP5          17.46 ±5.59    44.19 ± 8.53      58.68 ± 8.61
+formed into 229-bin mel spectrograms after an STFT with           Exp.        Postprocessing onset threshold: 0.65
+a Hann window of 2048 and a hop size of 160 samples. We           TP1          19.10 ±3.12    43.88 ± 7.02      59.93 ± 9.77
+double the frame rate compared to Mobile-AMT to allow             TP2          14.32 ±6.70    20.52 ± 8.68      21.07 ± 8.70
+                                                                  TP3          20.70 ±5.90    46.48 ± 8.28      56.72 ± 8.28
+for more frequent updates, and therefore reduced latency.         TP4          27.18 ±7.65    53.65 ± 10.71     61.55 ± 11.36
+    Apart from the training duration and data encoding,           TP5          18.74 ±5.80    46.80 ± 8.60      61.05 ± 8.89
+we follow the same training scheme as used in the non-
+augmented setup in our reference method, i.e., all adapted      Table 1. Comparison of note onset F1 scores (mean ±
+models are trained and evaluated on the MAESTRO v3.0            std each over three experimental runs) on the MAESTRO
+dataset using mir_eval [17]. As our work focuses on min-        v.3 validation set across three onset tolerances for differ-
+imizing delay in real-time transcription, we mostly focus       ent target encodings, (weighted) loss functions and onset
+on the note onset metrics. Except for the final comparison,     thresholds in postprocessing.
+we only evaluate on the validation set. Since our goal is to
+achieve minimal latency for real-time musical interactions,
+we assess inference performance on stricter timing toler-       current frame surpasses the threshold. Next, we eliminate
+ances (10–30 ms) to reduce the mismatch between system          re-onsets of the same pitch that occur within a predefined
+evaluation and target performance.                              minimum re-onset distance. Finally, we determine the off-
+                                                                set of an active note based on the earlier occurring one of
+                                                                either frame inactivity or offset activity.
+4.1 Training and Postprocessing
+                                                                    We test the change in label encoding in combination
+In Mobile-AMT, the training target for an onset or off-         with different (weighted) loss functions in five different
+set extends over multiple time steps, forming a triangle        experimental setups: In TP1 we train our reference model
+centered on the target annotation. Originally proposed by       with the original loss functions and regression target en-
+Kong et al. [2], such triangles allow expressing positions at   coding scheme as proposed by the authors [5]. In TP2 we
+a higher resolution than the frame rate. However, predict-      use classification targets, and in TP3 we additionally ap-
+ing such triangles requires lookahead in the model, as the      ply a weight factor 10 on both the onset and offset targets.
+output must increase before the actual event. Furthermore,      Finally, we apply the shift-tolerant BCE loss (with a tol-
+interpreting the predictions requires lookahead in postpro-     erance of ±10 ms), either unweighted (TP4) or weighted
+cessing in order to find each triangle’s maximum. As a          again by a factor of 10 (TP5). All five setups use our
+preparation for switching to a causal version of Mobile-        strictly causal postprocessing described above. The model
+AMT with causal postprocessing, we thus replace the tri-        architecture remains as proposed in Mobile-AMT.
+angular targets with binary targets that are active only at         Table 1 lists the note onset F1 scores on the MAE-
+the frame that is closest to an annotation.                     STRO v3.0 validation set for the different training targets
+   As the changed label encoding results in a heavily im-       and loss functions, combined with different onset thresh-
+balanced binary classification task, particularly for onset     old values applied during postprocessing, as evaluated on
+and offset targets, we try weighting their positive occur-      different onset tolerance thresholds. We choose to eval-
+rences with a factor of 10 in the binary cross-entropy loss     uate at lower tolerance thresholds as they reflect a real-
+ [18]. Additionally, pointwise classification targets penal-    time system’s practical responsiveness better than the com-
+ize small temporal deviations more strongly than triangu-       monly used ± 50ms do, which might mask latency issues
+lar targets. To account for this, we test applying a shift-     by crediting the model for detections that would feel de-
+tolerant loss recently proposed for beat detection [19], with   layed to a user in an interactive scenario. Learning point-
+a tolerance of ±1 frame (± 10 ms at our frame rate).            wise binary targets without any further modification (TP2)
+   We also modify the postprocessing to ensure that the         proves superior to short sequential regression (TP1), pro-
+prediction for the current frame relies only on past infor-     vided a low enough onset threshold during postprocessing.
+mation. First, we binarize the output probabilities: for on-    The effect of lower onset detection thresholds is somewhat
+set and offset targets, an activation is detected when the      mitigated by weighting positive labeled examples higher
+current frame exceeds a given threshold while the previ-        (TP3), and virtually fully eliminated by using a shift-
+ous frame does not. A frame activation is recorded if the       tolerant loss (TP4). There is no further improvement when
+   1                                                                   Tolerance         10 ms            20 ms            30 ms
+   0                                                                 H1 Hann 64 ms    17.43   ± 5.10   34.65   ± 7.40   39.86   ± 7.45
+   1                                                                 H2 Hann 10 ms     0.00   ± 0.01    0.00   ± 0.02    0.04   ± 0.10
+   1                                                                 T1 asym. 10 ms
+                                                                     T2 asym. 20 ms
+                                                                                      22.25
+                                                                                      28.61
+                                                                                              ± 5.17
+                                                                                              ± 7.09
+                                                                                                       25.21
+                                                                                                       33.76
+                                                                                                               ± 5.20
+                                                                                                               ± 7.01
+                                                                                                                        25.84
+                                                                                                                        34.65
+                                                                                                                                ± 5.18
+                                                                                                                                ± 6.89
+                                                                     T3 asym. 30 ms   27.61   ± 6.79   37.91   ± 7.54   39.43   ± 7.33
+                                                  1024
+   0                                                                 T4 asym. 40 ms   24.39   ± 6.50   37.51   ± 7.81   39.87   ± 7.60
+   1                                                                 T5 asym. 50 ms   20.99   ± 6.02   36.88   ± 7.75   40.47   ± 7.59
+                                                                     ST asym. 10 ms    0.41   ± 0.40    1.57   ± 0.82   11.86   ± 4.25
+                                            160
+   0
+   1                                                               Table 2. Note onset F1 scores on the MAESTRO v.3 vali-
+                                                                   dation set for different windowing functions. The last row
+   0                                                               additionally uses a shift-tolerant training loss.
+       2000   1500    1000     500       0        500    1000
+                                                                      To experiment with different windowing configurations
+Figure 1. Mobile-AMT centers STFT windows on the                   for reducing the delay in audio preprocessing, we mod-
+time point to predict for, incurring a delay of 1024 samples.      ify our reference method to apply only causal processing,
+We shift the window to reduce the delay to 160 samples,            as allowing the model access to future frames would ren-
+and change the window function to better use that limited          der our interventions meaningless. Specifically, we make
+amount of future information.                                      each convolution causal, so the model’s receptive field of
+                                                                   9 frames extends 8 frames into the past, rather than split-
+combining weights and shift-tolerance (T5).                        ting 4 frames into the past and 4 frames into the future.
+   For the next experiments, we use binary targets with            Additionally, we remove the Squeeze-Excitation layers of
+weights. While the shift-tolerant loss performed favorably         the MobileNet V3 blocks, which perform global average
+here, our goal is to use a causal model, for which shift tol-      pooling over both past and future frames in an excerpt.
+erance could result in systematically delayed predictions.            Table 2 shows our results. The original centered Hann
+                                                                   window with our causal model (H1) performs worse than
+4.2 Audio Preprocessing                                            our non-causal starting point (TP3 in Table 1). Shifting the
+                                                                   Hann window from a delay of 64 ms to a delay of 10 ms
+Mobile-AMT processes audio in spectrogram frames of
+                                                                   (H2) seems to completely attenuate usable information in
+2048-sample windows centered on the time points to pre-
+                                                                   the frames. Using an asymmetric window (T1) improves
+dict events for. Thus, even with a causal model that does
+                                                                   performance, but still falls behind the centered Hann win-
+not process information from future frames, in real-time
+                                                                   dow. Successively increasing the delay up to 50 ms, we
+inference, every time a complete audio buffer of 2048 sam-
+                                                                   see a strong improvement (T2–T5 and Figure 2). For
+ples is filled, inference will be triggered to predict events
+                                                                   a delay of 30 ms or more, we match performance of the
+that are already 1024 samples (64 ms) in the past. Figure 1
+                                                                   centered Hann window at an evaluation onset tolerance of
+illustrates this: the top row shows an audio waveform, the
+                                                                   30 ms. For stricter tolerances, shifted asymmetric windows
+second row a typical STFT window centered at the onset.
+                                                                   of 20 ms delay or more surpass the centered Hann window.
+Shorter filters reduce this delay, as the delay is fixed to half
+                                                                      We also take the chance to investigate how a shift-
+the filter length, but this comes at the cost of lower fre-
+                                                                   tolerant loss of ±1 frame affects results for the causal
+quency resolution, which we should avoid: With a 2048-
+                                                                   model. The loss could allow the model to systematically
+sample STFT at 16 kHz, the bin width is 7.8 Hz, which is
+                                                                   predict events one frame (10 ms) later than annotated. Sur-
+already too coarse to achieve semitone precision for the
+                                        Z                          prisingly, using an asymmetric window with 10 ms of de-
+lowest piano notes (A0 at 27.5 Hz, B 0 at 29.14 Hz).
+                                                                   lay, we find that the shift-tolerant loss (ST) performs on
+    We can however reduce this delay to a lower number
+                                                                   par with 30 ms delay (T3) when admitting an evaluation
+ns of samples (e.g., 160 samples or 10 ms) while keeping
+                                                                   tolerance of 50 ms (not shown in table), but breaks down
+the window length and frequency resolution unchanged,
+                                                                   with any stricter tolerance (as seen in the table).
+by shifting windows so they end ns samples after their
+                                                                      For the third group of experiments, we keep the strictest
+reference point instead of being centered. The third row
+                                                                   setting with asymmetric windows at a delay of 10 ms.
+in Figure 1 shows the Hann window shifted to ns = 160
+samples. The Hann window strongly attenuates the bound-
+                                                                   4.3 Model Architecture
+aries, the right one of which now contains highly rele-
+vant information for the prediction. To mitigate this un-          In our final group of experiments, we investigate architec-
+wanted attenuation, we can replace the Hann window with            tural modifications to our reference model. The architec-
+an asymmetric window that tapers (2048 − ns ) samples              ture of Mobile-AMT consists of three acoustic stacks, each
+before and ns samples after the reference point. The last          consisting of recurrent convolutional blocks. Each stack
+row in Figure 1 illustrates this windowing function for a          learns a (onset, frame or velocity) target. For some targets,
+1888/160 sample asymmetry. Note how we keep more in-               the outputs of multiple stacks are concatenated to condi-
+formation from the incoming samples in the gray shaded             tion the final predictions. Compared to their reference of-
+area under the window function, albeit at the cost of in-          fline model [2], Mobile-AMT omits the acoustic stack for
+creasing spectral leakage (by about 20 dB for ns = 160).           the offset target, reusing the stack of the frame target.
+                                                Asymmetric window with different amounts of shift
+                                        10ms                                                                     Furthermore, when comparing all model architecture
+                           0.400        20ms
+                                        30ms                                                                 modifications (A1-5) on note onset and note-onset-and-
+                           0.375        40ms
+                                        50ms                                                                 offset F1 score, we observe two unexpected model be-
+Mean note onset F1 score
+
+
+
+                           0.350
+                                                                                                             haviours: First, adding a separate offset stack (A1) does
+                           0.325
+                                                                                                             not improve offset prediction. As our postprocessing de-
+                           0.300                                                                             tects a note offset as the earlier of either offset activation
+                           0.275                                                                             or frame inactivation, we hypothesize that frame activity
+                           0.250                                                                             is sufficiently learned to compensate for the absence of an
+                           0.225                                                                             offset acoustic stack. Second, removing the velocity con-
+                           0.200                                                                             ditioning on onset prediction (A2) results in a strong im-
+                                   10                      20                          30               50
+                                                                Onset tolerance (ms)                         provement in onset prediction. Furthermore, sharing the
+                                                                                                             acoustic stack across increasing proportions (A3-5) does
+Figure 2. Note onset F1 scores (means only) for different                                                    not appear to hinder the model’s ability to learn meaning-
+window delays and onset tolerance thresholds.                                                                ful representations. Finally, experiment A6 suggests that
+                                                                                                             the model benefits from the larger contextual window.
+                           Tolerance               10 ms                   20 ms                30 ms
+                                                  Note onset F1 mean ± std                                   4.4 Final comparison
+                           A1                  20.23 ± 4.29          23.03 ± 4.25           23.75 ± 4.24     For our final comparison, we proceed with the following
+                           A2                  25.77 ± 4.65          30.66 ± 4.98           31.79 ± 4.93     data and model configurations: we continue with the (160
+                           A3                  21.59 ± 4.79          24.48 ± 4.83           25.14 ± 4.80
+                           A4                  21.53 ± 4.31          24.51 ± 4.24           25.22 ± 4.19
+                                                                                                             samples) shifted asymmetric window for the STFT (T1 in
+                           A5                  19.44 ± 4.20          22.39 ± 4.34           23.12 ± 4.30     Sec. 4.2), remove the velocity conditioning (A2) and share
+                           A6                  25.82 ± 4.48          30.52 ± 4.51           31.56 ± 4.44     all convolutional layers in the acoustic stack across all tar-
+                                           Note onset and offset F1 mean ± std                               gets (A5). Mobile-AMT uses the original non-causal post-
+                           A1                  3.25 ± 1.31            5.13 ± 2.54           7.20 ± 3.51
+                                                                                                             processing described in Section 3.2, while our model use
+                           A2                  3.56 ± 1.29            6.17 ± 2.80           8.39 ± 4.01      the causal postprocessing introduced in Section 4.1.
+                           A3                  5.84 ± 1.41            5.84 ± 2.48           7.71 ± 3.43          Table 4 summarizes the results over different onset (and
+                           A4                  5.94 ± 1.31            5.94 ± 2.48           7.89 ± 3.49      offset) thresholds for note onset and onset-and-offset met-
+                           A5                  4.84 ± 1.11            4.84 ± 2.36           6.61 ± 3.32
+                           A6                  6.79 ± 1.15            6.79 ± 2.53           8.89 ± 3.59
+                                                                                                             rics. As expected, Mobile-AMT outperforms our modified
+                                                                                                             causal model across all metrics, with a significant margin.
+Table 3. Note onset and onset-and-offset F1 scores on the                                                    Upon reviewing all experiments conducted, we conclude
+MAESTRO v.3 validation set across three onset tolerances                                                     that the largest performance drops are attributed to the
+for architectural modifications and input representations.                                                   shifted window function and the causal convolutions in our
+                                                                                                             model. When comparing Mobile-AMT and our adapted
+                                                                                                             model across various onset tolerance thresholds, we ob-
+    Our experiments involve the following adaptations,                                                       serve, similar to the previous experiment, that while our
+each tested independently: First, in A1 we (re)introduce a                                                   modified causal model predicts fewer targets with lower
+separate offset acoustic stack to explore whether and how                                                    accuracy overall, it demonstrates higher precision and ro-
+it improves offset label prediction. In A2 we remove the                                                     bustness when evaluated at stricter timing tolerances.
+velocity conditioning on the onsets. Next, we examine
+whether further streamlining the architecture by sharing
+                                                                                                                       5. DISCUSSION AND OUTLOOK
+a fourth (A3), half (A4) or all (A5) of the convolutional
+blocks in the model’s acoustic stacks affects performance.                                                   In this work, we investigate whether and how the cur-
+Lastly, in A6 we examine the effect of training on the orig-                                                 rent state of the art in real-time piano transcription can be
+inal 10 seconds sequence length.                                                                             adapted to achieve minimum-latency automatic piano tran-
+    Table 3 presents the note onset and note onset-and-                                                      scription suitable for real-time musical interaction.
+offset F1 scores of the model and data adaptations on the                                                       What latency is suitable cannot be answered univer-
+MAESTRO validation set. Overall, it is evident that the                                                      sally, so our choice of 10–30 ms is worthy of discus-
+combined impact of binary, heavily imbalanced pointwise                                                      sion. While 10 ms is suggested in digital instrument de-
+targets, causal modeling, and shifted asymmetric window                                                      sign [8–10], thresholds for latency perception vary depend-
+results in a significantly harder learning problem, with                                                     ing on the musical situation, task, and instrument: for per-
+the same training duration (500 epochs) leading to signif-                                                   cussive digital instruments, decreased ratings for values
+icantly poorer scores than the base case (TP1 in Table 1).                                                   of 20 ms and above were found [20], instrument-specific
+However, across all experimental setups in Section 4.1                                                       thresholds between below 10 ms and 40 ms are reported
+compared to the current one, all our causal modifications                                                    in a live monitoring setting [21], and about 30 ms were
+demonstrate significantly stronger robustness to decreasing                                                  found for gestural control [22]. Offsets as low as 6 ms may
+tolerance thresholds, which is important to guarantee low                                                    be perceived in simple isochronously spaced stimuli [23],
+latency in predictions, and therefore appear promising for                                                   while other researchers found just noticeable latency dif-
+further training.                                                                                            ferences at 27 ms and higher [24]. Transcription-enabled
+                                                Note Onset                                Note Onset with Offset
+   Model           Tol. (ms)    Precision         Recall            F1           Precision        Recall            F1
+   Causal-AMT         10       43.51 ± 6.87   25.60 ± 8.64      31.55 ± 7.76     6.86 ± 2.15     4.11 ± 2.03    5.03 ± 2.08
+   Mobile-AMT         10       22.70 ± 5.82   15.57 ± 2.96      18.26 ± 3.51     3.27 ± 1.19     2.32 ± 0.94    2.69 ± 1.00
+   Causal-AMT         20       50.86 ± 7.52   29.71 ± 9.11      36.70 ± 7.96    10.89 ± 3.91     6.34 ± 2.90    7.86 ± 3.16
+   Mobile-AMT         20       59.28 ± 7.41   41.87 ± 8.44      48.52 ± 6.96    11.03 ± 4.15     7.98 ± 3.73    9.16 ± 3.84
+   Causal-AMT         30       51.85 ± 7.49   30.24 ± 9.07      37.38 ± 7.85    14.49 ± 5.72     8.33 ± 3.93   10.37 ± 4.42
+   Mobile-AMT         30       81.17 ± 6.29   57.84 ± 12.79     66.80 ± 9.78    18.42 ± 6.89    13.27 ± 6.09   15.26 ± 6.30
+
+Table 4. Final comparison between our implementation of Mobile-AMT and our modified minimal-latency, strictly causally
+adapated model.
+
+
+real-time applications like interactive accompaniment or           an unshifted causal model. Here, a shift-tolerant loss does
+generative improvisation are more akin to ensemble play-           not improve performance. At the same time, configuring
+ing than direct instrument control. In networked musical           the model architecture for strictly causal processing also
+contexts, researchers typically aim for 20–30 ms of latency        deteriorates performance with respect to the baseline with
+to meet performance conditions that mirror traditional in-         more than 100 ms of lookahead.
+person ensembles [11, 12]. However, studies also found                 In a third experiment, we assess different model archi-
+that musicians may be able to compensate for latencies up          tectures and their impact. We observe that sharing the con-
+to 50 ms [13,25] or even 100 ms [26] for one piano piece, a        volutional components of the acoustic stack across differ-
+value that was deemed “neither musical nor interactive” in         ent target types proves beneficial. We hypothesize that the
+another study [27]. A real-time transcription model should         local acoustic features captured in the convolutional layers
+not only be tolerable but enable fluent musical interaction,       of the acoustic model can be effectively learned indepen-
+so we took 30 ms as a minimal requirement, and 10 ms as            dently of sequential information, making them invariant to
+a goal for imperceptible latency.                                  the target type. Furthermore, removing the velocity con-
+   We investigate multiple adaptations to reduce la-               ditioning on the onsets strongly improves the accuracy of
+tency, including label encoding with causal postprocess-           onset predictions.
+ing, shifted asymmetric window functions during prepro-                Overall, we find that we can compensate well for algo-
+cessing, and architectural modifications that enforce causal       rithmic issues: we can scale the model and use lookahead-
+processing within the model. Additionally, we reduce the           free targets without a major drop in performance. What
+model size (from 320 to 160 GFLOPs for 3 seconds of in-            proves difficult, however, is to render the model strictly
+put) by sharing computations across core model compo-              causal and to effectively process the incoming audio with-
+nents for all targets.                                             out loss of relevant information. For a latency of 10 ms, it
+   In a first set of experiments, we assess the impact of          would be required that the model predicts pitches with at
+regression versus classification loss encodings for non-           most 10 ms of incoming audio samples. For onsets of the
+causal models. The original regression targets only make           lowest two octaves on the piano, this means that there is not
+sense in conjunction with a lookahead as the targets begin         even a full period of the fundamental frequency present in
+to increase several frames before the actual onset which           the samples, and predictions may need to rely on harmonic
+is impossible for a causal model to predict. To miti-              partials. Along with the transient phase and the conse-
+gate the cost in training stability and accuracy incurred by       quently blurry STFT frame, this leads to an increasingly
+localized, causal-ready targets, we experiment with loss           hard transcription task. We hope that these findings and
+functions that weight the active frames over the inactive          pinpointed challenges will contribute to future research on
+frame to combat label imbalance, and loss functions that           real-time, minimum latency automatic piano transcription.
+are tolerant to small temporal shifts. We find that the                While this study primarily focuses on the algorithmic
+weighted classification losses approximate the baseline,           performance and robustness of a real-time transcription
+and the shift-tolerant losses reach the same level in the ab-      model, we acknowledge that a detailed analysis of pro-
+sence of targets requiring lookahead.                              cessing time—including both network inference and pre-
+   In a second experiment, we investigate the delay in-            processing—across different hardware platforms remains
+curred by the computation of audio feature representations.        an important area for future work to allow for the practi-
+Specifically, we look at STFT windows and their cor-               cal deployment of a real-time transcription system in real-
+responding centered targets. Transcription requires high           world scenarios. Likewise, we want to take a closer in-
+frequency resolution for pitch estimation which requires           spection into the design of the underlying window func-
+large windows. Centering the targets results in an often           tion and filter bank, in order to find an appropriate balance
+overlooked delay of half the window length, 64 ms in our           between reducing prediction delay and increasing future
+case. We test configurations of shifted windows along with         context, all while maintaining the desired STFT properties.
+asymmetric windowing functions that do not attenuate the           Lastly, across all experimental groups, our system adapta-
+most recent samples. We find that aggressively shifted             tions consistently outperformed the baseline at lower tim-
+windows at 10 ms do deteriorate the transcription accuracy         ing tolerance, which we consider a desirable property wor-
+by a lot, yet at 30 ms, we reach comparable performance to         thy of further investigation.
+             6. ACKNOWLEDGEMENTS                             [10] F. Caspe, J. Shier, M. Sandler, C. Saitis, and
+                                                                  A. McPherson, “Designing neural synthesizers for low
+This research acknowledges support by the European Re-
+                                                                  latency interaction,” arXiv preprint arXiv:2503.11562,
+search Council (ERC), under the European Union’s Hori-
+                                                                  2025.
+zon 2020 research and innovation programme, grant agree-
+ment No. 101019375 Whither Music?. The LIT AI Lab is         [11] L. Turchet and C. Rottondi, “On the relation between
+supported by the Federal State of Upper Austria.                  the fields of networked music performances, ubiqui-
+                                                                  tous music, and internet of musical things,” Personal
+                   7. REFERENCES                                  and Ubiquitous Computing, vol. 27, no. 5, pp. 1783–
+                                                                  1792, 2023.
+[1] C. Hawthorne, A. Stasyuk, A. Roberts, I. Simon, C.-
+    Z. A. Huang, S. Dieleman, E. Elsen, J. Engel, and        [12] E. Lakiotakis, C. Liaskos, and X. Dimitropoulos, “Im-
+    D. Eck, “Enabling factorized piano music modeling             proving networked music performance systems us-
+    and generation with the MAESTRO dataset,” in In-              ing application-network collaboration,” Concurrency
+    ternational Conference on Learning Representations,           and Computation: Practice and Experience, vol. 31,
+    2019.                                                         no. 24, p. e4730, 2019.
+[2] Q. Kong, B. Li, X. Song, Y. Wan, and Y. Wang, “High-     [13] E. Chew, R. Zimmermann, A. A. Sawchuk, C. Kyr-
+    Resolution Piano Transcription with Pedals by Re-             iakakis, C. Papadopoulos, A. François, G. Kim,
+    gressing Onset and Offset Times,” IEEE/ACM Trans-             A. Rizzo, and A. Volk, “Musical interaction at a dis-
+    actions on Audio Speech and Language Processing,              tance: Distributed immersive performance,” in Pro-
+    vol. 29, pp. 3707–3717, 2021.                                 ceedings of the MusicNetwork Fourth Open Workshop
+[3] S. Sigtia, E. Benetos, and S. Dixon, “An end-to-end           on Integration of Music in Multimedia Applications.
+    neural network for polyphonic piano music transcrip-          MusicNetwork Barcelona, 2004, pp. 15–16.
+    tion,” IEEE/ACM Transactions on Audio, Speech, and
+                                                             [14] T. Kwon, D. Jeong, and J. Nam, “Polyphonic Piano
+    Language Processing, vol. 24, no. 5, pp. 927–939,
+                                                                  Transcription Using Autoregressive Multi-State Note
+    2016.
+                                                                  Model,” in The 21th International Society for Music
+[4] R. Kelz, S. Böck, and G. Widmer, “Deep polyphonic             Information Retrieval Conference (ISMIR). Interna-
+    adsr piano note transcription,” in ICASSP 2019-2019           tional Society for Music Information Retrieval, 2020.
+    IEEE International Conference on Acoustics, Speech
+                                                             [15] D. Jeong and S. Telecom, “Real-time automatic piano
+    and Signal Processing (ICASSP). IEEE, 2019, pp.
+                                                                  music transcription system,” in Late Breaking Demo.
+    246–250.
+                                                                  International Society for Music Information Retrieval,
+[5] Y. Kusaka and A. Maezawa, “Mobile-AMT: Real-                  2020, pp. 4–6.
+    Time Polyphonic Piano Transcription for In-the-Wild
+    Recordings,” in 2024 32nd European Signal Process-       [16] A. Howard, M. Sandler, G. Chu, L.-C. Chen, B. Chen,
+    ing Conference (EUSIPCO). IEEE, 2024, pp. 36–40.              M. Tan, W. Wang, Y. Zhu, R. Pang, V. Vasudevan et al.,
+                                                                  “Searching for MobileNetV3,” in Proceedings of the
+[6] A. Fernandez, “Onsets and Velocities: Affordable              IEEE/CVF international conference on computer vi-
+    Real-Time Piano Transcription Using Convolutional             sion, 2019, pp. 1314–1324.
+    Neural Networks,” in 2023 31st European Signal Pro-
+    cessing Conference (EUSIPCO).      IEEE, 2023, pp.       [17] C. Raffel, B. McFee, E. J. Humphrey, J. Salamon,
+    151–155.                                                      O. Nieto, D. Liang, D. P. Ellis, and C. C. Raffel,
+                                                                  “MIR_EVAL: A Transparent Implementation of Com-
+[7] T. Kwon, D. Jeong, and J. Nam, “Towards Efficient and         mon MIR Metrics.” in ISMIR, vol. 10, 2014, p. 2014.
+    Real-Time Piano Transcription Using Neural Autore-
+    gressive Models,” IEEE/ACM Transactions on Audio,        [18] R. M. Bittner, J. J. Bosch, D. Rubinstein, G. Meseguer-
+    Speech, and Language Processing, 2024.                        Brocal, and S. Ewert, “A lightweight instrument-
+                                                                  agnostic model for polyphonic note transcription and
+[8] D. Wessel and M. Wright, “Problems and prospects for          multipitch estimation,” in Proceedings of the IEEE In-
+    intimate musical control of computers,” Computer mu-          ternational Conference on Acoustics, Speech, and Sig-
+    sic journal, vol. 26, no. 3, pp. 11–22, 2002.                 nal Processing (ICASSP), Singapore, 2022.
+[9] A. P. McPherson, R. H. Jack, and G. Moro, “Action-       [19] F. Foscarin, J. Schlüter, and G. Widmer, “Beat this!
+    sound latency: Are our tools fast enough?” in                 Accurate beat tracking without DBN postprocessing,”
+    16th International Conference on New Interfaces for           arXiv preprint arXiv:2407.21658, 2024.
+    Musical Expression, NIME 2016, Griffith University,
+    Brisbane, Australia, July 11-15, 2016. nime.org,         [20] R. H. Jack, A. Mehrabi, T. Stockman, and A. McPher-
+    2016, pp. 20–25. [Online]. Available: https://doi.org/        son, “Action-sound latency and the perceived quality of
+    10.5281/zenodo.3964611                                        digital musical instruments: Comparing professional
+     percussionists and amateur musicians,” Music Percep-
+     tion, vol. 36, no. 1, pp. 109–128, 09 2018. [Online].
+     Available: https://doi.org/10.1525/mp.2018.36.1.109
+
+[21] M. Lester and J. Boley, “The effects of latency on live
+     sound monitoring,” Journal of the Audio Engineering
+     Society, no. 7198, october 2007.
+
+[22] T. Mäki-Patola and P. Hämäläinen, “Latency tolerance
+     for gesture controlled continuous sound instrument
+     without tactile feedback,” in Proceedings of the 2004
+     International Computer Music Conference, ICMC
+     2004, Miami, Florida, USA, November 1-6, 2004.
+     Michigan Publishing, 2004. [Online]. Available:
+     https://hdl.handle.net/2027/spo.bbp2372.2004.032
+
+[23] A. Friberg and J. Sundberg, “Time discrimination in
+     a monotonic, isochronous sequence,” The Journal of
+     the Acoustical Society of America, vol. 98, no. 5, pp.
+     2524–2531, 1995.
+
+[24] A. Schmid, M. Ambros, J. Bogon, and R. Wimmer,
+     “Measuring the just noticeable difference for audio
+     latency,” in Proceedings of the 19th International
+     Audio Mostly Conference: Explorations in Sonic
+     Cultures, AM 2024, Milan, Italy, September 18-
+     20, 2024, L. A. Ludovico and D. A. Mauro,
+     Eds. ACM, 2024, pp. 325–331. [Online]. Available:
+     https://doi.org/10.1145/3678299.3678331
+
+[25] S. Dahl and R. Bresin, “Is the player more influenced
+     by the auditory than the tactile feedback from the in-
+     strument,” in Proceedings of the Digital Audio Effects
+     Conference (DAFx), 2001, pp. 6–9.
+
+[26] A. A. Sawchuk, E. Chew, R. Zimmermann, C. Pa-
+     padopoulos, and C. Kyriakakis, “From remote media
+     immersion to distributed immersive performance,”
+     in Proceedings of the 2003 ACM SIGMM Work-
+     shop on Experiential Telepresence, ser. ETP ’03.
+     New York, NY, USA: Association for Computing
+     Machinery, 2003, p. 110–120. [Online]. Available:
+     https://doi.org/10.1145/982484.982506
+
+[27] C. Bartlette, D. Headlam, M. Bocko, and G. Velikic,
+     “Effect of network latency on interactive musical
+     performance,” Music Perception, vol. 24, no. 1,
+     pp. 49–62, 09 2006. [Online]. Available: https:
+     //doi.org/10.1525/mp.2006.24.1.49
+

@@ -1,0 +1,15 @@
+# 개발/백업 산출물 (디스크에는 두되 저장소에는 올리지 않음)
+.backups/
+for-claude-design/
+_tmp/
+
+# 잔여/임시 파일
+*.tmp
+*.bak
+*.zip
+*.new
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini

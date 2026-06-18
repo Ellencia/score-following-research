@@ -1,0 +1,180 @@
+<template id="doc-01_analysis" data-title="[01] Arzt 2016 — 분석 보고서" data-docx="papers/01_Arzt2016_Flexible/분석_보고서.docx"><h1 id="flexible-and-robust-music-tracking-분석-보고서">Flexible and Robust Music Tracking 분석 보고서</h1>
+<h2 id="핵심-요약">핵심 요약</h2>
+<p>이 문서는 Andreas Arzt<a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[1]</a>가 Johannes Kepler University Linz<a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[2]</a>에 제출한 2016년 박사학위논문으로, 서양 고전음악을 대상으로 한 <strong>실시간 음악 추적(score following / music tracking)</strong> 문제를 다룹니다. 이 논문의 핵심은 기존의 on-line Dynamic Time Warping 기반 추적기를 출발점으로 삼되, 단순 정렬 알고리즘을 넘어서 <strong>tempo model, 특징량 정규화, 실제 연주를 참조로 쓰는 추적, 대규모 스코어 데이터베이스 검색, 다중 가설/다중 에이전트 추적</strong>을 결합해 “유연하고(flexible) 강건한(robust)” 시스템으로 확장했다는 점입니다. 특히 독일어 Kurzfassung(ix쪽)에서 저자는 논문의 핵심 기여를 세 가지로 요약합니다. 첫째, 추적 알고리즘의 강건성과 정밀도를 높이는 개선된 알고리즘·특징량·템포모델, 둘째, 복잡한 오케스트라 음악까지 다룰 수 있는 강건한 multi-agent 추적기, 셋째, 음악 작품을 매우 빠르게 식별하고 대규모 악보 데이터베이스 기반의 유연한 추적을 가능하게 하는 알고리즘입니다. 또한 이 시스템은 Concertgebouw<a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[3]</a>에서 Richard Strauss<a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[4]</a>의 <em>Eine Alpensinfonie</em> 공연에 맞춰 악보·영상·설명 텍스트를 관객에게 동기화해 보여주는 시연으로 이어졌습니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[5]</a></p>
+<p>다만 중요한 한계가 있습니다. 사용자가 준 JKU ePub PDF와 과거 cp.jku PDF는 현재 브라우저 도구에서 각각 403/404로 직접 열람되지 않았습니다. 따라서 아래 보고서는 <strong>JKU/CP.JKU 검색 인덱스에 남아 있는 PDF 본문 조각</strong>, <strong>공식/저자 업로드 메타데이터</strong>, 그리고 이 논문이 실제로 확장·통합한 <strong>원 논문들(2008–2015)</strong> 을 교차 검증해 재구성한 분석입니다. 따라서 핵심 구조와 기여는 높은 확신으로 정리할 수 있지만, PDF 전체의 모든 장을 직접 페이지 단위로 완독했다는 의미의 “full direct read”는 도구 제약 때문에 충족하지 못했습니다. 이 제한은 보고서 본문에서 명시적으로 표시합니다. <a href="">[6]</a></p>
+<h2 id="서지-정보와-접근-범위">서지 정보와 접근 범위</h2>
+<p>서지 메타데이터를 종합하면, 문서 제목은 <strong>Flexible and Robust Music Tracking</strong>, 저자는 Andreas Arzt, 유형은 <strong>Doctoral Thesis</strong>, 소속/제출 기관은 Johannes Kepler University Linz이며, 지도교수는 Gerhard Widmer<a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[7]</a>입니다. JKU 저장소 검색 결과에는 “Linz, November 2016”이 보이고, ResearchGate 메타데이터에는 “December 2016”, “Doctoral Thesis”, “Advisor: Gerhard Widmer”가 나타납니다. CORDIS의 CON ESPRESSIONE 프로젝트 결과 목록에도 같은 제목의 박사학위논문이 등재되어 있습니다. ResearchGate 메타데이터 기준으로 참고문헌은 140개, figure는 10개로 표시됩니다. <a href="https://epub.jku.at/obvulihs/content/titleinfo/1611839?utm_source=chatgpt.com">[8]</a></p>
+<p>초록(abstract)과 관련해서는, 현재 확보한 색인 조각에서 <strong>영문 abstract 전체는 직접 확인되지 않았고</strong>, 대신 논문의 초반부에 독일어 <strong>Kurzfassung</strong>이 존재함을 확인할 수 있습니다. 이 Kurzfassung(ix쪽)은 컴퓨터가 라이브 연주를 듣고 악보 상의 현재 위치를 실시간으로 알아내는 문제를 설명하고, 그 응용으로 자동 페이지 넘김, 음악과 동기화된 시각화, 자동 반주를 제시합니다. 동시에 논문의 초점이 “고전음악용 유연하고 강건한 음악 추적 알고리즘”에 있음을 명시합니다. 따라서 “abstract if present” 항목은 현재 접근 가능한 근거에 따라 <strong>독일어 요약(Kurzfassung)</strong> 으로 제시하는 것이 가장 정확합니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[9]</a></p>
+<h2 id="상세-요약">상세 요약</h2>
+<p>이 논문이 다루는 문제는 오늘날 MIR(Music Information Retrieval) 문헌에서 말하는 <strong>score following</strong>, 즉 “실시간 성능 제약이 있는 음악 동기화”입니다. 후속 리뷰들은 score following을 라이브 오디오와 대응하는 악보를 실시간으로 정렬하는 과제로 정리하면서, 자동 페이지 넘김, 자동 반주, 공연장 시각화 동기화 같은 응용을 대표 사례로 듭니다. 이 논문은 հենց այդ 전통에서, 특히 on-line DTW 계열을 중심으로 한 고전적 접근을 실제 운용 가능한 수준까지 밀어붙인 종합 연구로 위치합니다. <a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[10]</a></p>
+<p>논문 구성의 중심축은 대략 세 갈래입니다. 첫째, <strong>on-line time warping 기반 추적기의 개선</strong>입니다. p.46의 장 제목은 “improvements to music tracking via on-line time warping”이며, 여기서 저자는 특히 <strong>tempo curves</strong>와 <strong>tempo models</strong>를 핵심 블록으로 둡니다. 템포모델이 중요한 이유에 대해 논문은 “음악 추적의 과제는 결국 스코어 표현의 템포를 실제 연주에 맞추는 것”이기 때문이라고 설명합니다(PDF p.46). 이어 p.47에서는 현재 템포 계산을 위해 forward path보다 더 정확한 <strong>backward path</strong>를 사용한다고 밝히며, backward alignment path의 기울기가 score representation과 performance 사이의 상대 템포 차이를 나타낸다는 직관을 제시합니다(PDF p.47). 즉, 이 논문에서 템포는 단순 보조 변수라기보다 정렬 성능을 좌우하는 제어 신호입니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[11]</a></p>
+<p>둘째, <strong>참조(references)의 성격을 바꾸는 유연성 확장</strong>입니다. p.67의 “Music Tracking via a Single Performance as a Reference” 구간은, MIDI로 합성한 데드팬(deadpan) 스코어 오디오 대신 <strong>실제 연주를 참조 스코어처럼 쓰는 방식</strong>의 장단점을 명료하게 설명합니다. 저자는 피아노는 MIDI 합성이 비교적 양호하지만, 오케스트라 곡은 자동 합성이 훨씬 어렵고, 실제 연주는 템포·강약·아티큘레이션 같은 정보를 암묵적으로 품고 있어 live performance와 더 비슷한 특징량을 제공한다고 주장합니다(PDF p.67). 반면 단점은 오디오 시간을 스코어 비트에 연결하는 symbolic 정보가 “공짜로” 주어지지 않으므로, 수작업 주석 또는 off-line alignment가 필요하다는 점입니다(PDF p.67). 이 부분은 논문의 “robust”가 단지 알고리즘 내부의 강건성만이 아니라, <strong>참조 표현 그 자체를 더 현실적인 것으로 바꾸는 방향</strong>임을 보여줍니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[12]</a></p>
+<p>셋째, <strong>작품 식별과 유연 추적의 결합</strong>입니다. p.87의 “the dataset”과 “tempo-invariant fingerprinting”은 score identification and score position identification 문제를 위해 대규모 스코어 데이터베이스와 <strong>symbolic fingerprinting</strong> 접근을 도입합니다. 논문은 이를 Shazam류 오디오 식별 아이디어에서 영감을 받은 방식으로 설명하며, 쿼리 오디오를 전사(transcription)해 noisy note list를 만들고, 이를 tempo-invariant하고 local/discriminative한 fingerprint 집합으로 바꿔 데이터베이스와 매칭한다고 밝힙니다(PDF p.87). 이어 p.98에서는 이 검색 결과를 실시간으로 안정화하기 위해 <strong>rule-based multi-agent position hypothesis tracking</strong> 을 사용합니다. 구현 세부도 제시되는데, 쿼리를 창 크기 15 notes, hop 5 notes로 잘라 sub-query로 처리하고, 각 sub-query의 상위 100개 위치 후보를 online hypothesis tracker에 투입하며, 각 agent는 작품·위치·템포 가설과 누적 점수를 유지합니다(PDF p.98). 이것은 단순한 “작품 검색”이 아니라, <strong>검색과 추적을 연결한 retrieval-augmented tracking</strong> 구조라고 볼 수 있습니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[13]</a></p>
+<p>관점상 이 논문의 결론은 “하나의 만능 모델”을 내세우기보다는, 실시간 추적이라는 까다로운 문제를 해결하기 위해 <strong>여러 모듈을 적절히 결합한 공학적 체계</strong>를 구축하는 데 있습니다. 독일어 요약(ix쪽)에서 강조되는 live demos, scientific conferences, galas, Concertgebouw demonstration은 이 연구가 벤치마크 숫자만이 아니라 실제 동작과 현장 적용을 매우 중시했음을 보여줍니다. 후속 문헌들도 이 논문을 “다중 추적기, backtracking heuristic, tempo model, adaptive distance” 등 여러 개선을 집약한 DTW 기반 대표작으로 요약합니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[14]</a></p>
+<pre><code>flowchart LR
+    A[라이브 오디오] --&gt; B[특징 추출]
+    B --&gt; C[On-line DTW 추적]
+    C --&gt; D[Backward path 기반 현재 템포 추정]
+    D --&gt; E[Tempo model 보정]
+    E --&gt; F[현재 score position 산출]
+
+    A --&gt; G[노트 전사]
+    G --&gt; H[Tempo-invariant symbolic fingerprint]
+    H --&gt; I[대규모 score DB lookup]
+    I --&gt; J[Multi-agent position hypothesis tracking]
+    J --&gt; K[작품 ID + score position]</code></pre>
+<p>위 도식은 논문 본문 조각(PDF p.46–47, p.87, p.98)과 관련 발표자료에 드러난 파이프라인을 압축한 것입니다. 실시간 정렬 라인과 데이터베이스 검색 라인이 분리되면서도, 최종적으로는 같은 “현재 위치 추정” 문제로 수렴한다는 점이 이 논문의 구조적 특징입니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[15]</a></p>
+<h2 id="방법론과-데이터">방법론과 데이터</h2>
+<p>방법론의 출발점은 <strong>on-line DTW</strong> 입니다. 후속 리뷰와 원 논문 초록들은 이 계열 접근이 score와 live performance라는 두 시계열을 실시간으로 정렬하며, harmonic feature와 onset feature의 표현 설계가 성능을 좌우한다고 설명합니다. 특히 2012년의 <em>Adaptive Distance Normalization for Real-Time Music Tracking</em>은 onset-emphasized feature의 에너지 크기 차이 때문에 생기는 거리 왜곡을 줄이기 위해 <strong>distance normalization</strong>을 도입하고, 여기에 harmonic/onset feature 결합을 추가하면 개별 특징량보다 더 강건하고 정확하다고 밝힙니다. 이는 thesis의 p.46–47에서 보이는 ODTW 개선 노선과 정확히 맞물립니다. <a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[16]</a></p>
+<p>tempo model 부분은 thesis의 가장 핵심적인 공헌 가운데 하나입니다. p.46의 Figure 3.2는 라흐마니노프 Prelude Op.23 No.5의 여러 коммер셜 recording에서 추출한 tempo curve를 보여주며, beat 약 130 부근의 slowdown과 190 부근의 subsequent speed-up, 그리고 연주 간 timing 차이가 상당히 크다는 점을 강조합니다(PDF p.46). 대응하는 2010년 논문 <em>Simple Tempo Models for Real-time Music Tracking</em>은 “특정 연주자의 rehearsal data에만 맞추는 대신, 여러 다른 해석을 지속적으로 재조합해 정확한 tempo hypothesis를 만든다”고 설명합니다. 다시 말해 이 thesis의 tempo model은 단일 곡선 예측이 아니라, <strong>여러 해석의 분포를 실시간으로 섞어 쓰는 ensemble형 가설 보정기</strong>에 가깝습니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[17]</a></p>
+<p>multiple-performance reference 방법론은 thesis의 p.67에서 설계 철학이 가장 선명하게 드러납니다. 저자는 live performance와 합성 MIDI 사이의 특징 차이보다, 서로 다른 실제 performance들 사이의 특징 차이가 더 작다고 보며, 특히 오케스트라에서는 이 장점이 더 크다고 주장합니다(PDF p.67). 같은 시기의 2015년 ISMIR 논문 <em>Real-time Music Tracking using Multiple Performances as a Reference</em> 역시, 여러 performance를 symbolic score에 off-line alignment한 뒤, 각 performance를 reference로 쓰는 여러 on-line tracker를 동시에 실행하고, 그 출력을 결합해 현재 위치를 추정한다고 요약합니다. 논문 전체를 보면 thesis는 이 아이디어를 단일 논문 수준의 아이디어가 아니라 <strong>실전형 robust tracker의 한 축</strong>으로 편입한 셈입니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[18]</a></p>
+<p>데이터 측면에서 thesis는 p.87의 Table 5.1에서 비교적 구체적인 수치를 제시합니다. 아래 표는 해당 페이지의 내용을 정리한 것입니다. 이 표는 논문이 단순 데모 수준이 아니라, 적어도 작품 식별 실험 단계에서는 <strong>수백 곡 규모의 데이터베이스</strong>를 사용했음을 보여줍니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[19]</a></p>
+<table>
+<thead>
+<tr class="header">
+<th>데이터셋</th>
+<th>작품 수</th>
+<th>스코어 노트 수</th>
+<th>연주 노트 수</th>
+<th>총 길이</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Chopin Piano Works</td>
+<td>154</td>
+<td>325,263</td>
+<td>326,501</td>
+<td>9:38:36</td>
+</tr>
+<tr class="even">
+<td>Mozart Piano Sonatas</td>
+<td>13</td>
+<td>42,049</td>
+<td>42,095</td>
+<td>1:23:56</td>
+</tr>
+<tr class="odd">
+<td>Additional Pieces</td>
+<td>159</td>
+<td>574,926</td>
+<td>미제시</td>
+<td>미제시</td>
+</tr>
+<tr class="even">
+<td>Total</td>
+<td>326</td>
+<td>942,238</td>
+<td>부분 제공</td>
+<td>부분 제공</td>
+</tr>
+</tbody>
+</table>
+<p>같은 p.87은 database에 Chopin과 Mozart 외에도 complete Beethoven piano sonatas, two Beethoven symphonies, various other piano pieces가 포함된다고 적습니다. 그러나 ground truth alignment가 있는 것은 Chopin과 Mozart corpus뿐이라 평가용 query set은 이 둘에 한정됩니다(PDF p.87). 따라서 데이터 구성은 “광범위한 DB + 상대적으로 제한된 정답형 평가셋” 구조입니다. 이는 실제 검색 난도를 높이는 장점이 있지만, 정량평가가 <strong>주로 피아노 중심, 서양 고전 canon 중심</strong> 으로 치우친다는 한계도 동시에 만듭니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[19]</a></p>
+<p>재현성(reproducibility)은 중간 정도입니다. 긍정적으로 보자면, thesis 조각과 관련 논문들은 window size 15, hop 5, top 100 result, ring buffer size 50, median normalization, online agent update 등 구현 힌트를 상당히 많이 제공합니다(PDF p.98). 또한 multiple-performance reference를 위해 off-line alignment를 사용한다는 점과, 데이터셋 명칭 및 규모도 명시합니다(PDF p.67, p.87). 그러나 현재 접근 가능한 본문 조각과 공식 메타데이터에서는 <strong>공개 코드 저장소나 완전한 실험 패키지 링크를 직접 확인할 수 없었습니다</strong>. 따라서 “개념 재현”은 가능하지만, “버튼 하나로 동일 실험 재현” 수준의 오픈 재현성은 확인되지 않았다고 보는 편이 정확합니다. PDF 전체 직접 열람이 제한되었기 때문에, 코드/데이터 부재를 절대적으로 단정하지는 않겠습니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[20]</a></p>
+<h2 id="비판적-평가">비판적 평가</h2>
+<p>이 thesis의 가장 큰 장점은 <strong>문제 정의가 현장 지향적</strong>이라는 점입니다. 많은 score-following 연구가 특정 알고리즘 패러다임 하나의 성능 개선에 집중하는 반면, 이 논문은 실제 시스템이 실패하는 지점을 정면으로 다룹니다. 예를 들어 템포 변화는 model로, 특징량의 불안정성은 normalization으로, 오케스트라의 합성 난점은 real-performance reference로, 작품 미지정 상황은 fingerprint retrieval로, 검색 결과의 불안정성은 multi-agent hypothesis tracking으로 각각 처리합니다. 이런 구성은 “실시간 추적”을 하나의 알고리즘이 아니라 <strong>시스템 문제(system problem)</strong> 로 본다는 점에서 강합니다. Concertgebouw 시연이 성립했다는 사실 자체가 이 장점을 잘 보여줍니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[21]</a></p>
+<p>또 다른 강점은 <strong>정확도와 강건성을 함께 다루는 평가 관점</strong>입니다. thesis p.67의 Table 4.2 조각은 on-line tracking 결과를 허용오차 0.05초, 0.25초, 0.50초, 0.75초, 1.00초별 정렬 비율로 제시합니다. 이 표에서 0.25초 허용오차 기준 결과는 대략 0.71–0.97 범위이고, 1초 오차 기준은 0.91–1.00까지 올라갑니다. 동시에 본문은 “피아노 작품에서는 특히 잘 동작하지만 두 개의 symphony에서는 문제를 보인다”고 스스로 인정합니다(PDF p.67). 즉, 저자는 결과를 한 숫자로 포장하지 않고, <strong>작품 유형/오차 구간별로 성능의 질감</strong>을 드러냅니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[12]</a></p>
+<p>약점은 세 가지가 큽니다. 첫째, <strong>도메인 편향</strong>입니다. 논문의 중심 데이터와 논의는 Chopin, Mozart, Beethoven, Rachmaninoff, Strauss 등 서양 고전음악, 그중에서도 피아노와 정형화된 오케스트라 레퍼토리에 매우 강하게 기댑니다. 이는 연구 목표와 일치하지만, 재즈, 자유 템포가 더 큰 음악, 비서양 음악, 스코어가 불완전한 음악에는 바로 일반화되기 어렵습니다. 둘째, <strong>off-line alignment와 symbolic score 가용성</strong>에 대한 의존입니다. p.67이 명시하듯, actual performance를 reference로 쓰더라도 스코어-오디오 연결 정보는 자동 또는 수작업 off-line alignment로 만들어야 합니다(PDF p.67). 셋째, <strong>구조적 변형(structural differences)</strong> 문제는 thesis가 확장하려 했지만 완전히 닫지 못한 과제에 가깝습니다. 후속 연구들은 여전히 repeats, jumps, arbitrary structural changes가 완전히 해결되지 않은 문제라고 이 thesis를 인용합니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[22]</a></p>
+<p>방법론적 편향 भी 존재합니다. thesis는 매우 강한 공학적 모듈화를 택했기 때문에, 각 모듈의 오차가 상위 단계로 누적될 수 있습니다. 예를 들어 작품 식별 단계에서 transcription noise가 fingerprinting에 영향을 줄 수 있고, retrieval hypothesis의 품질이 online position tracker를 좌우합니다(PDF p.87, p.98). 후속 신경망 기반 동기화 논문들이 이 thesis를 언급하며 “components가 너무 많아 end-to-end 적응이 어렵다”는 취지의 비판을 제기한 것도 이 때문입니다. 다시 말해 이 논문은 <strong>설명 가능성과 공학적 통제 가능성</strong>을 얻는 대신, 현대적 의미의 end-to-end adaptability는 희생한 체계입니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[23]</a></p>
+<p>현재 기준에서 남는 열린 질문은 다음과 같습니다. 논문이 악보 이미지 직접 추적, 구조 차이의 일반화, 비고전 장르 일반화, 공개 benchmark/코드 패키지화까지는 도달했는가? 후속 문헌을 보면 이러한 주제는 2019년 이후 강화학습, 멀티모달 CNN, 구조 인지 CNN 등으로 이어집니다. 따라서 이 thesis는 “완결판”이라기보다 <strong>DTW 계열 score following의 성숙한 종합판이자, 이후 학습기반 세대가 넘어야 할 기준선</strong>으로 보는 편이 더 타당합니다. <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[24]</a></p>
+<h2 id="선행연구와-비교">선행연구와 비교</h2>
+<p>이 thesis가 올라선 직접적인 기반은 세 축입니다. 첫째, Roger Dannenberg<a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[25]</a> 이후의 실시간 accompaniment/score following 전통입니다. 둘째, Simon Dixon<a href="https://www.researchgate.net/publication/382971148_TheGlueNote_Learned_Representations_for_Robust_and_Flexible_Note_Alignment?utm_source=chatgpt.com">[26]</a>의 2005년 on-line time warping으로 대표되는 <strong>DTW 기반 실시간 정렬 노선</strong>입니다. 셋째, Christopher Raphael<a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[27]</a>과 Arshia Cont<a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[28]</a>가 이끈 graphical model/HMM 계열입니다. 2012년 adaptive distance normalization 논문은 이 두 계열을 명시적으로 대비하면서, 자신들의 tracker는 graphical model이 아니라 on-line DTW에 기반한다고 말합니다. 결국 thesis의 새로움은 “DTW는 단순하고 낡은 방법”이라는 시선을 뒤집고, 온갖 보강장치를 붙여 실제 현장 수준까지 확장했다는 데 있습니다. <a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[29]</a></p>
+<p>또 하나 중요한 선행은 structural differences를 다루는 연구입니다. 2013년 Maarten Grachten<a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[30]</a> 등은 performance 간 구조 차이가 있을 때의 automatic alignment를 다룹니다. 반면 thesis는 구조 차이 문제를 전면 해결했다기보다, 실제 시스템 설계에서 검색·가설추적·tempo modeling을 결합해 <strong>부분적으로 우회하거나 흡수</strong>하는 방향으로 나아갑니다. 이 차이는 중요합니다. 전자는 alignment problem을 더 일반화하려는 시도이고, 후자는 <strong>system robustness를 높여 실제 실패 가능성을 줄이는 시도</strong>이기 때문입니다. <a href="https://www.researchgate.net/publication/304424926_Automatic_alignment_of_music_performances_with_structural_differences?utm_source=chatgpt.com">[31]</a></p>
+<p>아래 표는 이 thesis를 4편의 직접 관련 논문과 비교한 것입니다. 표의 bibliographic information과 요약은 각 원 논문/공식 메타데이터/후속 리뷰를 바탕으로 정리했습니다. <a href="https://www.andreas-arzt.com/publications/?utm_source=chatgpt.com">[32]</a></p>
+<table>
+<thead>
+<tr class="header">
+<th>Citation</th>
+<th>Year</th>
+<th>Methods</th>
+<th>Key findings</th>
+<th>This document와의 차이</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dixon, <em>An On-line Time Warping Algorithm for Tracking Musical Performances</em></td>
+<td>2005</td>
+<td>On-line DTW</td>
+<td>실시간 score following의 DTW 기반 토대 제시</td>
+<td>본 thesis의 출발점이 되는 baseline 성격</td>
+</tr>
+<tr class="even">
+<td>Arzt et al., <em>Automatic Page Turning for Musicians via Real-Time Machine Listening</em></td>
+<td>2008</td>
+<td>실시간 오디오-스코어 정렬 + page-turning 응용</td>
+<td>score following의 실용 응용 가능성 실증</td>
+<td>thesis는 이를 응용 사례가 아니라 더 넓은 시스템 아키텍처로 확장</td>
+</tr>
+<tr class="odd">
+<td>Arzt &amp; Widmer, <em>Simple Tempo Models for Real-time Music Tracking</em></td>
+<td>2010</td>
+<td>다중 performance 기반 tempo model</td>
+<td>여러 해석을 재조합해 tempo hypothesis 개선</td>
+<td>thesis에서 p.46–47의 핵심 장으로 흡수·확장</td>
+</tr>
+<tr class="even">
+<td>Arzt et al., <em>Adaptive Distance Normalization for Real-Time Music Tracking</em></td>
+<td>2012</td>
+<td>onset feature normalization + harmonic/onset fusion</td>
+<td>특징량 조합이 정확도/강건성 향상</td>
+<td>thesis의 ODTW 개선 축 중 하나를 형성</td>
+</tr>
+<tr class="odd">
+<td>Arzt &amp; Widmer, <em>Real-time Music Tracking using Multiple Performances as a Reference</em></td>
+<td>2015</td>
+<td>여러 real performance를 reference로 병렬 추적</td>
+<td>synthetic score보다 실제 performance 참조의 장점 제시</td>
+<td>thesis에서 오케스트라/실전 강건성 향상 전략으로 통합</td>
+</tr>
+<tr class="even">
+<td><strong>This document: Flexible and Robust Music Tracking</strong></td>
+<td><strong>2016</strong></td>
+<td>ODTW + tempo model + feature normalization + performance reference + fingerprint retrieval + multi-agent hypothesis tracking</td>
+<td>실시간 추적, 작품 식별, 대규모 DB 기반 flexible tracking, 실전 시연을 하나의 체계로 통합</td>
+<td>개별 논문 아이디어들을 논문 수준 system으로 종합</td>
+</tr>
+</tbody>
+</table>
+<p>표에서 보듯 thesis의 진짜 차별점은 “새 알고리즘 하나”보다도 <strong>여러 직접 관련 논문들을 한 단계 높은 시스템 수준에서 통합했다는 점</strong>입니다. 그래서 후속 논문들이 이를 종종 “DTW 기반 고전 score following의 총정리”처럼 다루는 것입니다. 특히 2019년 강화학습 기반 score following, 2021년 sheet-image 기반 multi-resolution prediction, 2020년대 구조 인지 alignment 연구들은 이 thesis를 중요한 기준점으로 인용하면서도, 동시에 “수작업 feature engineering/모듈 분해”의 한계를 넘어 end-to-end 학습으로 가려는 방향을 택합니다. <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[33]</a></p>
+<h2 id="실무적-함의와-응용">실무적 함의와 응용</h2>
+<p>실무적으로 이 연구는 가장 먼저 <strong>자동 페이지 넘김</strong>에 직접 연결됩니다. 이는 2008년 관련 논문에서 이미 제시되었고, 이후 리뷰 문헌도 score following의 고전적 응용으로 가장 먼저 언급합니다. 피아니스트나 실내악 연주자에게는 hands-free 악보 페이지 전환이 곧바로 가치가 있으며, thesis는 이 응용을 넘어 “공연장 audience-facing synchronized information system”으로 확장합니다. Concertgebouw 시연은 정확히 이 방향을 보여 줍니다. 라이브 음악에 맞춰 악보, 예술 영상, 설명 텍스트를 동기화하는 것은, 오늘날로 치면 <strong>실시간 공연용 멀티미디어 큐잉 엔진</strong>에 해당합니다. <a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[34]</a></p>
+<p>둘째, <strong>자동 반주와 인터랙티브 시스템</strong>입니다. 리뷰 문헌은 자동 반주가 이 분야의 대표적 응용이라고 반복해서 서술합니다. thesis 자체도 정렬과 tempo adaptation을 중심에 두므로, 반주 시스템이나 rehearsal assistant의 timing core로 쓰기 적합합니다. 이 점에서 이 논문은 “음악을 분석하는 MIR”과 “음악과 함께 동작하는 interactive music system”의 경계에 서 있습니다. <a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[35]</a></p>
+<p>셋째, 사용자의 업무 맥락에 더 직접 연결해 보면, 이 논문은 공연장·전시·교육용 <strong>대형 표시 시스템의 실시간 cue synchronization</strong> 에 매우 시사적입니다. 이는 논문이 실제로 관객을 위한 synchronized score/video/text display를 시연했다는 점에서 단순한 추측이 아니라, 해당 시스템을 다른 형태의 디지털 사이니지·LCS/VMS형 콘텐츠 동기화 문제로 일반화한 해석입니다. 즉, “라이브 이벤트에 맞춰 무엇을 언제 보여 줄 것인가”라는 문제에 대해, thesis는 오디오를 기준 clock로 삼는 한 가지 매우 강력한 해법을 제안한 셈입니다. 이 문단의 마지막 문장은 thesis의 응용 사례를 사용자의 분야로 일반화한 <strong>추론</strong>입니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[36]</a></p>
+<p>넷째, 연구적 응용으로는 현대 score following의 <strong>강한 baseline</strong> 입니다. 후속 학습기반 문헌들이 여전히 이를 인용하는 이유는, 실시간성·강건성·응용성을 동시에 만족하는 classical baseline이 흔치 않기 때문입니다. 특히 악보 이미지 직접 추적이나 구조 인지 딥러닝 기법도 여전히 이 thesis가 다룬 문제들—tempo variation, mistakes, robustness, real-time constraints—를 같은 언어로 다시 다룹니다. 즉, 이 연구는 낡아진 것이 아니라, <strong>문제 설정 자체를 표준화한 작업</strong>에 가깝습니다. <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[37]</a></p>
+<h2 id="후속-연구와-핵심-참고문헌">후속 연구와 핵심 참고문헌</h2>
+<p>이 thesis를 바탕으로 가장 가치 있는 후속 연구는 네 갈래입니다. 첫째, <strong>공개 벤치마크와 완전 재현 패키지</strong>를 만드는 일입니다. 현재 thesis 조각에는 데이터 규모와 알고리즘 파라미터가 일부 노출되어 있지만, 코드와 평가 파이프라인의 완전 공개 여부는 확인되지 않았습니다. 둘째, <strong>도메인 일반화 실험</strong>입니다. Chopin/Mozart/Beethoven 중심 구성을 넘어, 재즈·현대음악·비서양 음악·저품질 rehearsal audio까지 확장해야 “robust”라는 말이 더 강해집니다. 셋째, <strong>retrieval + tracking의 end-to-end 학습화</strong>입니다. thesis는 전사–fingerprint–DB lookup–agent tracking의 모듈형 체계인데, 이것을 differentiable 또는 jointly trained framework로 바꾸면 적응성이 높아질 수 있습니다. 넷째, <strong>구조 차이 stress test</strong>입니다. arbitrary repeats, skips, inserts, ornaments, cadenzas, trills를 체계적으로 합성·주석화한 평가셋을 만들고, thesis 계열과 최신 neural 계열을 정면 비교하면 이 분야의 실제 난제가 더 정확히 보일 것입니다. <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[38]</a></p>
+<p>이 보고서의 가장 큰 제한도 분명히 적어 두겠습니다. 제공된 원본 PDF는 현재 도구에서 직접 렌더링되지 않았기 때문에, 본 분석은 JKU/cp.jku에 남아 있는 페이지 조각(ix, p.46, p.47, p.67, p.87, p.98)과 해당 thesis가 통합한 원 논문들을 중심으로 재구성되었습니다. 따라서 논문의 전체 장 구성, 모든 실험표, 부록, 코드/데이터 명시를 100% 포괄했다고 말할 수는 없습니다. 반대로 말하면, <strong>핵심 기여와 시스템 구조는 높은 신뢰도로 파악되지만, 세부 구현의 모든 항목은 full-PDF direct read가 가능할 때 한 번 더 검증하는 것이 가장 좋습니다.</strong> <a href="">[39]</a></p>
+<p>핵심 참고문헌은 다음 정도를 우선 읽으면 충분합니다.</p>
+<ul>
+<li>Roger Dannenberg<a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[25]</a>, 1984. 실시간 자동 반주의 매우 초기 고전. score following의 문제 정의를 이해하는 데 좋습니다. <a href="https://www.researchgate.net/publication/382971148_TheGlueNote_Learned_Representations_for_Robust_and_Flexible_Note_Alignment?utm_source=chatgpt.com">[40]</a></li>
+<li>Simon Dixon<a href="https://www.researchgate.net/publication/382971148_TheGlueNote_Learned_Representations_for_Robust_and_Flexible_Note_Alignment?utm_source=chatgpt.com">[26]</a>, 2005. on-line time warping의 직접 선행. thesis의 기술적 출발점입니다. <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[41]</a></li>
+<li>Andreas Arzt<a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[1]</a>, Gerhard Widmer<a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[7]</a>, 2010. <em>Simple Tempo Models for Real-time Music Tracking</em>. thesis의 tempo model 장을 이해하는 가장 핵심 논문입니다. <a href="https://www.researchgate.net/publication/264011151_Simple_Tempo_Models_for_Real-time_Music_Tracking?utm_source=chatgpt.com">[42]</a></li>
+<li>Andreas Arzt, Gerhard Widmer, Simon Dixon, 2012. <em>Adaptive Distance Normalization for Real-Time Music Tracking</em>. 특징량 설계와 거리 정규화의 핵심 논문입니다. <a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[43]</a></li>
+<li>Andreas Arzt, Gerhard Widmer, 2015. <em>Real-time Music Tracking using Multiple Performances as a Reference</em>. 실제 연주를 reference로 쓰는 전략의 핵심 논문입니다. <a href="https://www.researchgate.net/publication/280156207_Real-time_Music_Tracking_using_Multiple_Performances_as_a_Reference?utm_source=chatgpt.com">[44]</a></li>
+<li>Maarten Grachten 등, 2013. <em>Automatic alignment of music performances with structural differences</em>. 구조 차이 문제를 보는 비교축으로 유용합니다. <a href="https://www.researchgate.net/publication/304424926_Automatic_alignment_of_music_performances_with_structural_differences?utm_source=chatgpt.com">[45]</a></li>
+<li>Florian Henkel 등, 2019/2021 이후의 score-image/direct RL 계열 문헌. 이 thesis 이후 분야가 어디로 진화했는지 보는 데 좋습니다. <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[46]</a></li>
+</ul>
+<p><a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[1]</a> <a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[16]</a> <a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[27]</a> <a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[29]</a> <a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">[43]</a> ADAPTIVE DISTANCE NORMALIZATION FOR REAL-TIME MUSIC TRACKING</p>
+<p><a href="https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com">https://citeseerx.ist.psu.edu/document?doi=c6842d058b78973f3d6022a67faa257eb0cb1737&amp;repid=rep1&amp;type=pdf&amp;utm_source=chatgpt.com</a></p>
+<p><a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[2]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[3]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[4]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[5]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[7]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[9]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[11]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[12]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[13]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[14]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[15]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[17]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[18]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[19]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[20]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[21]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[22]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[23]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[36]</a> <a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">[38]</a> Submitted by</p>
+<p><a href="https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com">https://www.cp.jku.at/research/papers/Arzt_Dissertation.pdf?utm_source=chatgpt.com</a></p>
+<p><a href="">[6]</a> <a href="">[39]</a> Internal Error</p>
+<p><a href="https://epub.jku.at/obvulihs/content/titleinfo/1611839?utm_source=chatgpt.com">[8]</a> Hochschulschriften / Flexible and robust music tracking</p>
+<p><a href="https://epub.jku.at/obvulihs/content/titleinfo/1611839?utm_source=chatgpt.com">https://epub.jku.at/obvulihs/content/titleinfo/1611839?utm_source=chatgpt.com</a></p>
+<p><a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[10]</a> <a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[30]</a> <a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[34]</a> <a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">[35]</a> Frontiers | Real-Time Music Following in Score Sheet Images via Multi-Resolution Prediction</p>
+<p><a href="https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com">https://www.frontiersin.org/articles/10.3389/fcomp.2021.718340/full?utm_source=chatgpt.com</a></p>
+<p><a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[24]</a> <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[25]</a> <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[28]</a> <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[33]</a> <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[37]</a> <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[41]</a> <a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">[46]</a> Score Following as a Multi-Modal Reinforcement Learning Problem | Transactions of the International Society for Music Information Retrieval</p>
+<p><a href="https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com">https://transactions.ismir.net/articles/10.5334/tismir.31?utm_source=chatgpt.com</a></p>
+<p><a href="https://www.researchgate.net/publication/382971148_TheGlueNote_Learned_Representations_for_Robust_and_Flexible_Note_Alignment?utm_source=chatgpt.com">[26]</a> <a href="https://www.researchgate.net/publication/382971148_TheGlueNote_Learned_Representations_for_Robust_and_Flexible_Note_Alignment?utm_source=chatgpt.com">[40]</a> (PDF) TheGlueNote: Learned Representations for Robust and Flexible Note Alignment</p>
+<p><a href="https://www.researchgate.net/publication/382971148_TheGlueNote_Learned_Representations_for_Robust_and_Flexible_Note_Alignment?utm_source=chatgpt.com">https://www.researchgate.net/publication/382971148_TheGlueNote_Learned_Representations_for_Robust_and_Flexible_Note_Alignment?utm_source=chatgpt.com</a></p>
+<p><a href="https://www.researchgate.net/publication/304424926_Automatic_alignment_of_music_performances_with_structural_differences?utm_source=chatgpt.com">[31]</a> <a href="https://www.researchgate.net/publication/304424926_Automatic_alignment_of_music_performances_with_structural_differences?utm_source=chatgpt.com">[45]</a> (PDF) Automatic alignment of music performances with structural differences</p>
+<p><a href="https://www.researchgate.net/publication/304424926_Automatic_alignment_of_music_performances_with_structural_differences?utm_source=chatgpt.com">https://www.researchgate.net/publication/304424926_Automatic_alignment_of_music_performances_with_structural_differences?utm_source=chatgpt.com</a></p>
+<p><a href="https://www.andreas-arzt.com/publications/?utm_source=chatgpt.com">[32]</a> Publications | Andreas Arzt</p>
+<p><a href="https://www.andreas-arzt.com/publications/?utm_source=chatgpt.com">https://www.andreas-arzt.com/publications/?utm_source=chatgpt.com</a></p>
+<p><a href="https://www.researchgate.net/publication/264011151_Simple_Tempo_Models_for_Real-time_Music_Tracking?utm_source=chatgpt.com">[42]</a> (PDF) Simple Tempo Models for Real-time Music Tracking</p>
+<p><a href="https://www.researchgate.net/publication/264011151_Simple_Tempo_Models_for_Real-time_Music_Tracking?utm_source=chatgpt.com">https://www.researchgate.net/publication/264011151_Simple_Tempo_Models_for_Real-time_Music_Tracking?utm_source=chatgpt.com</a></p>
+<p><a href="https://www.researchgate.net/publication/280156207_Real-time_Music_Tracking_using_Multiple_Performances_as_a_Reference?utm_source=chatgpt.com">[44]</a> (PDF) Real-time Music Tracking using Multiple Performances as a Reference</p>
+<p><a href="https://www.researchgate.net/publication/280156207_Real-time_Music_Tracking_using_Multiple_Performances_as_a_Reference?utm_source=chatgpt.com">https://www.researchgate.net/publication/280156207_Real-time_Music_Tracking_using_Multiple_Performances_as_a_Reference?utm_source=chatgpt.com</a></p>
+</template>

@@ -1,0 +1,398 @@
+                                                   RUMAA: Repeat-Aware Unified Music Audio Analysis for
+                                               Score-Performance Alignment, Transcription, and Mistake Detection
+                                                                                     Sungkyun Chang, Simon Dixon, Emmanouil Benetos
+
+                                                                             Centre for Digital Music, Queen Mary University of London, UK
+
+                                            Abstract—This study introduces RUMAA, a transformer-based frame-             Score                                            Performance
+                                                                                                                                                          e   f   g
+                                         work for music performance analysis that unifies score-to-performance
+                                         alignment, score-informed transcription, and mistake detection in a near                                                                                         5   6
+                                                                                                                                                                               1                  4
+                                         end-to-end manner. Unlike prior methods addressing these tasks separately,                      a         b                                   2
+                                         RUMAA integrates them using pre-trained score and audio encoders and
+                                                                                                                                                          d
+                                         a novel tri-stream decoder capturing task interdependencies through                                                                                              3
+                                         proxy tasks. It aligns human-readable MusicXML scores with repeat
+                                         symbols to full-length performance audio, overcoming traditional MIDI-                                           c
+arXiv:2507.12175v1 [cs.SD] 16 Jul 2025
+
+
+
+
+                                         based methods that rely on manually unfolded score-MIDI data with                                                                         2 second
+                                         pre-specified repeat structures. RUMAA matches state-of-the-art alignment
+                                         methods on non-repeated scores and outperforms them on scores with                                  T.Reset
+                                         repeats in a public piano music dataset, while also delivering promising
+                                         transcription and mistake detection results.                                                        T
+
+
+
+
+                                                                                                                          Proxy Task 1
+                                                                                                                                             T.Micro
+                                                                 1. INTRODUCTION                                                             Velocity
+                                         Music Performance Analysis [1] (MPA), a key area of Music                                           Duration
+                                         Information Retrieval (MIR), investigates the relationship between                                  Pitch
+                                         a musical score and its performance across various genres and
+                                                                                                                                             Ignore (-)
+                                         instruments. This study focuses on classical piano music, examining
+                                         how performers adhere to the score, what deviations occur, and how                                                           1    2       3          4       5           6
+                                                                                                                          Proxy Task 3
+
+
+
+                                         audio translates into symbols. In classical music, where score fidelity is                          Match / Insert
+                                                                                                                                             / Delete                 M    I   D   M D        M M                 M
+                                         relatively critical, these questions support applications like tutoring [2]
+                                         and assessment.                                                                                     Repeat
+
+                                            We address three essential tasks: score-to-performance alignment,                                Ignore (-)
+                                         score-informed transcription, and mistake detection. Scores, with
+                                         symbolic repeats and expressions, contrast with audio performances.                                                          a        b   c   d      e       f           g
+                                         Prior work treated these tasks separately—e.g., alignment mapping                                   Time Sig.
+                                         notes, transcription converting audio, and mistake detection identifying                            Bar
+                                                                                                                          Proxy Task 2
+
+
+
+
+                                         errors [3], [4]—yet their interdependence is clear: alignment reveals
+                                                                                                                                             Pos
+                                         matched or missing notes signaling mistakes, while transcription
+                                                                                                                                             Pos.Micro
+                                         leverages alignment for accurate audio-to-symbol conversion.
+                                            This interdependence suggests a unified approach would be more                                   Velocity
+                                         effective. Additionally, conventional MIDI-based representations                                    Duration
+                                         cannot handle repeat symbols, which are often ignored in practice but                               Pitch
+                                         strictly followed in formal performances. This poses challenges for
+                                                                                                                                             Ignore (-)
+                                         MIDI-based alignment methods requiring manually verified, repeat-
+                                         unfolded scores. In contrast, RUMAA directly processes repeat symbols.
+                                                                                                                       Fig. 1: Token streams for proxy tasks. Top: Example score and audio
+                                            We propose RUMAA [ru:ma:] illustrated in Fig. 2, a transformer-            performance (visualized as a piano-roll), with orange highlights (missing) for
+                                         based framework unifying these tasks with key features:                       missing score notes and pastel blue highlights (extra) for extra performance
+                                                                                                                       notes. Bottom: RUMAA decoder outputs for performance (Proxy Task 1), score
+                                           • Proxy-driven multi-task model: Employs three proxy tasks                  (Proxy Task 2), and alignment (Proxy Task 3), as detailed in Section 3 and
+                                             to encode target task interdependencies, enhancing multi-task             Table 1. Yellow boxes (□) denote exclusive tokens, and dotted boxes indicate
+                                             learning for transcription, alignment, and mistake detection.             silence tokens. Patterns ensure grayscale readability. Best viewed in color.
+                                           • Multimodal and crossmodal seq-to-seq: Utilizes pre-trained score
+                                             and audio encoders to jointly process symbolic scores and audio,                                             2. RELATED WORK
+                                             enabling crossmodal reasoning and producing structured outputs            Score-performance alignment [5, pp. 115–166] employs cross-modal
+                                             that reflect task dependencies.                                           methods that directly align heterogeneous representations or symbolic
+                                           • Repeat handling: Handles repeats by aligning to performed
+                                                                                                                       methods that convert both modalities into a common space. Most
+                                             structure without pre-unfolded scores, enabling adaptation to             methods adopt symbolic approaches, while cross-modal methods [6],
+                                             real-world performance variations.                                        [7] align in the audio domain using features like chromagrams, making
+                                         This unified approach enables robust and flexible music performance           note-level alignment challenging. Conventional DTW [8]–[10] and
+                                         analysis, bridging symbolic and audio modalities through proxy-driven,        HMM-based [3] methods typically align transcribed symbolic se-
+                                         crossmodal learning.                                                          quences, incurring complexity and cascading errors from transcription.
+                                                                           P.E.                                                                                                 P.E.
+                                                  Score Processing
+                                                                                                      P.E.
+                                                                                                                                 Decoder (x6)
+                                                                                                                                           Self-Attention                      Multi-ch
+                                                                                       Bar-level                                 K,V
+                                                                                                                                                               Q                Emb.
+                                                                                       Patches
+                                        MusicXML Score                                                                                     Perf. Cross-Attention
+
+                                                                                                                                           Gated FFN
+                                                                                                                                 K,V                          Q
+
+
+
+
+                                                                                                                                                                                       Auto-regressive
+                                                                           Score Encoder             Audio Encoder
+                                                                           (M3)                                                            Score Cross-Attention
+                           Conversion to Interleaved ABC
+                                                                                                                                           Gated FFN
+
+
+     %%score { 1 | 2 }
+                                                                                     Bar-patching                                            split
+     L:1/8
+     Q:1/4=248                                                                                                                                                                 Multi-ch
+                                  <head>                                                                                                                                       LM head
+     M:2/4                                                                           emb.
+     K:Ab
+     V:1 treble nm="Piano"                                                     M3 Charater-level      STFT→ Pre-encoder            Output: 3-channel Multi-sequence Decoding
+                                                                                  Tokenizer                (12 Hz)
+     V:2 bass                     <body>                                                                                                  Proxy T1: Score-Aligned Performance
+                                                                                                                                          Transcription
+
+     [V:1]|:!p!"^Allegro molto" ([Ac]2 [=EB]2|[V:2]|:([F,,F,]2 [G,,G,]2|                                                                  Proxy T3: Edit Operation Tagging
+                                                                           <
+     …                                                                            Input Score ABC                 Audio
+                                                                           h                                                              Proxy T2: Performance-Aligned Score
+                                                                                      <body>
+                                                                           >
+                                                                                                                  input                   Conversion
+
+
+Fig. 2: Overview of RUMAA framework. Left: The input MusicXML score is converted into an interleaved ABC representation (Section 4.1). Center: The
+score and performance audio are encoded into score (Section 4.1) and audio embeddings (Section 4.2). Right: The decoder (Section 4.3), conditioned on score
+and audio context, autoregressively generates multi-channel tokens. Each channel corresponds to a proxy subtask (Section 3) related to our main tasks.
+
+   Repeat handling is a known issue [11] in alignment methods. MIDI-                                Table 1: Token definition. Tokens marked with ⋆ are exclusive, silencing
+based approaches struggle since MIDI lacks explicit repeat notations.                               other multi-class tokens in their channel. <BOS> and <EOS> are global tokens
+                                                                                                    that silence all channels. N includes a silence token per class.
+JumpDTW [11], [12] uniquely handles repeats by aligning image-
+domain scores with audio. Traditional methods rely on global structure                               Token                     Range         N       Description
+analysis followed by local matching, while Transformer architectures                                 (Performance Tokens)
+may learn hierarchical patterns through multi-head attention, though                                 T (onset time)            0:32          34      62.5 ms grid timing
+long-context handling [13] remains challenging.                                                      T.Reset ⋆                 None          2       Reset T every 2 seconds
+                                                                                                     T.Micro                   -5:5          11      6.25 ms adjustment
+   Recent deep learning methods include the GlueNote Trans-                                          Velocity                  1:32          32      MIDI velocity, 4-unit steps
+former [14], which enhances DTW for symbolic alignment but requires                                  Duration                  0:48          49      Up to 4s: 31.25/62.5/125 ms
+external transcription. Chou et al. [15] proposed a Transformer for                                  Pitch                    21:109         89      Piano MIDI pitch
+mistake detection, but we exclude it from baselines as it assumes pre-                               -⋆                        None          2       Skip an extra note
+aligned 2-second score-audio pairs, making it unsuitable for inference                               (Score Tokens)
+on unaligned data.                                                                                   Time Sig. ⋆            1/4 to 12/8      12      Time signatures (top/bottom)
+   Score-informed transcription methods [4], [16] demonstrate that                                   Bar                       0:50          51      Indexing bar
+                                                                                                     Pos                       0:32          33      40-tick (32nd note) grid
+joint modeling enables accurate transcription and simultaneous                                       Pos.Micro                  -5:5         11      4-tick adjustment
+alignment with mistake detection, inspiring our unified transformer-                                 Duration                  0:48          49      40/80/160-tick steps
+based approach.                                                                                      Pitch                    21:109         89      Piano MIDI pitch
+                                                                                                     -⋆                        None           2      Skip a missing note
+                              3. PROXY TASK DESIGN
+                                                                                                     (Alignment Tokens)
+We address three interdependent tasks: score-performance alignment,                                  Insert/Delete/Match       None           4      Extra/Missing/Matched note
+score-informed transcription, and mistake detection. To efficiently                                  Repeat                    None           2      Repeated notes or bar
+                                                                                                     -⋆                        None           2      Skip
+learn these task relationships and enable their joint inference, we
+formulate a proxy task that learns to generate a tokenized alignment                                 BOS, EOS                  None           2      Begin and end of sequence
+sequence of performance (T1) and score (T2) events, including explicit
+edit operations (T3) through our tri-stream decoding.                                                  This parallel decoding paradigm mirrors post-processed outputs
+   The core idea (Figure 1) is to create a strict one-to-one alignment by                           from HMM/DTW-based methods using the Matchnote format [3],
+explicitly modeling extra or missing notes. This sequence integrates                                [10] adapted into a tokenized neural-friendly representation. While
+edit operations such as <Match>, <Insert>, and <Delete>.                                            traditional approaches rely on global structure- or cluster-level align-
+When a note is present in the performance but absent in the score                                   ment followed by local matching, our Transformer decoder directly
+(an insertion) or vice versa (a deletion), the exclusive token <-> acts                             learns these hierarchical patterns via cross-attention. Conditioning on
+as a placeholder in the corresponding channel for the missing note.                                 full score input with barlines and repeats allows it to handle omissions
+This maintains a consistent, perfectly aligned structure.                                           and non-linear repeats without explicit rules.
+   Figure 1 illustrates how each decoder channel corresponds to a                                      Table 1 provides the complete token definitions. Our tri-stream
+proxy task. These tasks include:                                                                    tokenization (Table 1) extends CP-Words [17] by introducing struc-
+   T1. Score-Aligned Performance Transcription outputs perfor-                                      tured tokens across three aligned streams: performance, score, and edit
+          mance tokens with timing and note information.                                            operations. Each note is encoded with onset, duration, and pitch tokens,
+   T2. Performance-Aligned Score Conversion outputs score                                           including exclusive and silence tokens. Compared to serialized MIDI-
+          tokens following performance order.                                                       like [18], [19] tokens, our design yields over 3× shorter sequences
+   T3. Edit Operation Tagging outputs alignment operation tokens.                                   and enables simpler note-level alignment. By adopting two-level
+quantization—<T> and <T.Micro> [20]—and a timing reset token                by a multi-sequence language model (LM) head [17] to generate
+[21], we achieve higher temporal resolution with fewer tokens than          parallel sequences. Each head corresponds to a proxy task defined in
+prior schemes, which typically require over 100 timing tokens per           Section 3: T1, T2, T3. The third head also has the potential to decode
+second. In contrast, our timing and duration representations are length-    extended compound tokens, such as beat, tempo, or other attributes
+invariant, each using a fixed vocabulary of fewer than 50 tokens.           relevant to music performance modeling. Note that tokens with the
+                                                                            same name across score and performance channels (e.g., <Pitch>;
+                             4. MODEL
+                                                                            see Table 1) use separate embeddings and do not share weights.
+Fig. 2 illustrates the structure of RUMAA, which integrates pre-
+trained score and audio encoders with a custom decoder. Our                                    5. EXPERIMENTAL SETUP
+design specifically addresses the training memory bottleneck of long        5.1. Data Preparation and Training
+audio inputs—unlike symbolic alignment models [14] or short-audio           For pre-training the audio encoder, we use the YourMT3 dataset [22],
+transcription models (e.g., MT3 [18], [22]) without score. We adopt:        combining 10 public multi-instrument transcription datasets including
+(1) efficient score representation using ABC notation with bar-level        Maestro [30], reserving the official test split for evaluation. While
+patching, (2) optimized audio encoding to reduce token length, and          prioritizing piano, we maintain multi-instrument pre-training, as initial
+(3) hierarchical cross-attention decoder with tri-stream output strategy.   findings show that mapping speech to singing and non-musical or
+The following subsections detail these components.                          percussive sounds to drums—or ignoring them—boosts robustness in
+4.1. Score Encoder                                                          live piano transcription.
+As shown in the left panel of Fig. 2, the score encoder converts               For post-training the decoder, we use the (n)ASAP dataset [10],
+MusicXML [23] to ABC notation [24], representing each bar with up           a Maestro [30] subset with 222 MusicXML [23] scores and 519
+to 64 characters [25]. Both notes and key musical elements (dynamics,       piano performances, including MIDI, audio, and manually verified
+repeats, keys, time signatures, and pedal) are retained.                    note alignments [10]. We held out 20 movements and 50 recordings
+   We adopt the pre-trained M3 encoder from CLaMP2 [25], which              from six composers—Bach, Beethoven, Chopin, Haydn, Liszt, and
+relies on character-level tokenization and bar-level patching to process    Schubert—as the test set. MusicXML scores are converted to ABC-
+ABC notation. Each character is encoded as a 12-dim embedding,              interleaved format [25] for the score encoder. Tri-stream tokens for
+and 64 embeddings per bar are stacked into a single 768-dim bar-            the proxy tasks derived from (n)ASAP’s alignment, MIDI, and score
+level token. A 12-block Transformer with multi-head self-attention,         data. We randomly sample one-minute audio segments and extract up
+pre-trained to capture musical events without losing note-level details     to 50 bars of score content that cover the corresponding passage.
+from long sequences, produces a 768-dim representation [25]. This              To augment (n)ASAP’s semi-professional performances, which
+output is linearly projected from 768 to 1,024 dimensions before            limit mistake learning and rarely include repeats in 1-minute segments,
+being fed into the decoder described in Section 4.3.                        we create five score-modulated versions, altering 10% of notes via
+                                                                            pitch modulation (±5 semitons) or deletion, and five performance-
+4.2. Performance Audio Encoder                                              modulated versions using Piano-SynMist [31] and MIDI-DDSP [32].
+We use a spectrogram from 16 kHz mono audio (STFT: 2,048                    This expands the dataset tenfold for robust proxy task training. For
+samples window, 10ms hop). A pre-encoding layer (three ResNet               repeat simulation, we add repeat symbols to random bars in 20% of
+blocks) processes features to produce 1024-dim outputs at 12 frames         ABC-interleaved scores lacking repeats, repeating the audio.
+per second. Inspired by Music2Latent [26], this lower frame rate               To evaluate score-performance alignment, we use the revised
+efficiently supports longer sequences without degrading transcription       Vienna [33], with high-quality piano performances, transcriptions,
+performance, as verified in preliminary experiments.                        MusicXML scores, and manual alignments. Score-informed transcrip-
+   The audio encoder is a 12-layer self-attention Transformer, pre-         tion is tested on (n)ASAP [10], score-free transcription on Maestro
+trained following YourMT3+ [22] with three modifications: adapted           [30]. Lastly, STPD [4] is used for mistake detection benchmark, with
+for lower-frame-rate inputs, re-implemented with flash attention, and       its score-MIDI converted to the ABC-interleaved format. All the
+pre-trained decoder predicting MIDI velocity tokens (0-127). In             evaluation datasets are isolated from the training dataset.
+RUMAA, we reuse only the pre-trained and frozen audio encoder,                 We trained our decoder alongside an off-the-shelf M3 [25] score
+which produces 1,024-dim representations.                                   encoder and a pre-trained performance audio encoder described
+                                                                            in Section 4.1. For this post-training, we adopted AdamW-Scale
+4.3. Decoder
+                                                                            optimizer [34] and scheduler from the prior work [22]. Training takes
+The decoder, shown as the green box in the center of Fig. 2, is a           on three A6000 GPUs or H100 GPUs using a cosine schedule with
+6-block Transformer autoregressively generating tri-stream outputs          initial and final learning rates of [1e-02, 1e-05] and a 1,000-step
+conditioned on audio (Section 4.2) and score (Section 4.1) features.        warm-up from 1e-03, spanning approximately two days.
+   Our key architectural choice is hierarchical cross-attention, which
+involves separate conditioning for audio then score, in contrast to         5.2. Evaluation Metrics
+standard concatenation [15] or prepending input. Each block processes       Since our task includes transcription, we adopt a widely used ±50 ms
+shifted outputs via self-attention, then cross-attention with audio, then   onset tolerance [35] across all evaluations.
+score. This sequential approach resembles iterative transcription/score-       For score-to-performance alignment, we employ the note-level
+following and is more efficient than simple context concatenation.          Falign metric [10]. This metric evaluates matched note pairs and
+Replacing hierarchical attention with simple concatenation leads to         inserted/deleted notes as True Positives, unmatched predicted notes
+1% performance drop despite similar model size.                             as False Positives, and missing ground-truth notes as False Negatives.
+   Built on TorchScale [27], the Transformer uses a GatedFFN [28],          Originally designed for symbolic alignment tasks without repetitions,
+[29] and extends standard decoder blocks with an additional cross-          we adapt it by redefining repeated notes to be counted independently.
+attention layer as mentioned above. The final 1024-dime latent                 For score-informed transcription, we utilize two metrics derived
+representation is divided into three streams (1024 // 3), each processed    from mir_eval [35]: Fon to evaluate note onset detection and Foff-vel
+to assess combined onset, offset, and velocity detection. Additionally,         Table 3: Note-level transcription performance (Onset, Offset-Velocity F1
+MAEvel measures the mean absolute error of velocity (0–127).                    and Velocity MAE) on the score-informed piano transcription task. “w/o
+                                                                                score” indicates evaluation without score guidance, while “Score-informed”
+   For the mistake detection task in Table 4, we adopt four metrics
+                                                                                uses aligned score data from the (n)ASAP dataset [10] on the same test
+consistent with prior studies [16], [36]: Fcorrect , Acccorrect for correctly   set. Models marked with an asterisk (*) are trained for multi-instrument
+played notes, Fextra , Accextra for erroneous notes not in the score,           transcription, while the others are piano-only.
+and Fmissed , Accmissed for notes omitted from the performance despite                Model                          Fon ↑      Foff-vel ↑    MAEvel ↓
+being in the score.
+                                                                                      (w/o score: Maestro)
+                               6. RESULT                                              hFT-T [37]                      97.4          89.5         -
+                                                                                      IS-CRF [38]                     98.3          93.0         -
+                                                                                      MT3∗ [18]                       84.9           -           -
+Table 2: Note-level alignment (Falign ) on the piano score-to-performance             YourMT3+∗ [22]                  97.0           -           -
+task. “w/o repeat” indicates evaluation with all songs from Vienna [33]               RUMAA∗                          96.1          76.0        3.5
+dataset, while “w/ repeat” indicates evaluation with two songs containing
+repeat symbols (Mozart K331, Schubert D783).                                          (w/o score: (n)ASAP)
+        Model                              w/o repeat    w/ repeat                    RUMAA∗                          95.9          75.8        4.6
+
+        (symbolic alignment)                                                          (score-informed: (n)ASAP)
+        Nakamura HMM [3]                      99.0          36.4                      RUMAA                           99.1          93.6        4.0
+        hDTW+sym [10]                         98.5          28.2
+        GlueNote Transformer [14]             98.5          12.7                Table 4: Benchmark for piano mistake detection on the STPD [4] dataset.
+        (symbolic-audio alignment)                                               Model         w/o Score                     Score-informed
+        AMT [22] + Nakamura [3]               97.4          31.8
+                                                                                                  Fon      Fcorrect Fextra Fmissed Acorrect Aextra Amissed
+        AMT [22] + hDTW+sym [10]              96.9          26.5
+        AMT [22] + GlueNote [14]              96.9          26.3                 Wang [16]        –         99.2   84.9      92.6      98.4    75.2   86.9
+        RUMAA (ours)                          98.4          98.4                 Ewert [36]       –         99.3   77.0      94.5      98.6    64.0   89.9
+                                                                                 Benetos [4]     91.1        –      –         –        93.2    60.5   49.2
+                                                                                 RUMAA           92.8       99.5   89.2      95.3      98.7    80.3   90.4
+  This section reports the evaluation of RUMAA on score-to-
+performance alignment, score-informed transcription, and mistake
+detection. Results are summarized in Table 2–4, showing its perfor-             prediction performance drops by up to 18% compared to other
+mance across these tasks within a unified framework, with particular            models. This may stem from inconsistent offset annotations in the
+focus on scores with repeats and score-informed processing.                     multi-instrument dataset used to pre-train our audio encoder, unlike
+                                                                                competing models optimized for Maestro. However, with score
+6.1. Score-to-Performance Alignment                                             information on (n)ASAP, the proposed RUMAA achieves a near-
+For the score-to-performance alignment task, Table 2 reports Falign             perfect onset F1 score (99.1), surpassing all baselines by a clear
+values on the Vienna [33] piano dataset. The “without repeat” setting           margin, demonstrating that leveraging score information significantly
+uses unfolded scores across all songs, while the “with repeat” setting          enhances transcription performance.
+applies original scores to songs with repeat symbols. The upper section,
+                                                                                6.3. Piano Mistake Detection
+symbolic alignment, includes methods HMM [3], hDTW+sym [10],
+and GlueNote Transformer [14], aligning ground truth performance                For mistake detection, Table 4 presents a performance comparison on
+MIDI with unfolded score MIDI under ideal conditions without                    the STPD [4] piano dataset alongside previous NMF-based methods.
+transcription errors nor repeats. Nakamura HMM achieves the highest             RUMAA outperforms prior NMF-based approaches [4], [16], [36] in
+performance on non-repeated scores, with RUMAA trailing by less than            mistake detection. Without score guidance, it surpasses Benetos et
+1% (F1-score 98.4). On scores with repeats, however, these methods              al. [4] by approximately 2%; with score information, it achieves up
+drop by up to 87%, while RUMAA maintains 98.4. Conventional                     to a 15% improvement in detecting extra and missed notes while
+methods [3], [10], [14] using score-MIDI cannot interpret repeat                maintaining top accuracy metrics.
+symbols, often aligning only the beginning and end of repeated scores.                         7. DISCUSSION AND FUTURE WORK
+This is particularly noticeable in GlueNote, which struggles more
+with repeats.                                                                   RUMAA demonstrates that a unified model for score-performance
+   The lower section, symbolic-audio alignment, reflects alignment              alignment, transcription, and mistake detection achieves strong
+errors that inherently include prior transcription errors, as the               performance across all tasks. Notably, it performs well on scores
+alignment is performed on transcribed symbolic data. On repeated                with repeats, indicating effective modeling of MusicXML repeat
+scores, these methods drop by up to 87%, while RUMAA maintains                  structures. A key advantage of the unified audio and score encoders
+98.4. In symbolic-audio alignment, with transcription errors, baselines         is reduced transcription error via score-informed decoding, in contrast
+combining an external automatic music transcription (AMT) [22]                  to conventional AMT + HMM/DTW pipelines.
+with prior methods decline by up to 70% on repeats, but RUMAA                      However, the model struggles with long audio sequences (over
+outperforms them by over threefold, enhancing practicality without              one minute) due to cross-chunk memory limits, restricting its use
+an external transcriber.                                                        on extended real-world recordings [39] for alignment and mistake
+                                                                                detection. Evaluations were also limited to relatively clean, single-
+6.2. Score-informed Piano Transcription                                         instrument data, and online processing remains unexplored.
+Table 3 evaluates score-informed transcription on the (n)ASAP                      To address these limitations, future work could proceed along one
+dataset [10], reporting onset F1, offset-velocity F1, and velocity              of two avenues: developing memory-augmented architectures [40]
+MAE. Without score guidance on Maestro, RUMAA competes with                     to overcome sequence length constraints, or enhancing the model’s
+top models like hFT-T [37] and YourMT3+ [22], though it falls                   generalizability by extending it to multi-instrument scores and more
+short of IS-CRF [38] by about 2%. RUMAA’s note offset-velocity                  diverse, real-world recordings.
+                       8. ACKNOWLEDGMENT                                            [20] J. Lenz and A. Mani, “Pertok: Expressive encoding and modeling of
+                                                                                         symbolic musical ideas and variations,” in International Society for Music
+This research partially utilized AI Industrial Convergence Cluster                       Information Retrieval Conference (ISMIR), 2024.
+supported by the Ministry of Science and ICT of Korea, and Gwangju                  [21] L. Bradshaw, H. Fan, A. Spangher, S. Biderman, and S. Colton, “Scaling
+Metropolitan City.                                                                       self-supervised representation learning for symbolic piano performance,”
+                                                                                         arXiv preprint arXiv:2506.23869, 2025.
+                                                                                    [22] S. Chang, E. Benetos, H. Kirchhoff, and S. Dixon, “Yourmt3+: Multi-
+                              REFERENCES                                                 instrument music transcription with enhanced transformer architectures
+                                                                                         and cross-dataset stem augmentation,” in 2024 IEEE International
+ [1] A. Lerch, C. Arthur, A. Pati, and S. Gururani, “Music performance                   Workshop on Machine Learning for Signal Processing (MLSP), 2024.
+     analysis: A survey,” in International Society for Music Information            [23] W. M. N. C. Group, “Musicxml 4.0,” May 2021, accessed: 2025-03-27.
+     Retrieval Conference (ISMIR), 2019.                                                 [Online]. Available: https://www.w3.org/2021/06/musicxml40/
+ [2] H. Zhang, V. Cheung, H. Nishioka, S. Dixon, and S. Furuya, “How                [24] C. Walshaw, “A statistical analysis of the abc music notation corpus:
+     does the teacher rate? observations from the neuropiano dataset,” in                Exploring duplication,” in International Workshop on Folk Music Analysis,
+     International Society for Music Information Retrieval Conference (ISMIR)            A. Holzapfel, Ed., 2014.
+     – Late Breaking Demo, 2024.                                                    [25] S. Wu, Y. Wang, R. Yuan, Z. Guo, X. Tan, G. Zhang, M. Zhou, J. Chen,
+ [3] E. Nakamura, K. Yoshii, and H. Katayose, “Performance error detection               X. Mu, Y. Gao et al., “Clamp 2: Multimodal music information retrieval
+     and post-processing for fast and accurate symbolic music alignment.”                across 101 languages using large language models,” arXiv preprint
+     in International Society for Music Information Retrieval Conference                 arXiv:2410.13267, 2024.
+     (ISMIR), 2017.                                                                 [26] M. Pasini, S. Lattner, and G. Fazekas, “Music2latent: Consistency
+ [4] E. Benetos, A. Klapuri, and S. Dixon, “Score-informed transcription                 autoencoders for latent audio compression,” in International Society
+     for automatic piano tutoring,” in IEEE European Signal Processing                   for Music Information Retrieval Conference (ISMIR), 2024.
+     Conference (EUSIPCO), 2012, pp. 2153–2157.                                     [27] S. Ma, H. Wang, S. Huang, W. Wang, Z. Chi, L. Dong, A. Benhaim,
+ [5] M. Müller, Fundamentals of music processing: Audio, analysis, algo-                B. Patra, V. Chaudhary, X. Song, and F. Wei, “TorchScale: Transformers
+     rithms, applications. Springer, 2015, vol. 5.                                       at scale,” CoRR, vol. abs/2211.13184, 2022.
+ [6] M. Müller, A. Arzt, S. Balke, M. Dorfer, and G. Widmer, “Cross-modal          [28] C. Raffel, N. Shazeer, A. Roberts, K. Lee, S. Narang, M. Matena, Y. Zhou,
+     music retrieval and applications: An overview of key methodologies,”                W. Li, and P. J. Liu, “Exploring the limits of transfer learning with a
+     IEEE Signal Processing Magazine, vol. 36, no. 1, pp. 52–62, 2018.                   unified text-to-text transformer,” Journal of machine learning research,
+ [7] R. Agrawal, D. Wolff, and S. Dixon, “Structure-aware audio-to-score                 vol. 21, no. 140, pp. 1–67, 2020.
+     alignment using progressively dilated convolutional neural networks,”          [29] J. Ding, S. Ma, L. Dong, X. Zhang, S. Huang, W. Wang, and F. Wei,
+     in IEEE International Conference on Acoustics, Speech and Signal                    “Longnet: Scaling transformers to 1,000,000,000 tokens,” in Proceedings
+     Processing (ICASSP), 2021.                                                          of the 10th International Conference on Learning Representations, 2023.
+ [8] E. Keogh and C. A. Ratanamahatana, “Exact indexing of dynamic time             [30] C. Hawthorne and et al., “Enabling factorized piano music modeling and
+     warping,” Knowledge and information systems, vol. 7, pp. 358–386, 2005.             generation with the MAESTRO dataset,” in International Conference on
+ [9] F. Simonetta, S. Ntalampiras, and F. Avanzini, “Audio-to-score alignment            Learning Representations (ICLR), 2019.
+     using deep automatic music transcription,” in 2021 IEEE 23rd Inter-            [31] A. Morsi, H. Zhang, A. Maezawa, S. Dixon, X. Serra et al., “Simulating
+     national Workshop on Multimedia Signal Processing (MMSP). IEEE,                     piano performance mistakes for music learning,” in Sound and Music
+     2021, pp. 1–6.                                                                      Computing Conference, 2024.
+[10] S. D. Peter, C. E. Cancino-Chacón, F. Foscarin, A. P. McLeod,                 [32] Y. Wu, E. Manilow, Y. Deng, R. Swavely, K. Kastner, T. Cooijmans,
+     F. Henkel, E. Karystinaios, and G. Widmer, “Automatic note-level score-             A. Courville, C.-Z. A. Huang, and J. Engel, “Midi-ddsp: Detailed
+     to-performance alignments in the asap dataset,” Transactions of the                 control of musical performance via hierarchical modeling,” arXiv preprint
+     International Society for Music Information Retrieval (TISMIR), 2023.               arXiv:2112.09312, 2021.
+[11] C. Fremerey, M. Müller, and M. Clausen, “Handling repeats and jumps           [33] S. Gasser, M. Grachten, T. Gualtieri, and G. Widmer, “Vienna 4x22 Piano
+     in score-performance synchronization.” in International Society for Music           Corpus, Rematched,” https://github.com/OFAI/vienna4x22 rematched,
+     Information Retrieval Conference (ISMIR), 2010.                                     2023, accessed: 2025-03-20.
+[12] M. Shan and T. J. Tsai, “Improved handling of repeats and jumps in             [34] P. Nawrot, “Nanot5: Fast & simple pre-training and fine-tuning of t5
+     audio-sheet image synchronization,” in International Society for Music              models with limited resources,” in Proceedings of the 3rd Workshop for
+     Information Retrieval Conference (ISMIR), 2020.                                     Natural Language Processing Open Source Software (NLP-OSS 2023),
+[13] Z. Dai, Z. Yang, Y. Yang, J. Carbonell, Q. V. Le, and R. Salakhutdinov,             2023, pp. 95–101.
+     “Transformer-xl: Attentive language models beyond a fixed-length context,”     [35] C. Raffel, B. McFee, E. J. Humphrey, J. Salamon, O. Nieto, D. Liang,
+     arXiv preprint arXiv:1901.02860, 2019.                                              and D. P. Ellis, “Mir eval: A transparent implementation of common
+[14] S. D. Peter and G. Widmer, “Thegluenote: Learned representations                    mir metrics.” in International Society for Music Information Retrieval
+     for robust and flexible note alignment,” in Proceedings of the 25th                 Conference (ISMIR), 2014.
+     International Society for Music Information Retrieval Conference (ISMIR),      [36] S. Ewert, S. Wang, M. Müller, M. Sandler, S. Ewert, S. Wang, M. Muller
+     2024.                                                                               et al., “Score-informed identification of missing and extra notes in piano
+                                                                                         recordings,” in International Society for Music Information Retrieval
+[15] B. S.-H. Chou, P. Jajal, N. J. Eliopoulos, T. Nadolsky, C.-Y. Yang, N. Ravi,
+                                                                                         Conference (ISMIR), 2016.
+     J. C. Davis, K. Y.-J. Yun, and Y.-H. Lu, “Detecting music performance
+                                                                                    [37] K. Toyama, T. Akama, Y. Ikemiya, Y. Takida, W.-H. Liao, and Y. Mit-
+     errors with transformers,” in Proceedings of the AAAI Conference on
+                                                                                         sufuji, “Automatic piano transcription with hierarchical frequency-time
+     Artificial Intelligence, 2025.
+                                                                                         transformer,” in International Society for Music Information Retrieval
+[16] S. Wang, S. Ewert, and S. Dixon, “Identifying missing and extra notes in
+                                                                                         Conference (ISMIR), 2023.
+     piano recordings using score-informed dictionary learning,” IEEE/ACM
+                                                                                    [38] Y. Yan and Z. Duan, “Scoring time intervals using non-hierarchical
+     Transactions on Audio, Speech, and Language Processing, vol. 25, no. 10,
+                                                                                         transformer for automatic piano transcription,” arXiv preprint
+     pp. 1877–1889, 2017.
+                                                                                         arXiv:2404.09466, 2024.
+[17] W.-Y. Hsiao, J.-Y. Liu, Y.-C. Yeh, and Y.-H. Yang, “Compound word              [39] S. Flossmann, W. Goebl, M. Grachten, B. Niedermayer, and G. Widmer,
+     transformer: Learning to compose full-song music over dynamic directed              “The magaloff project: An interim report,” Journal of New Music Research,
+     hypergraphs,” in Proceedings of the AAAI Conference on Artificial                   vol. 39, no. 4, pp. 363–377, 2010.
+     Intelligence, vol. 35, no. 1, 2021, pp. 178–186.                               [40] A. Graves, G. Wayne, and I. Danihelka, “Neural turing machines,” arXiv
+[18] J. Gardner, I. Simon, E. Manilow, C. Hawthorne, and J. Engel, “Mt3:                 preprint arXiv:1410.5401, 2014.
+     Multi-task multitrack music transcription,” in International Conference
+     on Learning Representations (ICLR), 2021.
+[19] K. Bhandari, S. Chang, T. Lu, F. R. Enus, L. B. Bradshaw, D. Her-
+     remans, and S. Colton, “Improvnet: Generating controllable musical
+     improvisations with iterative corruption refinement,” arXiv preprint
+     arXiv:2502.04522, 2025.
+

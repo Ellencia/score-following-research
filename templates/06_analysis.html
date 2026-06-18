@@ -1,0 +1,167 @@
+<template id="doc-06_analysis" data-title="[06] Lee 2022 — 분석 보고서" data-docx="papers/06_Lee2022_Imperial/분석_보고서.docx"><h1 id="musical-score-following-and-audio-alignment--분석-보고서-lee-2022-imperial-college-london-fyp">Musical Score Following and Audio Alignment — 분석 보고서 (Lee 2022, Imperial College London FYP)</h1>
+<h2 id="핵심-요약">핵심 요약</h2>
+<p>본 보고서는 Imperial College London 전기전자공학과(EEE)의 학부 졸업 프로젝트(Final Year Project, FYP)로 작성된 Lin Hao Lee의 "Musical Score Following and Audio Alignment"(2022, arXiv 2205.03247v1)를 분석한다. 이 프로젝트는 약 40년에 걸친 score following 연구를 정리한 종합 리뷰(Part I), 두 종류의 오픈소스 평가 testbench(정량/정성) 제안(Part II), 그리고 서로 다른 세 종류의 score follower(beat-tracking 기반 TuneApp Conductor, ASM 기반 오프라인 정렬기, CQT-DTW 기반 실시간 follower)를 직접 구현한 결과(Part III)를 하나의 보고서에 통합한다는 점이 특징이다(p.16). 가장 중요한 정량적 기여는 sliCQ 기반 NSGT-CQT Online follower가 동일 OLTW 구조에서 FFT 기반 baseline(CQT Pseudo Online)을 Bach10 및 BWV846 양 데이터셋에서 일관되게 큰 폭으로 능가한다는 것을 실험으로 보였다는 점이다(p.114-117). 또한 QualScofo라는 정성 평가용 데이터셋과 GitHub 기반 testbench 패키지(flippy 시리즈)를 공개하여 이 분야의 재현성 부족 문제를 해소하려 시도하였다(p.62, 127).</p>
+<h2 id="서지-정보와-접근-범위">서지 정보와 접근 범위</h2>
+<ul>
+<li><strong>저자</strong>: Lin Hao Lee (CID 01403154), Imperial College London, Department of Electrical and Electronic Engineering 학부생(p.1).</li>
+<li><strong>지도교수</strong>: Prof. Patrick A. Naylor (Imperial College EEE), 제2 심사위원: Prof. Athanassios Manikas(p.1).</li>
+<li><strong>유형</strong>: Final Year Project Report (학부 졸업 보고서) — 즉 박사 학위논문이나 정식 저널 논문이 아닌, 학부 4학년 캡스톤 프로젝트 결과물.</li>
+<li><strong>연도</strong>: 2022년 5월 9일 제출, arXiv 업로드 2022-05-06(arXiv:2205.03247v1 [cs.SD]).</li>
+<li><strong>분량</strong>: 본문 약 130쪽(목차+부록 포함), Bibliography 별도(p.132 이후); 코드 라인 수 합계 약 10,145 LoC(p.131).</li>
+<li><strong>섹션 구성</strong>: 3부 구조 — Part I 리뷰(Ch.2 응용/Ch.3 예비/Ch.4 도전과제/Ch.5 문헌 리뷰), Part II Testbench(Ch.6 예비/Ch.7 정량/Ch.8 정성), Part III 구현(Ch.9 TuneApp Conductor/Ch.10 ASM/Ch.11 CQT-DTW), Ch.12 결론(p.5).</li>
+<li><strong>공개 자산</strong>: GitHub <code>flippy-fyp</code> 조직 하 <code>flippy</code>(CQT-DTW follower), <code>flippy-quantitative-testbench</code>, <code>flippy-qualitative-testbench</code>, <code>QualScofo</code> 데이터셋 — 모두 GPLv3 또는 그에 준하는 오픈 라이선스(p.55, 62, 124).</li>
+<li><strong>출처</strong>: 본 분석 보고서의 모든 인용은 <code>/tmp/pdftext/2205.03247v1.txt</code> 추출본의 페이지 번호를 따른다.</li>
+</ul>
+<h2 id="상세-요약">상세 요약</h2>
+<p><strong>문제 정의 및 동기.</strong> Score following이란 사람이 연주하는 음악 음향을 받아 해당 연주가 악보 어느 위치를 지나가는지 실시간으로 추적하는 과제이다(p.15). 응용 분야로는 자동 페이지 넘김(APT), 컴퓨터 반주(computer-aided accompaniment), 연주 분석, 음악 연습 보조, 무대 큐 트리거, 엔터테인먼트 등이 있으며(p.19-22), 본 프로젝트는 저자가 직접 개발 중이던 모바일/웹 음악 연습 앱 TuneApp의 기능 확장이라는 실용적 동기에서 출발하였다(p.15, 67). 저자는 이 분야가 이미 1984년 Dannenberg와 Vercoe의 첫 시스템(p.35) 이래로 약 40년의 역사를 가지고 있음에도, 평가 방식이 표준화되지 못해(MIREX의 한계; 2018년 이후 제출 0건, p.16, 47) 그룹마다 자체 평가 데이터셋과 자체 지표를 사용하고 있다는 문제, 그리고 신규 진입자가 참고할 만한 통합 리뷰가 없다는 문제(p.16)를 핵심 도전과제로 식별한다.</p>
+<p><strong>TuneApp Conductor (Beat-tracking 기반 인터랙티브 follower).</strong> Chapter 9에서 다루는 첫 번째 구현은 score를 한 박(beat) 단위 시퀀스로 표현하고, 사용자가 휴대폰을 흔들거나 화면을 탭하여 각 박을 직접 입력하면 그에 맞춰 오디오 또는 MusicXML 기반 시각적 피드백을 실시간 출력하는 "디지털 지휘자" 응용이다(p.67-72). 이는 엄밀히 말해 입력 오디오로부터 위치를 추정하는 일반적 score follower와 다르지만, 사용자의 비트 입력을 "performance" 신호로 해석하면 score-follower 프레임워크에 포함된다(p.71). TypeScript/React로 구현되어 (음악 재생 변형, MusicXML 변형 두 종류로) TuneApp 서비스 내에 배포되었으며, 박자 변화를 따라 오디오 재생 속도를 실시간으로 늘리거나 줄이는 phase vocoder류 처리가 포함된다(p.69-71). 사용자 테스트 결과 "재미있는" score-following 응용으로서 호평을 받았다(p.72-73, 127).</p>
+<p><strong>ASM (Approximate String Matching) follower.</strong> Chapter 10은 정량 testbench의 ground-truth 자동 생성에 활용할 목적의 비실시간 정렬기를 제안한다(p.75). MIDI score와 MIDI 연주 데이터를 각각 음높이/음표 시퀀스로 인코딩한 뒤, 편집 거리 형태의 동적 계획법(Needleman-Wunsch계 알고리즘 + 화음/장식음 처리 확장)으로 전역 정렬을 산출한다(p.76-86). 화음(p.83) 및 장식음(p.86)을 다루기 위해 후처리 단계와 인접 음표 재배치 단계가 추가되었다. Bach10 데이터셋(MIDI ground truth 보유)에서 모든 10개 악곡에 대해 <code>rp = 1.00</code>, <code>MAE = 0</code>, mismatch 0의 사실상 완벽한 정렬을 달성하였고(p.89, Table 10.2), 이 결과로부터 MAESTRO 데이터셋에 포함된 BWV 846(Prelude/Fugue in C major)에 대해 신뢰성 있는 정량 ground truth를 자동으로 생성할 수 있음을 보였다(p.89-92).</p>
+<p><strong>CQT-DTW score follower (실시간 본 시스템).</strong> Chapter 11은 본 프로젝트의 "flagship" 산출물로서, sliCQ(sliced Constant-Q Transform; Holighaus, Dörfler, Velasco, Grill의 NSGT 계열 알고리즘) 기반 실시간 CQT 특징 추출기 + Online Time Warping(OLTW; Dixon 2005) 정렬기를 결합한 시스템이다(p.94-113). 핵심 설계 결정은 (1) 인간 청각의 로그-주파수 특성과 다중 옥타브 음악의 분해능 요구를 동시에 만족시키기 위해 STFT/MFCC/Chromagram 대신 CQT를 선택하고(p.95), (2) 일반 CQT가 실시간성이 부족하므로 sliCQ로 대체하며, (3) 실시간 정렬에 OLTW를 사용해 가중치 <code>(wa, wb, wc) = (0.5, 1, 1)</code>로 비대칭 step constraint를 둔 점이다(p.106-113). 평가에서 네 가지 시스템 — CQT Offline, NSGT-CQT Offline, CQT (Pseudo) Online (FFT 기반 baseline), NSGT-CQT Online — 을 비교하였다(p.114).</p>
+<p><strong>QualScofo 데이터셋과 testbench.</strong> Part II는 정량 testbench(Ch.7; Python, follower와의 표준 입출력 인터페이스 정의)와 Electron/React 기반 정성 testbench(Ch.8; 사용자가 follower 출력을 sheet 위에서 시각적으로 검증)를 모두 오픈소스로 공개한다(p.51-62). QualScofo는 cello, octet, orchestra, piano 등 5개 그룹·총 16곡으로 구성되며(p.62, Table 8.1-8.2), 1717-1905년 작곡된 클래식 음악 발췌(2분 이내)와 그 PDF/MIDI/MusicXML 악보 + 실연 오디오(YouTube 또는 MAESTRO에서 수집)를 묶어 정성 평가용으로 제공한다(p.62-65). 다양한 악기 편성과 스튜디오/라이브 녹음을 포함하지만 연주자 숙련도 다양성은 부족하다는 한계를 저자가 명시한다(p.63).</p>
+<pre class="mermaid"><code>flowchart TB
+    subgraph PartI[Part I 리뷰]
+        Apps[응용 APT 반주 연습 공연 큐]
+        Prelim[예비 정의 MIDI MusicXML 오디오]
+        Chal[도전과제 특징추출 연주 편차 다성 즉흥]
+        Lit[40년 문헌 리뷰 Dannenberg HMM DTW 딥러닝]
+    end
+    subgraph PartII[Part II Testbench]
+        QuanT[정량 Testbench Python]
+        QualT[정성 Testbench Electron React]
+        QualScofo[(QualScofo 16곡 데이터셋)]
+        QuanT --&gt; QualT
+        QualT --&gt; QualScofo
+    end
+    subgraph PartIII[Part III 3개 follower 구현]
+        TuneApp[TuneApp Conductor Beat tracking 실시간]
+        ASM[ASM Aligner 오프라인 MIDI MIDI]
+        CQTDTW[CQT DTW NSGT CQT Online 오디오 실시간 flagship]
+        ASM -. ground truth 생성 .-&gt; QuanT
+        CQTDTW -. 평가 대상 .-&gt; QuanT
+        CQTDTW -. 평가 대상 .-&gt; QualT
+    end
+    PartI --&gt; PartII
+    PartII --&gt; PartIII
+</code></pre>
+<h2 id="방법론과-데이터">방법론과 데이터</h2>
+<p><strong>TuneApp Conductor (Ch.9).</strong> 입력은 사용자가 모바일 센서 또는 화면 터치로 제공하는 박 신호. 처리는 (1) 박 간격을 IOI(inter-onset interval)로 측정 → (2) 다음 박까지의 예상 시간 추정 → (3) 미리 준비된 오디오 트랙 또는 MusicXML 시퀀스를 phase vocoder 기법으로 시간축 변형하여 재생/렌더링(p.69-71). 평가 지표는 별도 정량 지표 대신 사용자 피드백과 두 가지 출시 변형의 사용 통계(p.72-73).</p>
+<p><strong>ASM Aligner (Ch.10).</strong> 입력은 MIDI 형식 score와 MIDI 형식 performance. 알고리즘은 Needleman-Wunsch 류 전역 정렬에 indel(gap) penalty 설정(p.82), 화음(parallel voice) 후처리 단계(p.83), 장식음 매칭 단계(p.86)를 추가. 평가 지표는 <code>rm</code>(miss rate), <code>re</code>(misalign rate), <code>MAE</code>, <code>σe</code>, <code>rp</code>(precision rate), <code>|L|</code>(정렬 길이), <code>NΓP/NΓS</code>(performance/score 측 gap 수), <code>NMismatch</code>(p.89, Table 10.1).</p>
+<p><strong>CQT-DTW (Ch.11).</strong> 입력은 score 측 합성 오디오(MIDI를 FluidSynth 등으로 합성) 및 performance 측 실연 오디오. CQT 처리는 두 분기로 나뉜다 — Offline은 [Schörkhuber &amp; Klapuri 2010] 류 고전 CQT, Online은 sliCQ(Velasco, Holighaus, Dörfler, Grill의 non-stationary Gabor frame 기반)를 사용(p.96-101). 정렬은 Offline의 경우 classical DTW, Online의 경우 Dixon의 OLTW를 사용하며, weight <code>(wa, wb, wc) = (0.5, 1, 1)</code>, search band 약 23초 분량 ≈ 500프레임 폭, MaxRunCount로 경로 기울기를 제약한다(p.106-113). FFTW 라이브러리를 통해 FFT 가속(p.116).</p>
+<p><strong>평가 지표.</strong> Definition 7.2.6의 misalignment threshold <code>θe</code>(기본 300 ms; MIREX 표준)를 기준으로 다음 지표를 정의한다(p.53-54): miss rate <code>rm</code>, misalign rate <code>re</code>, piece completion <code>pe</code>, error의 표준편차/MAE <code>σe</code>/<code>MAE</code>, latency 표준편차/평균 <code>σl</code>/<code>µl</code>, offset 표준편차/MAO <code>σo</code>/<code>MAO</code>, piecewise/total precision rate <code>rpp</code>/<code>rpt</code>(p.115, Table 11.1).</p>
+<p><strong>데이터셋 표.</strong></p>
+<table>
+<thead>
+<tr class="header">
+<th>데이터셋</th>
+<th>작품 수</th>
+<th>특성</th>
+<th>용도</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Bach10 [149]</td>
+<td>10곡(짧은 chorale)</td>
+<td>4성부(violin/clarinet/sax/bassoon), 비트 정렬된 ground truth, 다성 음악</td>
+<td>ASM 정렬기 검증(p.88-89) 및 CQT-DTW의 정량 평가(p.114-115)</td>
+</tr>
+<tr class="even">
+<td>BWV846 (MAESTRO 발췌)</td>
+<td>2곡(Prelude, Fugue)</td>
+<td>피아노 솔로, ASM이 자동 생성한 ground truth, 단성(Prelude) vs 다성(Fugue) 대비</td>
+<td>CQT-DTW 정량 평가(p.117-118)</td>
+</tr>
+<tr class="odd">
+<td>QualScofo (저자 공개)</td>
+<td>16곡, 5그룹</td>
+<td>1717-1905 클래식, 솔로 첼로~로맨틱 오케스트라, 스튜디오/라이브 혼재</td>
+<td>정성 testbench 평가(p.62-65, 119-123)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>정량 결과 요약(<code>θe = 300 ms</code>).</strong></p>
+<ul>
+<li>Bach10: <code>rpt</code> — CQT Offline 0.989 / NSGT-CQT Offline 0.986 / CQT(Pseudo) Online 0.641 / <strong>NSGT-CQT Online 0.743</strong>(p.117, Table 11.2). NSGT-CQT Online이 FFT 기반 Pseudo Online보다 약 10%p 우수.</li>
+<li>BWV846: <code>rpt</code> — CQT Offline 0.957 / NSGT-CQT Offline 0.976 / CQT(Pseudo) Online 0.662 / <strong>NSGT-CQT Online 0.797</strong>(p.117, Table 11.3). 차이가 더 큼.</li>
+<li>BWV846 Prelude/Fugue 분리: NSGT-CQT Online이 모든 항목에서 Pseudo를 능가하며, Fugue(다성)에서 Prelude(단성)보다 약 5%p <code>rp</code> 우위(p.118, Table 11.4).</li>
+<li>저자는 NSGT-CQT Online의 <code>rpt(θe=300 ms) = 0.743</code>이 MIREX 평가 환경에서 비교했을 때 알려진 모든 pure audio-to-audio 방식을 능가한다고 주장한다(p.115).</li>
+</ul>
+<p><strong>재현성.</strong> 세 구현 + 두 testbench + 데이터셋 모두 GitHub <code>flippy-fyp</code> 조직에 GPLv3로 공개되며, 평가 시스템 사양(Intel i7-8700, 16 GB RAM, Ubuntu 20.04)도 Appendix B에 명시된다(p.130). 각 저장소에는 README와 Reproduction Suite가 포함되어 있다(p.55, 124).</p>
+<h2 id="비판적-평가">비판적 평가</h2>
+<p><strong>강점.</strong> (1) 본 분야에서 보기 드물게 두 가지 평가 testbench와 데이터셋(QualScofo)을 모두 오픈소스로 공개해 재현성 문제를 직접적으로 공격한다(p.62, 127). (2) 동일 OLTW 정렬 단계를 고정하고 CQT 추출기만 sliCQ vs FFT pseudo-CQT로 교체하는 ablation 형식의 비교 실험을 수행해, 특징 추출이 실시간 score following 성능을 얼마나 좌우하는지를 명료하게 보였다(p.115-118). (3) 학부 FYP의 한계를 인정하면서도 약 10,145 LoC의 실제 동작하는 코드와 사용자에게 배포된 TuneApp Conductor 변형 두 가지로 "동작하는 시스템"을 보여 준다(p.131). (4) 40년에 걸친 score following 연구를 단일 보고서에 정리해 신규 연구자/학생에게 진입 장벽을 낮춰 준다(p.127).</p>
+<p><strong>약점.</strong> (1) <strong>순수 알고리즘적 새로움이 제한적</strong>이다 — sliCQ도 OLTW도 ASM도 모두 기존 기법이며, 본 프로젝트의 새로움은 이들을 결합·구현·공개한 데 있다(p.94, 106). 저자도 결론에서 "1년짜리 작은 발걸음"이라 표현한다(p.128). (2) <strong>NSGT-CQT Online의 <code>rpt(θe=300 ms) = 0.743/0.797</code>은 절대값으로 보면 75-80% 수준</strong>으로, 컴퓨터 반주처럼 정밀한 동기화가 필요한 응용에는 부족하다 — 저자는 이를 APT나 performance analysis 같은 비교적 관대한 응용에는 충분하다고 표현하지만(p.116), 모든 응용을 커버한다고 주장하지 않는다. (3) <strong>MIREX 우월성 주장은 직접 비교가 아닌 간접 추정</strong>이다 — MIREX 데이터셋 자체가 사적(private)이므로 본 시스템을 직접 그 위에서 돌리지 못했고, 문헌 보고치와 본 Bach10 결과를 비교한 것이다(p.115). (4) <strong>개선된 음향(저음역) 처리, 향상된 onset 검출(Chen &amp; Jang 2019의 RNN onset 등)을 적용하지 않음</strong> — 저자도 future work로 명시(p.124-126). (5) <strong>즉흥 연주, 음악 개선, 잡음 강건성, 마이크 입력</strong>은 다루지 않으며 코로나로 실연 환경 테스트도 수행되지 못했다(p.126). (6) <strong>학부 보고서 특성상 분량의 상당 부분이 교과서적 기초 설명</strong>(Fourier→CQT, DTW 정의 등)에 할애되어 학술 논문과 비교 시 정보 밀도가 낮다.</p>
+<h2 id="선행연구와-비교">선행연구와 비교</h2>
+<table>
+<thead>
+<tr class="header">
+<th>Citation</th>
+<th>연도</th>
+<th>방법</th>
+<th>핵심 발견</th>
+<th>본 논문과의 차이</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dannenberg [11] / Vercoe [12]</td>
+<td>1984</td>
+<td>모노포닉 string matching, MIDI 입력</td>
+<td>score following 분야의 출발점, 컴퓨터 반주 시연</td>
+<td>Lee는 이를 ASM 챕터의 출발점으로 인용하나, 본인의 ASM은 화음·장식음을 다루도록 확장됨(p.83-86)</td>
+</tr>
+<tr class="even">
+<td>Dixon [51] (Live Tracking)</td>
+<td>2005</td>
+<td>FFT-based 84-bin spectrum + Online Time Warping(OLTW)</td>
+<td>OLTW 알고리즘 정의, 실시간 follower의 표준 baseline</td>
+<td>Lee는 OLTW를 그대로 사용하되 FFT 입력을 sliCQ로 교체 — 동일 OLTW에서 특징 추출만 비교(p.115-117)</td>
+</tr>
+<tr class="odd">
+<td>Cont [28, 42] (Antescofo, HMM)</td>
+<td>2004-2008</td>
+<td>Anticipatory HMM 기반, 통계 모델, IRCAM</td>
+<td>통계적 score following의 대표 연구, 실연 무대에서 사용</td>
+<td>Lee는 HMM 계열을 리뷰에서만 다루고 직접 구현하지는 않음(p.40-42)</td>
+</tr>
+<tr class="even">
+<td>Müller, Information Retrieval for Music and Motion [19]</td>
+<td>2007</td>
+<td>DTW 교과서 정리</td>
+<td>DTW의 음악·모션 정합 일반론</td>
+<td>Lee의 DTW/OLTW 기술 배경 설명의 토대(p.41, 102-106)</td>
+</tr>
+<tr class="odd">
+<td>Arzt, Flexible and Robust Music Tracking (PhD thesis) [26]</td>
+<td>2016</td>
+<td>다중 가설 DTW + tempo 모델, APT 시연</td>
+<td>sheet music에서 가장 견고한 audio-based tracker 중 하나</td>
+<td>Lee는 Arzt의 보고치를 비교 기준으로 인용하지만 본인의 시스템은 Arzt 대비 단순함을 인정(p.115)</td>
+</tr>
+<tr class="even">
+<td>Henkel, Kelz, Widmer [13]</td>
+<td>2020</td>
+<td>CNN으로 sheet music 이미지에서 직접 follow</td>
+<td>이미지 입력 score following의 패러다임 전환</td>
+<td>Lee는 이를 "최근 동향"으로만 소개하고 본인은 audio-to-MIDI 라인을 따른다(p.42-44)</td>
+</tr>
+<tr class="odd">
+<td>Chen &amp; Jang [21]</td>
+<td>2019</td>
+<td>CQT + DTW + RNN onset detector</td>
+<td>CQT의 score following 적합성 입증</td>
+<td>Lee는 CQT 선택의 근거로 인용하나, score 정보 의존성을 약점으로 지적(p.95)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="실무적-함의와-응용">실무적 함의와 응용</h2>
+<ul>
+<li><strong>TuneApp Conductor</strong>는 일반 사용자를 위한 인터랙티브 지휘자 앱으로 실제 출시되어, score-following 기술이 학술 연구를 넘어 음악 교육·엔터테인먼트 시장에서 어떻게 이용될 수 있는지 보여 주는 사례 연구가 된다(p.72-73).</li>
+<li><strong>flippy-quantitative-testbench</strong>와 <strong>flippy-qualitative-testbench</strong>는 score follower를 개발하는 다른 연구자/학생이 표준화된 입출력 인터페이스만 지키면 자신의 시스템을 즉시 평가할 수 있도록 한다 — MIREX 부재 이후의 평가 공백을 메울 수 있는 후보 도구이다(p.51-58, 127).</li>
+<li><strong>QualScofo 데이터셋</strong>은 클래식 위주의 16곡으로 비교적 작지만, 정성 평가용으로는 첫 번째로 공개된 표준 후보가 된다(p.62-65). 향후 더 많은 곡과 다양한 연주자 숙련도를 추가할 수 있도록 GitHub로 공개되었다.</li>
+<li><strong>CQT-DTW (NSGT-CQT Online) follower</strong> 자체는 APT(자동 페이지 넘김), performance analysis, 음악 연습 보조 등 정밀도가 75-80%면 충분한 응용에 즉시 통합 가능하며, 향후 컴퓨터 반주에는 추가 후처리(예: latency 보정 평균 <code>µl</code> 만큼 미리 보고)가 필요하다고 저자가 제안한다(p.118, 126).</li>
+<li><strong>교육적 가치</strong>: Part I의 40년 리뷰는 score following을 처음 접하는 학부생/대학원생에게 입문 자료로 적합하며, 저자는 이를 향후 Docusaurus 기반 오픈 위키로 확장할 것을 시사한다(p.127).</li>
+</ul>
+<h2 id="후속-연구와-핵심-참고문헌">후속 연구와 핵심 참고문헌</h2>
+<p>저자가 제시하는 후속 연구 방향은 다음과 같다(p.124-126): (1) OLTW 자체의 개선 — backward path 탐색 등; (2) 실연 오디오의 온라인 디노이징/디리버브; (3) score 측에서 더 풍부한 특징(예: 동적 표시, articulation) 활용; (4) WebAssembly/Pyodide를 통한 웹 구현; (5) 코로나 종료 후 실제 연주자(다양한 숙련도)를 동원한 실연 환경 테스트; (6) 컴퓨터 반주, performance cue trigger 등으로 응용 확대; (7) 즉흥 연주에 대한 강건성 확보(p.126).</p>
+<p>핵심 참고문헌(본 보고서 다른 논문 분석과의 연결): Arzt 2016 PhD thesis [26] (본 시리즈 01번 논문), Dixon 2005 OLTW [51], Cont 2008 Antescofo [28], Müller 2007 DTW 교과서 [19], Henkel-Kelz-Widmer 2020 sheet image 딥러닝 [13] (본 시리즈 04번 논문 계열), Chen &amp; Jang 2019 CQT-DTW [21], Dannenberg-Hu 2003 polyphonic audio matching [20], Cont et al. 2007 MIREX 평가 [15]. 본 프로젝트 자체의 GitHub 자산은 <a href="https://github.com/flippy-fyp">https://github.com/flippy-fyp</a> 조직 하에 공개되어 있다.</p>
+</template>
