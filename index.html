@@ -254,7 +254,8 @@
     grid-template-rows: auto auto;
     grid-template-areas:
       "start glossary trends"
-      "start datasets recommend";
+      "start datasets recommend"
+      "audio audio audio";
   }
   .synth-card {
     position: relative; padding: 22px 22px 20px;
@@ -320,6 +321,20 @@
   .synth-card.trends    { grid-area: trends; }
   .synth-card.datasets  { grid-area: datasets; }
   .synth-card.recommend { grid-area: recommend; }
+  .synth-card.audio     { grid-area: audio; }
+
+  .synth-card.audio {
+    background: linear-gradient(135deg, var(--panel) 0%, rgba(92,213,117,0.06) 100%);
+    border: 1px solid rgba(92,213,117,0.25);
+    min-height: 0;
+  }
+  .synth-card.audio:hover { border-color: var(--hybrid); }
+  .synth-card.audio .head { color: var(--hybrid); }
+  .synth-card.audio .head .glyph {
+    background: rgba(92,213,117,0.12); border-color: rgba(92,213,117,0.3);
+    color: var(--hybrid); font-size: 15px;
+  }
+  .synth-card.audio .arrow { color: var(--hybrid); }
 
   .synth-card.recommend {
     background: linear-gradient(135deg, var(--panel) 0%, rgba(45,212,191,0.06) 100%);
@@ -943,7 +958,8 @@
       grid-template-areas:
         "start start"
         "glossary trends"
-        "datasets recommend";
+        "datasets recommend"
+        "audio audio";
     }
     .mindmap-grid { grid-template-columns: repeat(2, 1fr); }
   }
@@ -955,6 +971,7 @@
       grid-template-columns: 1fr;
       grid-template-areas:
         "start"
+        "audio"
         "glossary"
         "trends"
         "datasets"
@@ -1091,7 +1108,7 @@
       <!-- 종합 문서 5장 -->
       <div class="section-title">
         <h2>전체 종합 문서</h2>
-        <span class="count">5</span>
+        <span class="count">6</span>
         <span class="rule"></span>
       </div>
 
@@ -1101,6 +1118,13 @@
           <h3>논문 관계도와 흐름</h3>
           <p>13편의 시간선·계보·영향 관계, 세 갈래 노선(고전 신호처리 / 학습 기반 / 2025 차세대) + 오프라인 정렬 인접 분야, 누가 누구를 어떻게 발전시켰는가, 추천 읽기 순서까지 종합한 문서.</p>
           <span class="arrow">관계도와 흐름 열기 →</span>
+        </button>
+
+        <button class="synth-card audio" type="button" onclick="openDoc('topic_audio', this)" data-title="듣기용 오디오 대본">
+          <span class="head"><span class="glyph">🎧</span>읽을 시간이 없을 때</span>
+          <h3>듣기용 오디오 대본</h3>
+          <p>분야 전체를 귀로 흡수하는 약 25~30분 나레이션. 표·기호 없이 구어체 7챕터(도입 → 두 노선 → 2025 차세대 → 표상 → 풀린/안 풀린 문제 → 응용 → 6주 MVP). TTS에 붙여 넣어 들으세요.</p>
+          <span class="arrow">대본 열기 →</span>
         </button>
 
         <button class="synth-card glossary" type="button" onclick="openDoc('topic_glossary', this)" data-title="마스터 용어집">
