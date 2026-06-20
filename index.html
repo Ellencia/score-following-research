@@ -653,6 +653,41 @@
   .roadmap-card h3 { font-size: 20px; }
   .roadmap-card .arrow { color: var(--nextgen); }
 
+  /* === 오디오 대본 브라우저 TTS 플레이어 === */
+  .tts-player {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    padding: 11px 14px; margin: 16px 0 20px;
+    background: var(--panel-2); border: 1px solid rgba(92,213,117,0.3);
+    border-radius: var(--radius);
+    position: sticky; top: 0; z-index: 6;
+  }
+  .tts-player .tts-btn {
+    font: inherit; font-size: 13px; cursor: pointer;
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 6px 12px; transition: border-color .15s ease, color .15s ease;
+  }
+  .tts-player .tts-btn:hover { border-color: var(--hybrid); color: var(--hybrid); }
+  .tts-player label {
+    font-size: 12px; color: var(--muted);
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .tts-player select {
+    font: inherit; font-size: 12px; color: var(--text);
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 4px 6px; max-width: 190px;
+  }
+  .tts-player .tts-status {
+    font-size: 12px; color: var(--hybrid); margin-left: auto;
+    white-space: nowrap;
+  }
+  .tts-content .tts-active {
+    background: rgba(92,213,117,0.12);
+    box-shadow: -3px 0 0 var(--hybrid);
+    border-radius: 4px;
+    transition: background .25s ease;
+  }
+
   /* =========================================================
      MODAL
      ========================================================= */
@@ -1775,6 +1810,11 @@
         window.__SF_autoMarkGlossary(liveBody);
       }
 
+      // 오디오 대본: 브라우저 TTS 플레이어 연결
+      if (key === 'topic_audio') {
+        try { initAudioTTS(liveBody); } catch (e) { console.warn('TTS init failed', e); }
+      }
+
       // scroll to top of body
       const bodyEl = document.getElementById('live-modal-body');
       if (bodyEl) bodyEl.scrollTop = 0;
@@ -1791,6 +1831,7 @@
   }
 
   function closeModal() {
+    try { stopAudioTTS(); } catch (e) {}
     liveModal.classList.remove('open');
     liveModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
@@ -1799,6 +1840,161 @@
     }
     lastFocus = null;
     currentDoc = null;
+  }
+
+  // ===================== 오디오 대본 브라우저 TTS =====================
+  // Web Speech API(speechSynthesis)로 .tts-content 안의 문장을 순차 낭독.
+  // 외부 파일/네트워크 없이 동작. 문장 단위로 끊어 큐잉(긴 발화 잘림 방지) +
+  // 현재 문단 하이라이트·자동 스크롤.
+  const __tts = { utters: [], idx: 0, curEl: null, playing: false, paused: false, root: null, status: null, rate: 1 };
+
+  function __ttsSupported() {
+    return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+  }
+  function __ttsStatus(msg) { if (__tts.status) __tts.status.textContent = msg; }
+
+  function __ttsSplit(text) {
+    const parts = (text || '').replace(/\s+/g, ' ').trim().match(/[^.!?。…]+[.!?。…]*\s*/g) || [text];
+    const out = [];
+    parts.forEach(p => {
+      p = (p || '').trim();
+      if (!p) return;
+      if (p.length > 200) {                       // 너무 길면 쉼표 기준 추가 분할
+        const sub = p.match(/[^,，]+[,，]?\s*/g) || [p];
+        let buf = '';
+        sub.forEach(s => {
+          if ((buf + s).length > 200 && buf) { out.push(buf.trim()); buf = s; }
+          else buf += s;
+        });
+        if (buf.trim()) out.push(buf.trim());
+      } else out.push(p);
+    });
+    return out;
+  }
+
+  function __ttsPickVoice(sel) {
+    const voices = window.speechSynthesis.getVoices() || [];
+    const ko = voices.filter(v => /^ko/i.test(v.lang));
+    if (sel && sel.options.length === 0) {
+      const list = ko.length ? ko : voices;
+      list.forEach(v => {
+        const o = document.createElement('option');
+        o.value = v.name;
+        o.textContent = v.name + (/^ko/i.test(v.lang) ? '' : ' (' + v.lang + ')');
+        sel.appendChild(o);
+      });
+      if (!list.length) {
+        const o = document.createElement('option'); o.textContent = '(음성 없음)'; sel.appendChild(o);
+      }
+    }
+    const want = sel && sel.value;
+    return (want && voices.find(v => v.name === want)) || ko[0] || voices[0] || null;
+  }
+
+  function __ttsBuild() {
+    __tts.utters = [];
+    const content = __tts.root && __tts.root.querySelector('.tts-content');
+    if (!content) return;
+    const voice = __ttsPickVoice(__tts.root.querySelector('[data-tts="voice"]'));
+    content.querySelectorAll('h2, h3, p, li').forEach(el => {
+      const txt = (el.textContent || '').trim();
+      if (!txt) return;
+      __ttsSplit(txt).forEach((s, si) => {
+        const u = new SpeechSynthesisUtterance(s);
+        u.lang = (voice && voice.lang) || 'ko-KR';
+        if (voice) u.voice = voice;
+        u.rate = __tts.rate;
+        u._el = el; u._first = (si === 0);
+        __tts.utters.push(u);
+      });
+    });
+  }
+
+  function __ttsHighlight(el) {
+    if (__tts.curEl && __tts.curEl !== el) __tts.curEl.classList.remove('tts-active');
+    if (el) { el.classList.add('tts-active'); try { el.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {} }
+    __tts.curEl = el;
+  }
+
+  function __ttsSpeakFrom(i) {
+    if (i >= __tts.utters.length) {
+      __tts.playing = false; __tts.paused = false; __ttsHighlight(null);
+      __ttsStatus('완료 — ▶ 재생으로 다시 듣기'); return;
+    }
+    __tts.idx = i;
+    const u = __tts.utters[i];
+    u.onstart = () => { if (u._first) __ttsHighlight(u._el); };
+    u.onend = () => { if (__tts.playing) __ttsSpeakFrom(__tts.idx + 1); };
+    u.onerror = () => { if (__tts.playing) __ttsSpeakFrom(__tts.idx + 1); };
+    window.speechSynthesis.speak(u);
+  }
+
+  function __ttsPlay() {
+    const synth = window.speechSynthesis;
+    if (__tts.paused) { synth.resume(); __tts.paused = false; __tts.playing = true; __ttsStatus('재생 중'); return; }
+    synth.cancel();
+    const rs = __tts.root.querySelector('[data-tts="rate"]');
+    __tts.rate = parseFloat(rs && rs.value) || 1;
+    __ttsBuild();
+    if (!__tts.utters.length) { __ttsStatus('읽을 내용이 없습니다'); return; }
+    __tts.playing = true; __tts.paused = false; __ttsStatus('재생 중');
+    __ttsSpeakFrom(0);
+  }
+
+  function __ttsRestartFromCurrent() {
+    const saved = __tts.curEl;
+    window.speechSynthesis.cancel();
+    const rs = __tts.root.querySelector('[data-tts="rate"]');
+    __tts.rate = parseFloat(rs && rs.value) || 1;
+    __ttsBuild();
+    let start = 0;
+    if (saved) {
+      for (let i = 0; i < __tts.utters.length; i++) { if (__tts.utters[i]._el === saved) { start = i; break; } }
+    }
+    __tts.playing = true; __tts.paused = false; __ttsStatus('재생 중');
+    __ttsSpeakFrom(start);
+  }
+
+  function __ttsPause() {
+    if (__tts.playing && !__tts.paused) { window.speechSynthesis.pause(); __tts.paused = true; __ttsStatus('일시정지'); }
+  }
+
+  function stopAudioTTS() {
+    if (!__ttsSupported()) return;
+    try { window.speechSynthesis.cancel(); } catch (e) {}
+    __tts.playing = false; __tts.paused = false;
+    if (__tts.curEl) __tts.curEl.classList.remove('tts-active');
+    __tts.curEl = null;
+    if (__tts.status) __ttsStatus('정지');
+  }
+
+  function initAudioTTS(root) {
+    __tts.root = root;
+    __tts.status = root.querySelector('[data-tts="status"]');
+    const player = root.querySelector('.tts-player');
+    if (!player) return;
+    if (!__ttsSupported()) {
+      player.innerHTML = '<span class="tts-status">이 브라우저는 음성 재생을 지원하지 않습니다. 본문을 복사해 외부 TTS를 이용하세요.</span>';
+      return;
+    }
+    const voiceSel = root.querySelector('[data-tts="voice"]');
+    __ttsPickVoice(voiceSel);
+    if (window.speechSynthesis.getVoices().length === 0) {
+      window.speechSynthesis.onvoiceschanged = () => { __ttsPickVoice(voiceSel); __ttsStatus('▶ 재생을 눌러 들으세요'); };
+    }
+    player.addEventListener('click', e => {
+      const btn = e.target.closest('[data-tts]');
+      if (!btn || btn.tagName === 'SELECT') return;
+      const act = btn.getAttribute('data-tts');
+      if (act === 'play') __ttsPlay();
+      else if (act === 'pause') __ttsPause();
+      else if (act === 'stop') stopAudioTTS();
+    });
+    const rateSel = root.querySelector('[data-tts="rate"]');
+    if (rateSel) rateSel.addEventListener('change', () => { if (__tts.playing) __ttsRestartFromCurrent(); });
+    const voiceSel2 = root.querySelector('[data-tts="voice"]');
+    if (voiceSel2) voiceSel2.addEventListener('change', () => { if (__tts.playing) __ttsRestartFromCurrent(); });
+    __ttsStatus('▶ 재생을 눌러 들으세요');
   }
 
   // 키보드 단축키: 모달 열린 상태에서만 동작

@@ -1,13 +1,18 @@
 <template id="doc-topic_audio" data-title="듣기용 오디오 대본" data-docx=""><h1 id="score-following-듣기용-오디오-대본">Score Following 연구 13편 — 듣기용 오디오 대본</h1>
 <blockquote>
 <p><strong>용도</strong>: 문서를 읽을 시간이 없을 때 귀로 흡수하기 위한 나레이션 대본입니다. 표·기호·각주 없이 끝까지 말로만 이어지도록 썼습니다. 전체 약 25~30분 분량.</p>
-<p><strong>TTS로 듣는 법</strong>: 아래 본문을 복사해 음성 합성 도구에 붙여 넣으세요.</p>
-<ul>
-<li>무료: Microsoft Edge 브라우저의 "소리 내어 읽기"(Read Aloud), 또는 macOS/iOS 화면 낭독.</li>
-<li>고품질: ElevenLabs, OpenAI TTS, Google Cloud TTS, Naver Clova Voice 등 — 한국어 음성 선택.</li>
-<li>챕터마다 끊어 두었으니 한 번에 한 챕터씩 들어도 됩니다.</li>
-</ul>
+<p><strong>바로 듣기</strong>: 아래 <strong>▶ 재생</strong> 버튼을 누르면 이 브라우저의 음성으로 대본을 읽어 줍니다(문장을 따라 자동 스크롤·하이라이트). 정지·일시정지·속도·음성 선택이 가능합니다.</p>
+<p><strong>더 좋은 음성으로</strong>: 본문을 복사해 외부 음성 합성 도구(ElevenLabs, OpenAI TTS, Google Cloud TTS, Naver Clova Voice 등)에 붙여 넣으세요. 브라우저 내장 음성은 기기/브라우저에 따라 품질이 다릅니다.</p>
 </blockquote>
+<div class="tts-player" id="ttsPlayer">
+<button type="button" class="tts-btn" data-tts="play">▶ 재생</button>
+<button type="button" class="tts-btn" data-tts="pause">⏸ 일시정지</button>
+<button type="button" class="tts-btn" data-tts="stop">⏹ 정지</button>
+<label>속도 <select data-tts="rate"><option value="0.8">0.8×</option><option value="0.9">0.9×</option><option value="1" selected>1.0×</option><option value="1.1">1.1×</option><option value="1.25">1.25×</option><option value="1.5">1.5×</option></select></label>
+<label>음성 <select data-tts="voice"></select></label>
+<span class="tts-status" data-tts="status">음성 로딩 중…</span>
+</div>
+<div class="tts-content">
 <h2 id="챕터-0-시작하기-전에">[챕터 0] 시작하기 전에</h2>
 <p>안녕하세요. 지금부터 약 30분 동안, "스코어 팔로잉"이라는 연구 분야를 논문 열세 편으로 정리해 드리겠습니다.</p>
 <p>스코어 팔로잉, 우리말로 풀면 "악보 따라가기"입니다. 사람이 악기를 연주하면, 컴퓨터가 그 소리를 듣고 "지금 악보의 어느 위치를 연주하고 있는지"를 실시간으로 짚어내는 기술입니다. 가장 친숙한 응용이 바로 자동 페이지 넘김, 즉 전자 악보가 연주를 따라가며 알아서 페이지를 넘겨 주는 기능이죠. 그 밖에도 자동 반주, 콘서트 자막 동기화, 연습 보조 같은 데에 쓰입니다.</p>
@@ -52,4 +57,5 @@
 <p>반대로, 엠브이피 단계에서 욕심내지 말아야 할 것도 분명합니다. 광학 악보 인식, 추가 전사 모델 학습, 무대나 협주곡 시나리오, 카메라나 센서, 강한 디스토션 환경, 모바일 앱. 이 여섯 가지를 단기에 끌어들이면 6주가 6개월이 됩니다. 또한 처음부터 못 할 가능성이 높은 곡 조건도 미리 인정합니다. 디스토션이 강한 곡, 비브라토가 심한 솔로, 자유 템포가 큰 곡, 페이지 끝에 페르마타가 있는 곡. 그래서 시연 곡은 이 네 조건의 정반대로, 깨끗한 톤에 비브라토가 적고 템포가 안정적이며 페이지 끝에 늘임표가 없는 곡으로 고릅니다.</p>
 <h2 id="맺음말-한-문장으로">[맺음말] 한 문장으로</h2>
 <p>스코어 팔로잉이라는 한 문제를, 2016년 아르츠가 모듈형 동적 시간 워핑 시스템으로 종합한 뒤, 같은 제이케이유 그룹이 악보 이미지 학습 노선을 5년에 걸쳐 다듬었고, 외부 그룹들이 학부 테스트벤치와 전사 특징과 신경 매처, 그리고 사람과 기계의 협업으로 비판하고 확장했습니다. 그리고 2025년, 제이케이유의 세 편과 퀸메리의 한 편이 동시에 등장하면서, 분야는 다음 10년의 응용 스택을 위한 네 부품을 한꺼번에 내놓았습니다. 그 모든 변화의 밑바탕에는, "오디오를 직접 정렬하는 방식이 정확도의 천장에 도달했고, 이제는 전사한 다음 추적하는 쪽으로 무게중심이 옮겨갔다"는 한 줄의 진단이 있습니다.</p>
-<p>여기까지입니다. 더 깊이 들어가고 싶은 논문이 생겼다면, 이 페이지에서 그 논문의 분석 보고서와 비전공자 해설을 펼쳐 보시면 됩니다. 들어 주셔서 감사합니다.</p></template>
+<p>여기까지입니다. 더 깊이 들어가고 싶은 논문이 생겼다면, 이 페이지에서 그 논문의 분석 보고서와 비전공자 해설을 펼쳐 보시면 됩니다. 들어 주셔서 감사합니다.</p>
+</div></template>
