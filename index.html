@@ -636,6 +636,23 @@
   }
   .guitar-cello-card h3 { font-size: 20px; }
 
+  .roadmap-card {
+    background: linear-gradient(135deg, var(--panel) 0%, rgba(45,212,191,0.07) 50%, rgba(92,213,117,0.07) 100%);
+    border: 1px solid rgba(45,212,191,0.3);
+    padding: 26px 28px 24px;
+  }
+  .roadmap-card:hover {
+    border-color: var(--nextgen);
+    background: linear-gradient(135deg, var(--panel-2) 0%, rgba(45,212,191,0.11) 50%, rgba(92,213,117,0.11) 100%);
+  }
+  .roadmap-card .head { color: var(--nextgen); }
+  .roadmap-card .head .glyph {
+    background: rgba(45,212,191,0.12); border-color: rgba(45,212,191,0.3);
+    color: var(--nextgen); font-size: 15px;
+  }
+  .roadmap-card h3 { font-size: 20px; }
+  .roadmap-card .arrow { color: var(--nextgen); }
+
   /* =========================================================
      MODAL
      ========================================================= */
@@ -1455,10 +1472,10 @@
 
       </div>
 
-      <!-- 사용자 응용 카탈로그 -->
+      <!-- 사용자 응용 카탈로그 + 로드맵 -->
       <div class="section-title">
-        <h2>사용자 응용을 위한 종합 옵션 카탈로그</h2>
-        <span class="count">1</span>
+        <h2>사용자 응용 — 옵션 카탈로그 &amp; 제작 로드맵</h2>
+        <span class="count">2</span>
         <span class="rule"></span>
       </div>
 
@@ -1468,6 +1485,13 @@
           <h3>페이지 터너 종합 옵션 카탈로그 — 보수안부터 엽기안까지 70개 옵션</h3>
           <p>13편 분석 + Tier 2/3 + 6종 데이터셋을 통합해, 사용자의 일렉기타·첼로 페이지 터너 응용에 직접 적용 가능한 70개 옵션을 다섯 갈래(보수 / 검증된 결합 / 신선한 ML / 멀티모달·하드웨어 / 엽기적 안)로 카탈로그화. MERT × score following, Bow IMU, smart pick, BCI EEG, 청중 모바일 sync, audio watermark까지. 각 옵션마다 악기 적용성·구현 난이도·분야 첫 시도 여부 표기. 세 가지 시스템 아키텍처(MVP / 멀티모달 / 연구 지향) + 단계별 1년 로드맵 + 학술 환원 4지점.</p>
           <span class="arrow">카탈로그 열기 →</span>
+        </button>
+
+        <button class="synth-card roadmap-card" type="button" onclick="openDoc('topic_roadmap', this)" data-title="솔로 개발자 로드맵 — 직장 다니며 만들기">
+          <span class="head"><span class="glyph">🗺️</span>직장인 단독 개발자용</span>
+          <h3>솔로 개발자 로드맵 — 직장 다니며 페이지 터너 만들기</h3>
+          <p>70개 옵션·데이터셋·기여 매트릭스를 근거로, 주 8~12시간 part-time 캘린더에 맞춰 절단한 단계별 로드맵. [이번 주말 생존 스파이크] → [직선 곡 추적] → [수동 안전망 먼저] → [풀 MVP + 첼로 확장] → [LBD 출구 2건] → [옵션 트랙]. 적대적 검증으로 박은 것: chroma 비-피아노 미검증을 1주차에 실측하는 게이트0b, 데이터 수집을 MVP 게이트에서 분리, WIP 상한 1, 비브라토를 kill조건→측정변수로 승격, AMT를 MIDI 픽업으로 우회. 시도예산·kill 기준·동의/라이선스/IRB 체크리스트 포함.</p>
+          <span class="arrow">로드맵 열기 →</span>
         </button>
       </div>
 
