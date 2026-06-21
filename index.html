@@ -704,6 +704,8 @@
     border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 10px;
   }
   .tts-trackinfo .tts-btn:hover { border-color: var(--hybrid); color: var(--hybrid); }
+  .doc-audio { margin: 4px 0 18px; }
+  .doc-audio-label { font-size: 12px; font-weight: 600; color: var(--hybrid); margin-bottom: 8px; }
 
   /* =========================================================
      MODAL
@@ -1830,6 +1832,9 @@
       // 오디오 대본: 브라우저 TTS 플레이어 연결
       if (key === 'topic_audio') {
         try { initAudioTTS(liveBody); } catch (e) { console.warn('TTS init failed', e); }
+      } else {
+        // 그 외 문서: assets/audio/<key>_NN.mp3 음원이 있으면 모달 상단에 재생기 삽입
+        try { injectDocAudio(liveBody, key); } catch (e) { /* 음원 없으면 무시 */ }
       }
 
       // scroll to top of body
@@ -1849,6 +1854,7 @@
 
   function closeModal() {
     try { stopAudioTTS(); } catch (e) {}
+    if (__docAudioEl) { try { __docAudioEl.pause(); } catch (e) {} __docAudioEl = null; }
     liveModal.classList.remove('open');
     liveModal.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
@@ -1864,6 +1870,55 @@
   // 외부 파일/네트워크 없이 동작. 문장 단위로 끊어 큐잉(긴 발화 잘림 방지) +
   // 현재 문단 하이라이트·자동 스크롤.
   const __tts = { utters: [], idx: 0, curEl: null, playing: false, paused: false, root: null, status: null, rate: 1, audioEl: null, audioUrls: null, audioIdx: 0 };
+  let __docAudioEl = null;   // 문서별(해설/관계도 등) 미리 렌더된 음원 플레이어
+
+  // 임의 문서에 대해 assets/audio/<key>_NN.mp3(또는 <key>.mp3)를 찾아 모달 상단에 재생기 삽입
+  async function injectDocAudio(root, key) {
+    if (!key || !root) return;
+    const base = 'assets/audio/';
+    async function exists(u) { try { const r = await fetch(u, { method: 'HEAD' }); return r.ok; } catch (e) { return false; } }
+    let urls = null;
+    if (await exists(base + key + '.mp3')) urls = [base + key + '.mp3'];
+    else if (await exists(base + key + '_01.mp3')) {
+      urls = [];
+      for (let i = 1; i <= 99; i++) {
+        const u = base + key + '_' + String(i).padStart(2, '0') + '.mp3';
+        if (await exists(u)) urls.push(u); else break;
+      }
+      if (!urls.length) urls = null;
+    }
+    if (!urls) return;
+    const multi = urls.length > 1;
+    const wrap = document.createElement('div');
+    wrap.className = 'tts-audio doc-audio';
+    wrap.innerHTML =
+      '<div class="doc-audio-label">🎧 이 문서 듣기 (TTS 음원)</div>' +
+      '<audio controls preload="metadata" style="width:100%"></audio>' +
+      (multi ? '<div class="tts-trackinfo"><button type="button" class="tts-btn" data-af="prev">◀ 이전</button>' +
+               '<span class="tts-tracklabel"></span>' +
+               '<button type="button" class="tts-btn" data-af="next">다음 ▶</button></div>' : '');
+    const audio = wrap.querySelector('audio');
+    __docAudioEl = audio;
+    const label = wrap.querySelector('.tts-tracklabel');
+    let idx = 0;
+    function load(i, autoplay) {
+      idx = Math.max(0, Math.min(urls.length - 1, i));
+      audio.src = urls[idx];
+      if (label) label.textContent = '트랙 ' + (idx + 1) + ' / ' + urls.length;
+      if (autoplay) audio.play().catch(() => {});
+    }
+    load(0, false);
+    if (multi) {
+      audio.addEventListener('ended', () => { if (idx < urls.length - 1) load(idx + 1, true); });
+      wrap.addEventListener('click', e => {
+        const b = e.target.closest('[data-af]'); if (!b) return;
+        load(idx + (b.getAttribute('data-af') === 'next' ? 1 : -1), true);
+      });
+    }
+    const sub = root.querySelector('.doc-subtitle');
+    if (sub) sub.insertAdjacentElement('afterend', wrap);
+    else root.insertBefore(wrap, root.firstChild);
+  }
 
   function __ttsSupported() {
     return typeof window !== 'undefined' && 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
