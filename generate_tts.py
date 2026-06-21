@@ -1,171 +1,109 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-generate_tts.py
-assets/scripts/*.txt 낭독 대본을 네이버 CLOVA Voice API로 합성해
-assets/audio/<key>_NN.mp3 로 자동 저장한다. (붙여넣기 0회)
+generate_tts.py  (로컬 MeloTTS 버전)
+assets/scripts/*.txt 낭독 대본을 로컬 MeloTTS로 합성해
+assets/audio/<key>_NN.mp3 로 자동 저장한다. 계정·키·월정액 0원, 오프라인.
 
 ────────────────────────────────────────────────────────────
-준비 (1회)
-1) NCP(네이버 클라우드 플랫폼) 콘솔 → AI·Application Service → CLOVA Voice → 이용 신청
-2) Application 등록 → 인증정보(API Gateway)에서 키 두 개 발급:
-     X-NCP-APIGW-API-KEY-ID,  X-NCP-APIGW-API-KEY
-3) 환경변수 설정
-   PowerShell:
-     $env:NCP_CLOVA_ID="발급받은_KEY_ID"
-     $env:NCP_CLOVA_SECRET="발급받은_KEY_SECRET"
-   bash:
-     export NCP_CLOVA_ID=...   ;  export NCP_CLOVA_SECRET=...
-4) pip install requests          (선택: pip install pydub  + ffmpeg → 섹션 내 이어붙이기 깔끔)
+설치 (1회)
+1) PyTorch — RTX 5080은 sm_120이라 cu128 빌드 권장:
+     pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
+   (GPU가 안 잡혀도 CPU로 동작합니다. 느릴 뿐.)
+2) MeloTTS:
+     pip install git+https://github.com/myshell-ai/MeloTTS.git
+     python -m unidic download
+   (한국어 G2P는 g2pkk가 자동 설치됨. MeloTTS가 torch를 CPU판으로 덮어쓰면
+    위 1)의 cu128 torch를 다시 설치.)
+3) mp3 인코딩:
+     pip install pydub
+     + ffmpeg 설치:  winget install Gyan.FFmpeg   (또는 choco install ffmpeg)
 
 실행
-   python generate_tts.py                       # 전체 14편
-   python generate_tts.py 01_explanation        # 특정 key만 (여러 개 나열 가능)
-   python generate_tts.py --overwrite           # 기존 mp3 덮어쓰기
-   python generate_tts.py --speaker vdain --speed 1   # 화자/속도 변경
+   python generate_tts.py                    # 전체 14편
+   python generate_tts.py 01_explanation     # 특정 key만 (여러 개 나열 가능)
+   python generate_tts.py --overwrite        # 기존 mp3 덮어쓰기
+   python generate_tts.py --speed 0.9        # 느리게(0.8~1.0), --device cpu, --bitrate 48k
 
-화자(speaker) 예: nara(여,기본), vdain(다인,여), vyuna(유나,여), vgoeun, vhyeri,
-   ndain, jinho(남), nminyoung … (NCP 콘솔의 speaker 목록 참고. 더빙 톤은 v*/n* 프리미엄 계열)
-속도(speed): -5(빠름) ~ 5(느림), 0=보통. 낭독은 1~2 추천.
+처음 실행 시 한국어 모델을 HuggingFace에서 자동 다운로드한다(수십 MB).
 ────────────────────────────────────────────────────────────
 """
 import os
 import re
 import sys
-import time
 import glob
 import argparse
-
-try:
-    import requests
-except ImportError:
-    sys.exit("requests 가 필요합니다:  pip install requests")
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 SCRIPTS_DIR = os.path.join(BASE, "assets", "scripts")
 AUDIO_DIR = os.path.join(BASE, "assets", "audio")
-API_URL = "https://naveropenapi.apigw.ntruss.com/tts-premium/v1/tts"
 
 KEY_RE = re.compile(r"assets/audio/(.+)_\d+\.mp3")
 MARKER_RE = re.compile(r"^──\s*섹션")
-SENT_RE = re.compile(r"[^.!?。…\n]+[.!?。…]?\s*")
 
 
 def parse_script(path):
     """대본 파일 → (key, [섹션 텍스트, ...])"""
     with open(path, encoding="utf-8") as f:
         lines = f.read().splitlines()
-
-    key = None
-    for ln in lines:
-        m = KEY_RE.search(ln)
-        if m:
-            key = m.group(1)
-            break
-
+    key = next((KEY_RE.search(l).group(1) for l in lines if KEY_RE.search(l)), None)
     seps = [i for i, l in enumerate(lines) if l.strip().startswith("====")]
     body = lines[seps[1] + 1:] if len(seps) >= 2 else lines
-
     sections, cur = [], []
     for l in body:
         if MARKER_RE.match(l.strip()):
-            txt = "\n".join(cur).strip()
-            if txt:
-                sections.append(txt)
+            t = "\n".join(cur).strip()
+            if t:
+                sections.append(t)
             cur = []
         else:
             cur.append(l)
-    txt = "\n".join(cur).strip()
-    if txt:
-        sections.append(txt)
+    t = "\n".join(cur).strip()
+    if t:
+        sections.append(t)
     return key, sections
 
 
-def chunk_text(text, max_chars):
-    """문장 경계로 max_chars 이하 조각으로 분할"""
-    chunks, buf = [], ""
-    for para in text.split("\n"):
-        para = para.strip()
-        if not para:
-            continue
-        if len(para) <= max_chars:
-            pieces = [para]
-        else:
-            pieces = [m.group(0) for m in SENT_RE.finditer(para)] or [para]
-        for p in pieces:
-            p = p.strip()
-            if not p:
-                continue
-            if len(p) > max_chars:           # 한 문장이 너무 길면 강제 분할
-                for i in range(0, len(p), max_chars):
-                    chunks.append(p[i:i + max_chars])
-                continue
-            if len(buf) + len(p) + 1 > max_chars and buf:
-                chunks.append(buf.strip())
-                buf = p
-            else:
-                buf = (buf + " " + p).strip()
-    if buf.strip():
-        chunks.append(buf.strip())
-    return chunks
-
-
-def synth(text, speaker, speed):
-    headers = {
-        "X-NCP-APIGW-API-KEY-ID": CLIENT_ID,
-        "X-NCP-APIGW-API-KEY": CLIENT_SECRET,
-        "Content-Type": "application/x-www-form-urlencoded",
-    }
-    data = {
-        "speaker": speaker, "text": text, "format": "mp3",
-        "volume": "0", "speed": str(speed), "pitch": "0", "sampling-rate": "24000",
-    }
-    r = requests.post(API_URL, headers=headers, data=data, timeout=60)
-    if r.status_code != 200:
-        raise RuntimeError(f"API {r.status_code}: {r.text[:300]}")
-    return r.content
-
-
-def join_mp3(chunks_bytes, out_path):
-    if len(chunks_bytes) == 1:
-        with open(out_path, "wb") as f:
-            f.write(chunks_bytes[0])
-        return
-    try:                                     # 깔끔한 이어붙이기 (pydub + ffmpeg)
-        import io
-        from pydub import AudioSegment
-        seg = AudioSegment.empty()
-        for b in chunks_bytes:
-            seg += AudioSegment.from_file(io.BytesIO(b), format="mp3")
-        seg.export(out_path, format="mp3")
-    except Exception:                        # 폴백: 바이트 단순 연결(대개 재생 OK)
-        with open(out_path, "wb") as f:
-            for b in chunks_bytes:
-                f.write(b)
+def save_mp3(audio, sr, out_path, bitrate):
+    import numpy as np
+    from pydub import AudioSegment
+    pcm = (np.clip(np.asarray(audio, dtype="float32"), -1.0, 1.0) * 32767.0).astype("<i2")
+    seg = AudioSegment(pcm.tobytes(), frame_rate=int(sr), sample_width=2, channels=1)
+    seg.export(out_path, format="mp3", bitrate=bitrate)
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("keys", nargs="*", help="처리할 key (생략 시 전체)")
     ap.add_argument("--overwrite", action="store_true")
-    ap.add_argument("--speaker", default=os.environ.get("NCP_CLOVA_SPEAKER", "nara"))
-    ap.add_argument("--speed", default=os.environ.get("NCP_CLOVA_SPEED", "1"))
-    ap.add_argument("--max-chars", type=int, default=int(os.environ.get("NCP_CLOVA_MAXCHARS", "900")))
-    ap.add_argument("--sleep", type=float, default=0.3)
+    ap.add_argument("--speed", type=float, default=1.0, help="0.8~1.0 느리게, 1.0 보통")
+    ap.add_argument("--device", default="auto", help="auto | cuda:0 | cpu")
+    ap.add_argument("--bitrate", default="64k", help="mp3 비트레이트 (48k~96k)")
     args = ap.parse_args()
 
-    global CLIENT_ID, CLIENT_SECRET
-    CLIENT_ID = os.environ.get("NCP_CLOVA_ID")
-    CLIENT_SECRET = os.environ.get("NCP_CLOVA_SECRET")
-    if not CLIENT_ID or not CLIENT_SECRET:
-        sys.exit("환경변수 NCP_CLOVA_ID / NCP_CLOVA_SECRET 를 먼저 설정하세요.")
+    # 의존성 확인
+    try:
+        from melo.api import TTS
+    except Exception as e:
+        sys.exit("MeloTTS 미설치:\n  pip install git+https://github.com/myshell-ai/MeloTTS.git\n"
+                 "  python -m unidic download\n(" + str(e) + ")")
+    try:
+        import pydub  # noqa: F401
+    except Exception:
+        sys.exit("pydub 미설치(mp3 인코딩 필요):  pip install pydub  + ffmpeg 설치")
 
-    os.makedirs(AUDIO_DIR, exist_ok=True)
     paths = sorted(glob.glob(os.path.join(SCRIPTS_DIR, "*.txt")))
     if not paths:
         sys.exit(f"대본이 없습니다: {SCRIPTS_DIR}")
+    os.makedirs(AUDIO_DIR, exist_ok=True)
 
-    total_chars = total_files = 0
+    print("MeloTTS 한국어 모델 로딩 중… (첫 실행은 다운로드로 시간이 걸립니다)")
+    model = TTS(language="KR", device=args.device)
+    spk_id = list(model.hps.data.spk2id.values())[0]
+    sr = model.hps.data.sampling_rate
+    print(f"모델 준비 완료. device={model.device}, sr={sr}\n")
+
+    total_files = total_chars = 0
     for path in paths:
         key, sections = parse_script(path)
         if not key:
@@ -173,29 +111,25 @@ def main():
             continue
         if args.keys and key not in args.keys:
             continue
-        print(f"\n■ {os.path.basename(path)}  (key={key}, 섹션 {len(sections)}개)")
+        print(f"■ {os.path.basename(path)}  (key={key}, 섹션 {len(sections)}개)")
         for i, sec in enumerate(sections, 1):
             out = os.path.join(AUDIO_DIR, f"{key}_{i:02d}.mp3")
             if os.path.exists(out) and not args.overwrite:
-                print(f"  - {os.path.basename(out)}  (이미 있음, --overwrite로 갱신)")
+                print(f"  - {key}_{i:02d}.mp3  (이미 있음)")
                 continue
-            chunks = chunk_text(sec, args.max_chars)
             try:
-                audio = [synth(c, args.speaker, args.speed) for c in chunks]
-                if args.sleep:
-                    time.sleep(args.sleep)
+                audio = model.tts_to_file(sec, spk_id, output_path=None, speed=args.speed, quiet=True)
+                save_mp3(audio, sr, out, args.bitrate)
             except Exception as e:
-                print(f"  ✗ {os.path.basename(out)} 실패: {e}")
-                print("    (speaker 코드/한도 확인. --max-chars 를 낮춰보세요)")
+                print(f"  ✗ {key}_{i:02d}.mp3 실패: {e}")
                 continue
-            join_mp3(audio, out)
             kb = os.path.getsize(out) // 1024
-            print(f"  ✓ {os.path.basename(out)}  ({len(sec)}자 / {len(chunks)}요청 / {kb}KB)")
-            total_chars += len(sec)
+            print(f"  ✓ {key}_{i:02d}.mp3  ({len(sec)}자 / {kb}KB)")
             total_files += 1
+            total_chars += len(sec)
 
-    print(f"\n완료: {total_files}개 mp3, 약 {total_chars:,}자 합성.")
-    print("다음:  git add assets/audio && git commit -m \"TTS 음원 추가\" && git push")
+    print(f"\n완료: {total_files}개 mp3, 약 {total_chars:,}자.")
+    print('다음:  git add assets/audio && git commit -m "TTS 음원 추가" && git push')
 
 
 if __name__ == "__main__":
