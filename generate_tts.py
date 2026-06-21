@@ -173,7 +173,7 @@ def main():
     # edge
     ap.add_argument("--voice", default=os.environ.get("EDGE_TTS_VOICE", "ko-KR-SunHiNeural"))
     ap.add_argument("--rate", default=os.environ.get("EDGE_TTS_RATE", "+0%"),
-                    help="(edge) 예: --rate=-10% (대시는 = 로 붙여 쓸 것)")
+                    help="(edge) 예: --rate=-10%% 처럼 느리게 (대시는 = 로 붙여 쓸 것)")
     # melo
     ap.add_argument("--speed", type=float, default=1.0, help="(melo) 0.8~1.0 느리게")
     ap.add_argument("--device", default="auto", help="(melo) auto | cuda:0 | cpu")
