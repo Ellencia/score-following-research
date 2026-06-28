@@ -19,9 +19,11 @@ assets/scripts/*.txt 낭독 대본 → assets/audio/<key>_NN.mp3
   pip install torch torchaudio --index-url https://download.pytorch.org/whl/cu128
   # (B) GPU 안 써도 됨(설치 가벼움, 느릴 뿐): 위 줄 대신
   #   pip install torch torchaudio
-  pip install git+https://github.com/myshell-ai/MeloTTS.git
-  python -m unidic download
+  pip install "git+https://github.com/myshell-ai/MeloTTS.git"
+  pip install eunjeon            # 한국어 MeCab — MeloTTS 한국어 G2P 필수(없으면 합성 실패)
+  python -m unidic download     # 일본어 사전(~530MB) — MeloTTS import 시 MeCab 초기화에 필요
   pip install pydub numpy        # ffmpeg는 이미 설치돼 있음
+  # ※ Python은 반드시 3.11 (3.13은 mecab-python3 빌드 실패). eunjeon은 활성 env에 직접 설치할 것.
 
 실행 (sftts env에서):
   python generate_tts.py --engine melo 01_explanation        # 테스트
