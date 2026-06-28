@@ -13,3 +13,11 @@ _tmp/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Python
+__pycache__/
+*.pyc
+
+# TTS 작업용 임시(필요시) venv / 테스트 산출물
+.venv_tts/
+assets/audio/__test.mp3
