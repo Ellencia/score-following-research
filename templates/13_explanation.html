@@ -1,0 +1,145 @@
+<template id="doc-13_explanation" data-title="[13] Chang 2025 RUMAA — 비전공자 해설" data-docx="papers/13_Chang2025_RUMAA/비전공자_해설.docx"><h1 id="rumaa-repeat-aware-unified-music-audio-analysis--비전공자-해설">RUMAA: Repeat-Aware Unified Music Audio Analysis — 비전공자 해설</h1>
+<h2 id="이-논문이-풀려는-문제는-무엇인가">이 논문이 풀려는 문제는 무엇인가</h2>
+<p>피아노 학습 도구를 만들고 있다고 상상해 보자. 학생이 곡을 연주하면 시스템이 (1) 지금 어느 마디를 연주 중인지 알려 주고(alignment), (2) 어떤 음을 정확히 쳤고 어떤 음을 빼먹었는지 표시해 주며(mistake detection), (3) 동시에 그 연주를 자동으로 채보해(transcription) 학생 자신의 연주 기록을 남긴다. 이 세 작업은 인간이 한 번에 한다 — 선생님은 학생의 연주를 들으면서 동시에 "지금 4페이지 12마디네, 라♭ 음을 빼먹었고, 그 외에는 깔끔하게 쳤어"라고 한 번에 말한다.</p>
+<p>그런데 컴퓨터에는 그동안 이 세 작업이 따로 풀렸다. Alignment 시스템이 따로 있고, transcription 시스템이 따로 있고, mistake detection 시스템이 또 따로 있어서, 각자의 출력을 어떻게든 이어 붙여 학습 도구를 만들어야 했다. 더 큰 문제는 따로 푼다는 것 자체가 정확도를 떨어뜨린다는 점이다 — 정렬은 누락된 음을 알아내야 정확하고, 채보는 정렬 정보가 있어야 정확한데, 따로 풀면 이 상호 도움이 사라진다.</p>
+<p>또 하나 결정적 한계가 있다. 기존 방법들은 모두 <strong>반복 기호</strong>를 처리하지 못했다. 클래식 악보는 거의 모든 곡에 ":||"(반복 끝), "D.S. al Coda"(시뇨로 돌아가서 코다로) 같은 기호가 있는데, 컴퓨터가 정렬을 위해 사용하는 MIDI 포맷에는 이 기호가 없다. 그래서 사람이 미리 손으로 "이 마디는 두 번 연주, 그 다음 이 마디는…"이라고 풀어 둔 unfolded MIDI를 만들어야 시스템이 작동했다. 이 사전 작업이 큰 비용이고, 자동화가 거의 불가능했다.</p>
+<p>본 논문 RUMAA는 두 문제를 한꺼번에 해결한다. <strong>하나의 transformer 모델로 alignment·transcription·mistake detection 셋을 동시에 풀고, 사람이 보는 그대로의 MusicXML 악보(반복 기호 포함)를 입력으로 직접 받는다.</strong> 결과는 인상적이다 — 반복 있는 악보에서 기존 방법들이 정확도가 12-36%로 무너질 때, RUMAA는 98.4%를 유지한다.</p>
+<h2 id="한-줄-비유로-본-이-논문의-아이디어">한 줄 비유로 본 이 논문의 아이디어</h2>
+<p><strong>"세 가지 일을 따로 하는 세 사람을, 한 사람이 동시에 처리하게 만든다 — 그것도 사람이 보는 악보 그대로를 입력으로."</strong></p>
+<p>비유하자면, 외국어 통역을 생각해 보자. 그동안 분야는 (1) 음성을 텍스트로 바꾸는 사람, (2) 그 텍스트를 다른 언어로 번역하는 사람, (3) 번역에 오류가 있는지 확인하는 사람을 각자 따로 두고 결과를 이어 붙였다. RUMAA는 이 세 사람의 일을 한 사람이 동시에 하게 만든다. 더 나아가 그동안 통역사에게 영어 글을 줄 때 "이 부분은 두 번 읽고, 다음에 여기로 가시오" 같은 메모를 사람이 미리 풀어서 줘야 했는데, 이제는 영어 글에 적힌 그 지시문을 통역사가 직접 읽고 처리한다.</p>
+<p>기술적으로 이게 가능해진 것은 두 가지 사전 학습 모델 덕분이다. <strong>CLaMP2의 M3 encoder</strong>가 사람이 보는 악보를 이해하고, <strong>YourMT3+의 audio encoder</strong>가 사람이 듣는 음악을 이해한다. RUMAA는 이 두 사전 학습 모델을 합쳐 그 위에 디코더 하나만 새로 학습한다. 거대 언어 모델이 사전 학습된 단어 표상에 task-specific head를 얹어 다양한 NLP task를 한 번에 푸는 것과 같은 패러다임이다.</p>
+<h2 id="핵심-아이디어를-한-그림으로">핵심 아이디어를 한 그림으로</h2>
+<pre class="mermaid"><code>flowchart LR
+    Score[MusicXML 악보&lt;br/&gt;반복기호 포함] --&gt; ABC[ABC 표기로 변환&lt;br/&gt;마디당 64자]
+    ABC --&gt; M3[M3 Score Encoder&lt;br/&gt;CLaMP2 사전학습&lt;br/&gt;마디 단위 패치]
+    Audio[연주 오디오] --&gt; AE[Audio Encoder&lt;br/&gt;YourMT3+ 사전학습&lt;br/&gt;frozen]
+    M3 --&gt; Dec[Transformer Decoder&lt;br/&gt;self-attn → audio cross-attn → score cross-attn]
+    AE --&gt; Dec
+    Dec --&gt; T1[T1 출력&lt;br/&gt;연주 측 채보&lt;br/&gt;onset/pitch/velocity]
+    Dec --&gt; T2[T2 출력&lt;br/&gt;악보 측 정렬&lt;br/&gt;bar/pos/pitch]
+    Dec --&gt; T3[T3 출력&lt;br/&gt;편집 작업&lt;br/&gt;Match/Insert/Delete/Repeat]
+</code></pre>
+<p>악보 측에서는 MusicXML을 ABC라는 더 짧은 텍스트 표기로 변환하고(마디당 64자), CLaMP2의 사전 학습 M3 encoder가 한 마디씩 1024-dim 표상으로 만든다. 음악 텍스트 안에는 반복 기호·셈여림·조표·박자표·페달 표시가 모두 보존되어, 모델이 이 의미를 직접 이해할 수 있다. 음성 측에서는 YourMT3+의 사전 학습 audio encoder가 16 kHz 오디오를 12 Hz 프레임 표상으로 만든다.</p>
+<p>디코더의 핵심 장치는 <strong>계층적 cross-attention</strong>이다. 각 디코더 블록이 self-attention을 한 뒤, 먼저 audio에 cross-attention을 하고, 그 다음 score에 cross-attention을 한다. 이는 인간이 연주를 들을 때 하는 인지 절차 — 일단 무엇이 들렸는지 인식한 뒤 그것을 악보의 어디에 매칭할지 생각하는 — 와 자연스럽게 일치한다. 이 순서가 그냥 둘을 합쳐서 보는 것보다 1% 정확하다.</p>
+<p>출력 측은 세 채널이 동시에 생성된다. T1은 연주에서 들린 음표(시각·음고·셈여림), T2는 악보의 그 시각에 해당하는 위치(마디·박·음고), T3는 그 둘 사이의 편집 관계(Match/Insert/Delete/Repeat). 같은 자리의 세 채널이 일관되도록 학습되므로, 한 번의 forward pass로 정렬·전사·실수 검출이 모두 나온다.</p>
+<h2 id="알아야-할-핵심-용어">알아야 할 핵심 용어</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Alignment</td>
+<td>Alignment</td>
+<td>연주 오디오와 악보 사이의 시간선 매칭. "지금 9.7초가 악보의 12마디 2박자에 해당"</td>
+</tr>
+<tr class="even">
+<td>Score-informed transcription</td>
+<td>Score-informed transcription</td>
+<td>악보 정보를 활용해 audio→음표 변환의 정확도를 높이는 채보</td>
+</tr>
+<tr class="odd">
+<td>Mistake detection</td>
+<td>Mistake detection</td>
+<td>연주에서 누락된 음(missed)·잘못 추가된 음(extra)·정확히 친 음(correct)을 가려냄</td>
+</tr>
+<tr class="even">
+<td>MusicXML</td>
+<td>MusicXML</td>
+<td>사람이 보는 악보를 컴퓨터가 다룰 수 있게 적은 표준 포맷. 반복·셈여림·조표 등 모든 의미 정보 포함</td>
+</tr>
+<tr class="odd">
+<td>MIDI</td>
+<td>MIDI</td>
+<td>음표의 시작·길이·세기·음고만 나열한 단순 포맷. 반복·셈여림 같은 의미 정보 없음</td>
+</tr>
+<tr class="even">
+<td>ABC notation</td>
+<td>ABC notation</td>
+<td>MusicXML보다 훨씬 간결한 텍스트 기반 음악 표기. 마디당 64자 정도면 거의 모든 클래식 악보 표현 가능</td>
+</tr>
+<tr class="odd">
+<td>Repeat 기호</td>
+<td>Repeat sign</td>
+<td>악보의 ":</td>
+</tr>
+<tr class="even">
+<td>Repeat-unfolded score</td>
+<td>Repeat-unfolded score</td>
+<td>사람이 미리 반복을 풀어 한 줄로 만든 악보. 기존 정렬 시스템의 전처리 단계</td>
+</tr>
+<tr class="odd">
+<td>Transformer</td>
+<td>Transformer</td>
+<td>self-attention 기반 신경망 구조. 본 논문의 score encoder, audio encoder, decoder 모두 transformer</td>
+</tr>
+<tr class="even">
+<td>Cross-attention</td>
+<td>Cross-attention</td>
+<td>한 시퀀스가 다른 시퀀스를 "참고"하면서 자기 출력을 만드는 attention 변형</td>
+</tr>
+<tr class="odd">
+<td>Hierarchical cross-attention</td>
+<td>Hierarchical cross-attention</td>
+<td>본 논문의 핵심 — audio 먼저 보고 그 다음 score 보는 두 단계 cross-attention. 단순 concatenation보다 1% 정확</td>
+</tr>
+<tr class="even">
+<td>Pre-trained encoder</td>
+<td>Pre-trained encoder</td>
+<td>다른 task로 미리 학습된 encoder. 본 논문은 CLaMP2의 M3와 YourMT3+를 그대로 가져옴</td>
+</tr>
+<tr class="odd">
+<td>Tri-stream decoding</td>
+<td>Tri-stream decoding</td>
+<td>세 채널을 동시에 출력. T1(연주), T2(악보), T3(편집 관계)</td>
+</tr>
+<tr class="even">
+<td>Proxy task</td>
+<td>Proxy task</td>
+<td>진짜 풀고 싶은 task의 대리 task. 본 논문은 세 proxy task로 정렬·전사·실수 검출의 상호의존성을 학습</td>
+</tr>
+<tr class="odd">
+<td>F_align</td>
+<td>F_align</td>
+<td>정렬 정확도 메트릭. 매치+삽입+삭제 = TP, 미매치 예측 = FP, 미매치 정답 = FN</td>
+</tr>
+<tr class="even">
+<td>(n)ASAP / Vienna / STPD</td>
+<td>Datasets</td>
+<td>(n)ASAP는 222 MusicXML + 519 연주, Vienna는 정렬 평가용, STPD는 실수 검출 평가용</td>
+</tr>
+<tr class="odd">
+<td>Augmentation</td>
+<td>Augmentation</td>
+<td>학습 데이터를 합성으로 변형해 양과 다양성을 늘리는 것. 본 논문은 score-modulated와 performance-modulated 둘</td>
+</tr>
+<tr class="even">
+<td>GlueNote</td>
+<td>GlueNote</td>
+<td>같은 그룹(JKU)의 transformer 기반 심볼 정렬 모델. 본 논문이 비교 대상으로 사용</td>
+</tr>
+<tr class="odd">
+<td>YourMT3+</td>
+<td>YourMT3+</td>
+<td>본 논문 1저자의 multi-instrument transcription 모델. RUMAA의 audio encoder</td>
+</tr>
+<tr class="even">
+<td>CLaMP2 / M3</td>
+<td>CLaMP2 / M3</td>
+<td>multilingual multimodal MIR 모델. RUMAA의 score encoder</td>
+</tr>
+</tbody>
+</table>
+<h2 id="이-논문의-새로운-점">이 논문의 새로운 점</h2>
+<p>크게 세 가지를 들 수 있다.</p>
+<p><strong>첫째, MusicXML 반복 기호의 native 처리.</strong> 분야의 가장 큰 한계 중 하나가 — 거의 모든 클래식 곡에 있는 반복 기호가 — 드디어 해결되었다. 기존 MIDI 기반 시스템들은 반복이 있으면 정확도가 12.7-36.4로 무너졌다(86% drop). RUMAA는 같은 곡에서 98.4를 유지한다. 이는 알고리즘적 trick이 아니라 입력 표상 자체를 바꿈으로써 가능해진다 — ABC-interleaved 표기가 ":||", "Da Capo" 같은 의미 정보를 그대로 보존하고, M3 encoder가 그 의미를 학습하기 때문이다. 분야의 사람-개입 데이터 큐레이션 비용을 자동화로 대체할 수 있는 첫 사례다.</p>
+<p><strong>둘째, 세 task의 통합과 그 시너지.</strong> Alignment·transcription·mistake detection을 한 모델 한 forward pass로 푼다. 더 인상적인 것은 통합이 정확도를 깎지 않고 오히려 올린다는 점이다. Score-informed transcription에서 RUMAA의 F_on은 99.1로, score 정보를 안 쓰는 강한 베이스라인 hFT-T(97.4)보다 정확하다. 이것은 정렬 정보가 transcription을 도와주고, transcription 정보가 mistake detection을 도와주는 — 세 task가 서로의 답에서 정보를 빌리는 것이 모델 안에서 자연스럽게 일어나기 때문이다.</p>
+<p><strong>셋째, 사전 학습 모델의 모듈러 결합.</strong> RUMAA가 사용하는 두 encoder(M3와 YourMT3+)는 이미 공개된 모델이다. 본 논문이 한 일은 그 둘을 합치는 cross-modal decoder를 새로 학습한 것이다. NLP 분야가 대규모 언어 모델 + task-specific head로 거의 모든 task를 푸는 방식과 같은 패러다임이며, MIR 분야가 이 패러다임으로 진입하는 첫 본격적 사례 중 하나다. 이 모듈성 덕분에 후속 연구가 본 모델을 다른 악기·다른 데이터·다른 task로 확장하는 비용이 낮다.</p>
+<h2 id="한계와-의의">한계와 의의</h2>
+<p><strong>한계.</strong> 첫째, 약 1분 청크 한정이다. cross-chunk memory limit 때문에 30분짜리 콘서트 녹음에 그대로 적용할 수 없다. 둘째, 피아노 솔로에 한정된다 — 사전 학습은 multi-instrument이지만 fine-tuning과 평가는 모두 피아노 솔로 데이터셋이다. 본 프로젝트의 페이지 터너 응용(피아노/바이올린/첼로/기타) 관점에서 비-피아노 일반화는 별도 작업이다. 셋째, 실시간 처리가 안 된다 — 본 논문의 모든 모듈은 offline 처리로, score following 응용에는 직접 사용할 수 없다. 분석 11번의 transcribe-then-track 노선과 분명히 다른 트랙으로, 두 노선이 보완 관계임을 인식하는 것이 중요하다.</p>
+<p><strong>의의.</strong> 학술적으로 본 논문은 분야의 다음 10년을 가르는 이정표 중 하나로 평가된다. 두 가지 이유에서다. 첫째, 분야가 transformer + native MusicXML 결합으로 진입할 수 있음을 정량으로 처음 보여 줬다. 분야가 그동안 의존해 온 MIDI/synthesized audio/repeat-unfolded score 같은 단순화 가정을 통째로 우회할 수 있는 길이 열렸다. 둘째, 여러 task의 통합이 단순히 코드 경제성이 아니라 정확도 자체를 올린다는 점을 입증했다. 이는 분야가 task-specific 모델을 모아 응용을 만드는 방식에서, 통합 모델 + task-specific decoding으로 가는 패러다임 전환을 시사한다.</p>
+<p>본 프로젝트 페이지 터너 관점에서는 본 논문이 직접 백엔드로 쓰일 수는 없다. 하지만 본 논문이 오프라인으로 만든 정렬 결과를 — 특히 IMSLP 같은 야생 악보 + 야생 녹음을 자동으로 정렬해 만든 대량 데이터를 — 분석 10·11·12번의 실시간 시스템 학습 데이터로 환원할 수 있다. 즉 본 논문은 직접 응용보다도 응용 시스템의 학습 데이터를 확장하는 인프라적 가치가 더 크다. JLTR(분석 9번)이 사람의 6초 라벨링으로 풀었던 문제를 RUMAA는 학습된 transformer로 풀고, 둘 모두 결국 실시간 score follower의 학습 자원으로 환원되는 — 분야 전체가 한 점으로 모이는 그림이 그려진다.</p></template>

@@ -1,0 +1,111 @@
+<template id="doc-10_explanation" data-title="[10] Park 2025 Matchmaker — 비전공자 해설" data-docx="papers/10_Park2025_Matchmaker/비전공자_해설.docx"><h1 id="matchmaker-an-open-source-library-for-real-time-piano-score-following--비전공자-해설">Matchmaker: An Open-Source Library for Real-Time Piano Score Following — 비전공자 해설</h1>
+<h2 id="이-논문이-풀려는-문제는-무엇인가">이 논문이 풀려는 문제는 무엇인가</h2>
+<p>이 분야의 다른 8편 논문(Arzt 2016 박사논문, Dorfer 2016/2018, Henkel 2020/2021, Lee 2022, Zeitler 2024, Pillay 2024)을 떠올려 보자. 모두 다른 사람·다른 그룹·다른 언어·다른 데이터셋 위에서 만들어졌다. 결과적으로 "어느 알고리즘이 더 나은가"라는 단순한 질문에 답하기가 어렵다. A 논문은 자기 데이터에서 자기 베이스라인과 비교했고, B 논문은 또 다른 데이터에서 또 다른 베이스라인과 비교했기 때문이다. 비유하자면, 다른 종목의 여러 선수들이 각자 자기 종목의 자기 기록만 들고 있는데, 그중 누가 가장 빠른지 따져보라는 것과 같다.</p>
+<p>이 논문은 그 상황을 정면으로 해결한다. 저자들은 <strong>공동 출발선과 공동 트랙을 깔아 주는 도구</strong> — 즉 누구나 같은 코드로 같은 데이터에서 다른 알고리즘을 실험할 수 있는 단일 라이브러리 — 를 만든다. 그것이 <code>Matchmaker</code>다. pip 한 줄로 설치하고, 두 줄짜리 Python 코드로 마이크 앞에서 피아노를 연주하면 즉시 악보의 어느 위치가 연주되고 있는지를 받아볼 수 있다. 라이브러리 안에는 score following 분야의 대표적 알고리즘 셋(OLTW-Dixon, OLTW-Arzt, HMM)이 동일한 인터페이스로 들어 있어, 사용자는 코드 한 줄만 바꿔 알고리즘을 갈아끼울 수 있다.</p>
+<h2 id="한-줄-비유로-본-이-논문의-아이디어">한 줄 비유로 본 이 논문의 아이디어</h2>
+<p><strong>"score following을 박사과정용 시스템 통합 작업에서, 라이브러리 호출로 해결되는 문제로 끌어내린다."</strong></p>
+<p>비유하자면, 예전에는 GPS를 만들려면 위성 통신·신호 처리·지도 데이터·UI를 모두 직접 구현해야 했다. Matchmaker가 하는 일은, GPS의 모든 모듈을 표준화된 API 뒤에 숨기고 <code>gps.location()</code> 한 줄로 좌표를 돌려주는 라이브러리를 만드는 것과 같다. 페이지 터너·자동 반주·자막 같은 응용을 만들고 싶은 사람은 이제 score following의 내부 알고리즘을 다시 발명할 필요가 없다.</p>
+<h2 id="핵심-아이디어를-한-그림으로">핵심 아이디어를 한 그림으로</h2>
+<pre class="mermaid"><code>flowchart LR
+    Score[악보 파일&lt;br/&gt;MusicXML / MIDI / MEI] --&gt; Pre[partitura가 읽음]
+    Pre --&gt; Synth[FluidSynth로&lt;br/&gt;참조 오디오 합성]
+    Mic[마이크 / 오디오 파일] --&gt; Stream[AudioStream&lt;br/&gt;청크 단위로 받음]
+    Stream --&gt; Feat[특징 추출&lt;br/&gt;Chroma/LSE/CQT 등 선택]
+    Synth --&gt; Feat
+    Feat --&gt; Algo[정렬 알고리즘&lt;br/&gt;OLTW-Dixon / OLTW-Arzt / HMM]
+    Algo --&gt; Pos[현재 박자 위치&lt;br/&gt;실시간 출력]
+</code></pre>
+<p>악보 측에서는 MusicXML이나 MIDI를 읽어 들여 오디오로 합성하고, 입력 측에서는 마이크나 파일에서 들어오는 소리를 청크 단위로 자른다. 두 흐름에서 같은 종류의 특징(예: chroma)을 뽑아 정렬 알고리즘에 넣으면, 매 순간 "지금 악보의 몇 번째 박자를 연주하고 있는지"를 박자 단위로 돌려준다. 사용자가 보는 코드는 정말로 두 줄이다.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true"></a>mm <span class="op">=</span> Matchmaker(score_file<span class="op">=</span><span class="st">&quot;my_score.musicxml&quot;</span>, input_type<span class="op">=</span><span class="st">&quot;audio&quot;</span>)</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true"></a><span class="cf">for</span> current_position <span class="kw">in</span> mm.run():</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true"></a>    <span class="bu">print</span>(current_position)</span></code></pre></div>
+<h2 id="알아야-할-핵심-용어">알아야 할 핵심 용어</h2>
+<table>
+<thead>
+<tr class="header">
+<th>용어</th>
+<th>영문</th>
+<th>직관적 설명</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>실시간 음악 정렬 / 악보 추적</td>
+<td>Real-time music alignment / score following</td>
+<td>사람이 악기를 연주하는 동안, 컴퓨터가 매 순간 "지금 악보의 어느 위치인지"를 출력하는 작업</td>
+</tr>
+<tr class="even">
+<td>OLTW</td>
+<td>Online Time Warping</td>
+<td>빠르거나 느리게 흘러가는 두 시퀀스를 한쪽이 실시간 입력일 때 정렬하는 고전 알고리즘. 본 라이브러리의 두 변종이 OLTW-Dixon과 OLTW-Arzt</td>
+</tr>
+<tr class="odd">
+<td>HMM</td>
+<td>Hidden Markov Model</td>
+<td>음표가 attack-steady-release 같은 숨은 상태를 거친다고 보고, 관측된 오디오로 그 상태 시퀀스를 추정하는 확률 모델. Antescofo 계열이 이 노선</td>
+</tr>
+<tr class="even">
+<td>Chroma</td>
+<td>Chroma feature</td>
+<td>12 음명(C, C♯, ..., B)에 에너지가 얼마나 있는지를 나타내는 특징. 화성에 민감하나 onset에는 둔감</td>
+</tr>
+<tr class="odd">
+<td>LSE</td>
+<td>Log-Spectral Energy</td>
+<td>onset(소리가 시작되는 순간)에 민감한 단순한 스펙트럼 특징. 본 논문 결과에서 가장 균형잡힌 성능</td>
+</tr>
+<tr class="even">
+<td>AR</td>
+<td>Alignment Rate</td>
+<td>정해진 허용 시간(예: ±100 ms) 안에 정렬된 비트의 비율. 높을수록 좋음</td>
+</tr>
+<tr class="odd">
+<td>AAE / MAE</td>
+<td>Average / Median Absolute Error</td>
+<td>정렬 오차의 평균과 중앙값. 낮을수록 좋음</td>
+</tr>
+<tr class="even">
+<td>MusicXML / MIDI / MEI</td>
+<td>Music encoding formats</td>
+<td>악보를 컴퓨터가 읽을 수 있게 적은 표준 포맷들. 본 라이브러리는 partitura를 통해 모두 지원</td>
+</tr>
+<tr class="odd">
+<td>partitura</td>
+<td>Python library</td>
+<td>MusicXML/MIDI/MEI를 통합 파싱하는 JKU 그룹의 라이브러리. Matchmaker가 입력 파서로 의존</td>
+</tr>
+<tr class="even">
+<td>Cython</td>
+<td>Python superset</td>
+<td>C 수준의 속도를 내기 위해 Python 코드에 C 타입을 섞을 수 있게 한 언어. OLTW-Arzt가 이걸로 구현되어 0.07 ms 지연을 달성</td>
+</tr>
+<tr class="odd">
+<td>(n)ASAP / Batik / Vienna4x22</td>
+<td>Datasets</td>
+<td>본 논문이 평가에 사용한 세 가지 공개 피아노 데이터셋</td>
+</tr>
+<tr class="even">
+<td>backward-forward 전략</td>
+<td>Backward-forward strategy</td>
+<td>OLTW-Arzt의 핵심 — 현재 위치를 추정한 뒤 과거 결정을 다시 검토해 누적 오류를 줄이는 방법</td>
+</tr>
+<tr class="odd">
+<td>ACCompanion</td>
+<td>Companion system</td>
+<td>JKU 그룹의 자동 피아노 반주 시스템. Matchmaker를 score follower 모듈로 사용</td>
+</tr>
+<tr class="even">
+<td>시뮬레이션 모드 vs 라이브 모드</td>
+<td>Simulation vs live mode</td>
+<td>시뮬레이션은 미리 녹음된 파일로 재현 가능한 벤치마크용, 라이브는 마이크로 직접 연주 입력</td>
+</tr>
+</tbody>
+</table>
+<h2 id="이-논문의-새로운-점">이 논문의 새로운 점</h2>
+<p>크게 세 가지를 들 수 있다.</p>
+<p><strong>첫째, 표준화된 평가 프레임워크.</strong> 분야가 40년 동안 갖추지 못했던 "공동 트랙"을 만든 것 자체가 가장 큰 기여다. (n)ASAP·Batik·Vienna4x22 세 데이터셋 위에서 OLTW-Dixon·OLTW-Arzt·HMM 세 알고리즘을 동일 환경·동일 메트릭으로 비교하고, 184 연주·24만 음표·약 8 시간이라는 큰 평가 풀에서 결론을 내린다. 그 결론은 분명하다 — <strong>OLTW-Arzt + LSE 조합이 정확도와 지연 모두에서 균형이 가장 좋다</strong>. 이는 후속 논문이 새로운 알고리즘을 발표할 때 반드시 넘어야 할 베이스라인이 된다.</p>
+<p><strong>둘째, 응용 통합 비용을 거의 제로로 만드는 API.</strong> 보통 이 분야의 도구들은 자체 포맷·자체 빌드 시스템·자체 의존성을 가지고 있어, 응용을 만들려면 박사과정생 한 명의 통합 작업이 필요했다. Matchmaker는 partitura를 통해 MusicXML/MIDI/MEI를 모두 받고, AudioStream 컨텍스트 매니저로 마이크 입력을 자동 처리하며, 정렬 결과를 Python 제너레이터로 돌려준다. 이 디자인 결정 하나하나가 음악인 본인이 자신의 악보로 직접 페이지 터너나 반주 도구를 만들어 볼 수 있게 만든다.</p>
+<p><strong>셋째, 시뮬레이션과 라이브의 분리.</strong> 실시간 시스템은 OS 스케줄링·하드웨어 변동성·언어 자체의 GC 같은 잡음으로 인해 같은 알고리즘도 실험마다 결과가 달라질 수 있다. 본 논문은 단일 스레드 시뮬레이션 모드를 별도로 두어 알고리즘 자체의 정확도를 잡음 없이 측정하고, 멀티 스레드 라이브 모드를 별도로 두어 실제 사용 환경의 지연을 따로 보고한다. 지연 측정도 한 머신이 아니라 i9-9900K·M4 MacMini·M2 Pro MacBook 세 환경의 평균으로 보고해, 한 PC에서의 우연한 결과가 아닌 일반적 성능을 본다는 점을 분명히 한다.</p>
+<h2 id="한계와-의의">한계와 의의</h2>
+<p><strong>한계.</strong> 첫째, 평가가 솔로 피아노에 한정된다. 바이올린·첼로·기타·합주 같은 다른 악기 환경에서의 성능은 후속 작업이 필요하다 — 저자들도 결론에서 명시한다. 둘째, hand-crafted feature(chroma·mel·CQT·MFCC·LSE)만 비교했다. 같은 시기에 나온 Zeitler 2024(transcription raw feature)나 Pillay 2024(학습된 piano roll latent) 같은 학습 기반 특징은 정량 비교에서 빠져 있다. 셋째, HMM 베이스라인이 tempo-aware 확장 없이 단순한 형태로만 들어 있어, Antescofo 같은 산업용 HMM과 직접 비교가 어렵다 — 이것도 저자들이 인정한다.</p>
+<p><strong>의의.</strong> 학술적 기여는 "이 분야의 공통 인프라가 드디어 등장했다"는 데 있다. 음악정보검색 분야는 보통 알고리즘 논문은 많은데 그것을 한 자리에 모아 비교 가능하게 만드는 인프라 논문은 적었다. Matchmaker는 그 부족함을 정면으로 해결하면서 동시에 응용 개발자에게는 두 줄짜리 API를 내준다. 이 프로젝트의 페이지 터너 응용 관점에서 보면 — Matchmaker는 백엔드로 거의 그대로 쓸 수 있는 유일한 2025년 도구다. 박자 위치를 받아 페이지 경계와 비교하고 PDF 렌더러를 한 칸 넘기는 코드만 추가하면, 이 라이브러리만으로 페이지 터너의 핵심이 거의 완성된다. 이 논문이 같은 ISMIR 2025에서 발표된 Peter-Hu-Widmer SMC 2025의 transcribe-then-track 노선과 결합될 때, 분야의 다음 10년이 본격적으로 시작된다고 보아도 과언이 아니다.</p></template>

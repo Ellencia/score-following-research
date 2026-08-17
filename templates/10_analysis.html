@@ -1,0 +1,210 @@
+<template id="doc-10_analysis" data-title="[10] Park 2025 Matchmaker — 분석 보고서" data-docx="papers/10_Park2025_Matchmaker/분석_보고서.docx"><h1 id="matchmaker-an-open-source-library-for-real-time-piano-score-following-and-systematic-evaluation--분석-보고서">Matchmaker: An Open-Source Library for Real-Time Piano Score Following and Systematic Evaluation — 분석 보고서</h1>
+<h2 id="핵심-요약">핵심 요약</h2>
+<p>본 논문은 40년에 걸쳐 파편화되어 온 실시간 음악 정렬(real-time music alignment, score following) 분야에 <strong>재현 가능한 단일 평가 프레임워크</strong>가 부재하다는 문제 의식에서 출발한다. 저자들은 이를 직접 해결하는 도구로서 <code>Matchmaker</code>라는 오픈 소스 Python 라이브러리를 발표하고, 그 안에서 두 가지 OLTW 변종(Dixon 계열, Arzt 계열)과 HMM 기반 정렬을 동일 인터페이스로 구현한다. 라이브러리는 partitura를 통해 MusicXML/MIDI/MEI 등 다양한 포맷의 악보를 받고, 라이브 오디오 디바이스 입력과 시뮬레이션 모드를 모두 지원하며, OLTW-Arzt는 Cython으로 작성되어 실시간 적합성을 갖춘다. 평가는 (n)ASAP·Batik·Vienna4x22 세 데이터셋(184 연주, 93 작품, 7.74 시간, 24만 음표) 위에서 chroma·mel·CQT·MFCC·LSE 5종 특징을 공평하게 비교한다. 그 결과 <strong>OLTW-Arzt + log-spectral-energy(LSE) 조합이 정확도와 지연 모두에서 가장 균형잡힌 베이스라인</strong>임을 보고한다. 동시에 ACCompanion 자동 반주 시스템에 모듈로 결합되어 응용 검증을 거친 것이 프레임워크 자체의 실용성도 함께 입증한다.</p>
+<h2 id="서지-정보와-접근-범위">서지 정보와 접근 범위</h2>
+<ul>
+<li>저자: Jiyun Park¹·Carlos Cancino-Chacón²·Suhit Chiruthapudi²·Juhan Nam¹ (¹ KAIST GSCT, ² JKU Linz). Park과 Cancino-Chacón은 동등 기여</li>
+<li>출처: Proceedings of the 26th International Society for Music Information Retrieval Conference (ISMIR 2025), Daejeon, Korea, September 21-25, 2025, pp. 91-99</li>
+<li>라이선스: CC BY 4.0</li>
+<li>코드: <a href="https://github.com/pymatchmaker/matchmaker">https://github.com/pymatchmaker/matchmaker</a>, 문서 <a href="https://pymatchmaker.readthedocs.io/">https://pymatchmaker.readthedocs.io/</a>, 보충 자료 <a href="https://pymatchmaker.github.io/ismir2025_supplementary_materials/">https://pymatchmaker.github.io/ismir2025_supplementary_materials/</a></li>
+<li>본 분석은 PDF 추출 본문(615행) 직접 정독에 기반한다. 페이지 인용은 해당 텍스트 기준이다.</li>
+<li>펀딩: 오스트리아 FWF PAT 8820923 (Rach3 프로젝트), 한국 NRF RS-2023-NR077289</li>
+</ul>
+<h2 id="상세-요약">상세 요약</h2>
+<p>저자들은 Müller(2021)의 score following 분류 체계 — (1) 음악 표현, (2) 특징, (3) 정렬 알고리즘 — 를 그대로 가져와 라이브러리의 모듈 경계로 사용한다. 음악 표현 측은 partitura가 제공하는 MIDI/MusicXML/MEI 등 모든 심볼릭 포맷을 받아 오디오로 합성한 뒤(FluidSynth, 작품의 평균 BPM에 맞춰 합성) 정렬용 참조 시퀀스로 변환한다. 입력 측은 오디오 디바이스 또는 파일이며, AudioStream 클래스가 오버랩 윈도잉으로 청크를 만들어 큐에 넣고 OnlineAlignment 객체가 이를 소비한다. 결과는 박자 단위(beat) 위치로 반환된다.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode python"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true"></a>mm <span class="op">=</span> Matchmaker(score_file<span class="op">=</span><span class="st">&quot;path/to/score.musicxml&quot;</span>, input_type<span class="op">=</span><span class="st">&quot;audio&quot;</span>)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true"></a><span class="cf">for</span> current_position <span class="kw">in</span> mm.run():</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true"></a>    <span class="bu">print</span>(current_position)</span></code></pre></div>
+<p>내부에는 세 가지 정렬 알고리즘이 구현되어 있다. <strong>OLTW-Dixon</strong>은 Dixon(2005)과 후속 enhancement 기반의 표준 OLTW로, 윈도우 안에서 정규화된 비용을 따라 한 행/열씩 확장한다. <strong>OLTW-Arzt</strong>는 Arzt-Widmer(2015)의 backward-forward 전략과 tempo-aware 확장을 따른다 — 잘못된 초기 정합을 사후에 수정하므로 누적 오류를 줄이는 효과가 크고, 본 논문은 이를 Cython으로 다시 작성해 거의 무지연(0.07 ms) 추론을 달성한다. <strong>HMM</strong>은 Cont(2008)/Jiang-Raphael(2020) 계열의 attack–steady–release 상태 기반 정렬이다. 라이브러리는 multi-threaded queue로 실시간 모드를 처리하고, 단일 스레드 시뮬레이션 모드를 별도로 제공해 OS-level 잡음 없이 일관된 벤치마크가 가능하도록 분리했다(섹션 3.2).</p>
+<p>평가 데이터셋은 (n)ASAP(MAESTRO v2 test split, 43 작품·59 연주, 표현적 어려운 솔로), Batik(모차르트 소나타 30곡, 한 명의 피아니스트, 평균 길이가 가장 긺), Vienna4x22(4곡 × 22 연주로 해석 가변성 평가)다. 사전에 synctoolbox + Chroma &amp; DLNCO 오프라인 정렬에서 MAE &lt; 100 ms를 만족하는 연주만 포함했고, 최종 184 연주 / 93 작품 / 247,035 음표 / 7.74 시간 / 평균 Henle 난이도 6.11이라는 큰 평가 풀을 확보했다.</p>
+<p>평가 지표는 MIREX(2007)와 Morsi-Serra(2022) ASA 베이스라인에서 가져온다. **Alignment Rate(AR)**은 50 ms-2000 ms 허용 오차 안에 들어온 비트의 비율이며 piece-wise(작품별 평균)와 total(전체) 두 가지로 보고한다. **Absolute Error(AE)**의 분포는 AAE/MAE/표준편차/skewness/kurtosis로 요약하고, 2 초(또는 2 비트)를 초과하는 오차는 추적 실패로 간주해 통계에서 제외한다. <strong>시스템 지연</strong> μ_lat은 하드웨어 I/O 지연을 빼고 (i) 특징 추출과 (ii) 정렬 한 프레임 실행 두 부분으로 측정한다(Fig. 4). 정렬 경로의 비단조성을 다루기 위해, 평가용 매핑 함수 û_k = min{u_i | (u_i, v_i) ∈ W, v_i = max{v_j ≤ k}}를 정의해 미래 프레임에 의존하지 않는 인과적 평가를 보장한다(섹션 5.2).</p>
+<pre class="mermaid"><code>flowchart LR
+    Score[Score MusicXML/MIDI/MEI] --&gt; Pre[partitura + FluidSynth]
+    Pre --&gt; RefAudio[합성 참조 오디오]
+    AudioIn[Audio Device or File] --&gt; Stream[AudioStream 청크]
+    Stream --&gt; Proc[Processor 특징 추출]
+    RefAudio --&gt; Proc
+    Proc --&gt; Queue[Feature Queue]
+    Queue --&gt; OA[OnlineAlignment]
+    OA -- OLTW-Dixon / OLTW-Arzt / HMM --&gt; Pos[Beat Position]
+</code></pre>
+<p>결과(Table 2-3)는 세 데이터셋 모두에서 OLTW가 HMM 대비 정확도(AAE)와 커버리지(Total AR) 양쪽에서 우위를 보인다. OLTW-Dixon과 OLTW-Arzt는 MAE는 비슷하지만 Total AR에서 OLTW-Arzt가 일관되게 높아, backward-forward 전략이 추적 실패에 더 강함을 시사한다(섹션 6). HMM은 윈도우 내 sticky behavior로 음 지속 구간에서 멈추는 현상이 관찰되며 비트 단위 AR이 가장 낮다. 특징 비교(Table 4)에서는 LSE가 MAE 241.85 ms·지연 0.91 ms로 가장 낮고, CQT는 정확도가 떨어질 뿐 아니라 추출 지연 자체가 42.58 ms로 실시간 적합성이 낮다. OLTW-Arzt + LSE 조합이 합리적 베이스라인이라는 결론은 이 표에서 곧장 도출된다.</p>
+<h2 id="방법론과-데이터">방법론과 데이터</h2>
+<ul>
+<li><strong>라이브러리 구조</strong>: <code>Matchmaker(score_file, input_type)</code> 단일 진입점, <code>AudioStream</code> 컨텍스트 매니저, <code>Processor</code> 특징 추출, <code>OnlineAlignment</code> 정렬 제너레이터. 멀티스레드 큐로 실시간 처리, 시뮬레이션 모드는 단일 스레드로 재현성 확보.</li>
+<li><strong>알고리즘</strong>: OLTW-Dixon, OLTW-Arzt(Cython), HMM. 모두 Müller 분류의 (3) 정렬 알고리즘 슬롯에 끼워 넣을 수 있는 동일 추상화.</li>
+<li><strong>특징</strong>: chroma·mel·CQT·MFCC·LSE 5종. 모두 Processor 인터페이스에서 교체 가능.</li>
+<li><strong>평가 환경</strong>: Intel i9-9900K CPU, Python 3.9, sample rate 44.1 kHz, frame rate 30. 지연은 i9-9900K, Apple M4 MacMini, M2 Pro MacBook 세 환경 평균으로 보고.</li>
+</ul>
+<table>
+<thead>
+<tr class="header">
+<th>데이터셋</th>
+<th>#작품</th>
+<th>#연주</th>
+<th>#비트</th>
+<th>#음표</th>
+<th>시간(h)</th>
+<th>난이도(Henle 1-9)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>(n)ASAP</td>
+<td>43</td>
+<td>59</td>
+<td>26,329</td>
+<td>100,958</td>
+<td>2.65</td>
+<td>6.53</td>
+</tr>
+<tr class="even">
+<td>Batik</td>
+<td>30</td>
+<td>30</td>
+<td>18,789</td>
+<td>102,421</td>
+<td>2.85</td>
+<td>5.67</td>
+</tr>
+<tr class="odd">
+<td>Vienna 4x22</td>
+<td>4</td>
+<td>88</td>
+<td>13,728</td>
+<td>43,656</td>
+<td>2.24</td>
+<td>4.88</td>
+</tr>
+<tr class="even">
+<td>합계</td>
+<td>77</td>
+<td>177</td>
+<td>58,846</td>
+<td>247,035</td>
+<td>7.74</td>
+<td>6.11</td>
+</tr>
+</tbody>
+</table>
+<p>(<em>표 1 기준. 본문에는 184 연주·93 작품으로 보고되며, 이는 사전 필터링 후 최종 평가 풀이다.</em>)</p>
+<p>재현성: 코드/문서/보충 자료/벤치마크 스크립트 모두 공개. ACCompanion[3] 자동 반주에서 score-following 모듈로 사용된 실용 검증 사례가 있다.</p>
+<h2 id="비판적-평가">비판적 평가</h2>
+<p><strong>강점</strong></p>
+<ul>
+<li><strong>표준화된 비교 기반</strong>: MIREX(2007) 이후 처음으로 OLTW-Dixon, OLTW-Arzt, HMM을 동일 환경·동일 데이터에서 공평하게 비교 가능하게 만들었다. 후속 연구가 비교 기준선을 다시 구현할 필요가 없어졌다.</li>
+<li><strong>API 단순성</strong>: <code>Matchmaker(...)</code> 한 줄과 <code>for ... in mm.run()</code> 제너레이터 패턴이 페이지 터너·반주·자막 같은 응용 통합 비용을 크게 낮춘다.</li>
+<li><strong>포맷 호환성</strong>: partitura를 통해 MusicXML/MIDI/MEI 모두 입력 가능. 기존 score follower들이 자체 포맷·파서에 묶여 있던 단점을 정면으로 해결.</li>
+<li><strong>하드웨어 분리 평가</strong>: 시뮬레이션 모드와 실시간 모드를 명시적으로 나누고, 보고된 지연이 OS·언어 변동성을 배제하도록 설계됨.</li>
+<li><strong>재현성</strong>: Cython 구현, 다중 하드웨어에서의 지연 측정, 사전 필터링 기준(MAE &lt; 100 ms) 명시 등 후속 비교에 필요한 메타데이터가 풍부함.</li>
+</ul>
+<p><strong>약점/한계</strong></p>
+<ul>
+<li><strong>피아노 솔로 한정</strong>: 평가 셋이 모두 솔로 피아노다. 저자들도 결론에서 명시하듯 다른 악기·합주 평가는 데이터셋과 특징 모듈 추가가 필요하다.</li>
+<li><strong>HMM 베이스라인의 불리한 조건</strong>: 본 논문의 HMM은 tempo model과 결합되지 않은 형태로, 실제 Antescofo·Music Plus One 류의 HMM들이 사용하는 tempo-aware 확장을 충분히 반영하지 못한다 — 저자도 이 한계를 명시한다.</li>
+<li><strong>학습된 특징의 부재</strong>: chroma·mel·CQT 같은 hand-crafted feature만 비교했고, transcription model의 raw feature(Zeitler 2024) 같은 학습된 표현은 미포함. 본 논문이 새로운 모듈을 추가하기 쉬운 구조를 제공한다는 것이 부분적 변명이지만, 정량 비교는 후속 과제로 남았다.</li>
+<li><strong>OLTW-Dixon/Arzt 공정성</strong>: OLTW-Dixon은 Cython이 아닌 Python 구현으로, 두 OLTW 변종 간 지연 비교(0.07 ms vs. 1.22 ms)는 알고리즘 우열보다 구현 차이를 일부 반영할 수 있다.</li>
+<li><strong>Vienna4x22의 작품 수</strong>: 4 작품에 22 연주이므로 작품 단위 일반화 결론에는 신중해야 한다.</li>
+</ul>
+<h2 id="선행연구와-비교">선행연구와 비교</h2>
+<table>
+<thead>
+<tr class="header">
+<th>인용</th>
+<th>연도</th>
+<th>방법</th>
+<th>핵심 발견</th>
+<th>본 논문과의 차이</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dannenberg [1] / Vercoe [2]</td>
+<td>1984</td>
+<td>string matching, synthetic performer</td>
+<td>실시간 정렬 분야의 출발점</td>
+<td>Matchmaker는 40년 후의 정량 평가 프레임워크</td>
+</tr>
+<tr class="even">
+<td>Dixon [38, 49]</td>
+<td>2005</td>
+<td>OLTW (windowed online time warping)</td>
+<td>선형 시간/공간으로 실시간 추적 가능</td>
+<td>OLTW-Dixon이라는 이름의 베이스라인으로 직접 구현·평가</td>
+</tr>
+<tr class="odd">
+<td>Arzt-Widmer-Dixon [7], Arzt [50]</td>
+<td>2008-2010</td>
+<td>tempo-aware OLTW, backward-forward 전략</td>
+<td>누적 오류 회복 가능, page-turning 응용 검증</td>
+<td>OLTW-Arzt로 구현, Cython으로 가속 — 평가에서 가장 강한 베이스라인</td>
+</tr>
+<tr class="even">
+<td>Arzt-Widmer [21]</td>
+<td>2015</td>
+<td>multiple reference performances</td>
+<td>표현 변동에 강건</td>
+<td>본 논문의 OLTW-Arzt 구현이 이 multi-reference 사상을 부분 채택</td>
+</tr>
+<tr class="odd">
+<td>Cont (Antescofo) [24]</td>
+<td>2008</td>
+<td>duration-focused HMM</td>
+<td>인터랙티브 컴퓨터 음악</td>
+<td>Matchmaker의 HMM 베이스라인은 더 단순한 형태로 제공됨</td>
+</tr>
+<tr class="even">
+<td>Jiang-Raphael [47]</td>
+<td>2020</td>
+<td>switching state-space + hidden tempo</td>
+<td>tempo 동적 추정</td>
+<td>HMM 베이스라인 설계의 참고점</td>
+</tr>
+<tr class="odd">
+<td>Joder-Essid-Richard [27]</td>
+<td>2013</td>
+<td>learned features for polyphonic alignment</td>
+<td>학습된 표현이 정확도 개선</td>
+<td>Matchmaker는 hand-crafted만 비교, 학습 특징 통합은 후속 과제</td>
+</tr>
+<tr class="even">
+<td>Cancino-Chacón et al. (ACCompanion) [3]</td>
+<td>2023</td>
+<td>자동 반주 시스템</td>
+<td>reactive·robust·expressive 통합</td>
+<td>Matchmaker가 이 시스템의 score-following 모듈로 사용됨</td>
+</tr>
+<tr class="odd">
+<td>MIREX score-following challenge [23]</td>
+<td>2007</td>
+<td>평가 메트릭 표준</td>
+<td>AR·AE 정의</td>
+<td>Matchmaker는 이 메트릭을 그대로 차용·확장</td>
+</tr>
+</tbody>
+</table>
+<h2 id="실무적-함의와-응용">실무적 함의와 응용</h2>
+<ul>
+<li><strong>자동 페이지 터너의 실시간 백엔드</strong>: <code>mm.run()</code> 제너레이터의 현재 위치를 페이지 경계와 비교해 트리거하면 가장 단순한 형태의 자동 페이지 터너가 즉시 구현된다. ACCompanion이 이미 동일 패턴을 사용한다(섹션 8).</li>
+<li><strong>자동 반주·자막</strong>: 마디·박 단위 위치를 받아 MIDI 반주 또는 가사 자막을 동기화. Brazier-Widmer(2020) 오페라 트래커, Park-Yong-Kwon-Nam(2024) 클래식 보컬 가사 정렬 등 인접 연구가 동일 통합 가능.</li>
+<li><strong>연구 베이스라인 재현</strong>: 신규 score follower(예: 학습된 특징 기반)를 발표할 때 OLTW-Dixon/OLTW-Arzt/HMM 세 베이스라인을 동일 라이브러리로 공평하게 비교 가능. 후속 논문의 baseline reproduction 비용이 크게 낮아진다.</li>
+<li><strong>응용 비전공자 개발자에게</strong>: pip install 한 줄과 <code>Matchmaker(score_file=...)</code> 두 줄로 score follower를 시작할 수 있어, score following이 더 이상 박사과정 수준의 시스템 통합 작업이 아닌 라이브러리 호출로 해결 가능한 문제가 된다.</li>
+</ul>
+<h2 id="후속-연구와-핵심-참고문헌">후속 연구와 핵심 참고문헌</h2>
+<p>핵심 참고문헌</p>
+<ol>
+<li><strong>Dixon (2005, OLTW)</strong> — 본 라이브러리 OLTW-Dixon의 원전.</li>
+<li><strong>Arzt &amp; Widmer (2008-2015)</strong> — OLTW-Arzt의 tempo-aware 및 backward-forward 전략 원전.</li>
+<li><strong>Cancino-Chacón et al. (ACCompanion, IJCAI 2023)</strong> — Matchmaker의 응용 검증 기반.</li>
+<li><strong>Müller (Fundamentals of Music Processing, 2021)</strong> — 본 논문이 채택한 분류 체계.</li>
+<li><strong>Peter et al. (n)ASAP TISMIR 2023, Hu-Widmer Batik ISMIR 2023, Goebl Vienna4x22</strong> — 평가 데이터셋 제공.</li>
+<li><strong>Cont MIREX 2007</strong> — 평가 메트릭 정의의 출발점.</li>
+</ol>
+<p>후속 방향(저자 + 분석자 종합)</p>
+<ul>
+<li><strong>학습된 특징 모듈 통합</strong>: Zeitler 2024(transcription raw feature), Joder 2013(learned), Pillay 2024(piano roll latent) 류를 Processor에 끼워 넣어 hand-crafted vs learned 정량 비교.</li>
+<li><strong>HMM 베이스라인의 tempo 모델 보강</strong>: 현재의 단순 HMM은 tempo dynamics가 약함. Jiang-Raphael switching state-space 같은 hidden-tempo HMM을 라이브러리에 추가하면 비교의 공정성이 올라감.</li>
+<li><strong>multi-instrument·합주 확장</strong>: 솔로 피아노 외 violin/voice/ensemble 데이터셋과 특징 모듈 추가. 이 프로젝트의 사용자 응용(피아노/바이올린/첼로/기타 페이지 터너) 측면에서 우선순위가 가장 높다.</li>
+<li><strong>transcribe-then-track 통합</strong>: 같은 그룹(JKU)의 Peter-Hu-Widmer SMC 2025가 제안한 심볼 레벨 트래커를 Matchmaker의 알고리즘 슬롯에 추가하면, 본 논문이 보고한 audio OLTW의 정확도 plateau를 정면 돌파할 수 있다.</li>
+<li><strong>응용 도구 패키징</strong>: 자동 페이지 터너·자막·반주·교습용 피드백을 별도 서브 패키지로 분리해 비전공자 사용자 진입 장벽을 더 낮추는 방향.</li>
+</ul></template>

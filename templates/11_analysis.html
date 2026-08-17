@@ -1,0 +1,214 @@
+<template id="doc-11_analysis" data-title="[11] Peter 2025 Transcribe-and-Track — 분석 보고서" data-docx="papers/11_Peter2025_TranscribeTrack/분석_보고서.docx"><h1 id="pairing-real-time-piano-transcription-with-symbol-level-tracking-for-precise-and-robust-score-following--분석-보고서">Pairing Real-Time Piano Transcription with Symbol-level Tracking for Precise and Robust Score Following — 분석 보고서</h1>
+<h2 id="핵심-요약">핵심 요약</h2>
+<p>본 논문은 지난 10년간 <strong>audio OLTW 기반 score following이 정확도 plateau에 도달했다</strong>는 정량적 관찰에서 출발한다. 저자들의 진단은 명확하다 — 입력을 끝까지 audio 도메인에서 정렬하려는 한, 손으로 설계한 chroma·onset 특징의 표현력이 천장이 되며, 학습된 특징을 끼워 넣어도 한계 효용이 점점 작아진다. 대안으로 저자들은 <strong>transcribe-then-track</strong>이라는 새 패러다임을 제시한다. 즉 들어오는 오디오를 실시간 piano transcription 모델로 음표 시퀀스(MIDI 풍 심볼)로 변환한 뒤, 심볼 레벨에서 오프라인 OLTW를 새로 설계하여 정렬하는 두 단계 구조다. 핵심 기여는 (1) pitch error와 path-wise tempo 기반 time error를 결합한 새로운 pairwise distance metric, (2) directional weight과 tempo matrix를 갖는 OLTW 변형, (3) 불완전한 transcription 환경에서도 audio-only OLTW 베이스라인 대비 robustness 91.67% vs 88.89%·낮은 오차 분위(≤100 ms) 88% vs 71% 등 정확도와 강건성 양쪽에서 우위를 보고한다는 점이다. 시스템 한계는 transcription 모델의 174 ms 고정 지연으로, 페이지 터너·자막 같은 시간 여유가 있는 응용에는 그대로 쓸 수 있지만 자동 반주에는 미래 예측(extrapolation)이 필요하다.</p>
+<h2 id="서지-정보와-접근-범위">서지 정보와 접근 범위</h2>
+<ul>
+<li>저자: Silvan D. Peter¹, Patricia Hu (胡紫漪)¹, Gerhard Widmer¹·² (¹ JKU Institute of Computational Perception, ² LIT AI Lab)</li>
+<li>출처: Proceedings of the Sound and Music Computing Conference (SMC 2025). arXiv 사전 출판본 arXiv:2505.05078v1, 2025년 5월 8일</li>
+<li>라이선스: CC BY 3.0 Unported</li>
+<li>펀딩: ERC Horizon 2020 grant agreement No. 101019375 "Whither Music?"</li>
+<li>본 분석은 PDF 추출 본문(457행) 직접 정독에 기반한다. Acknowledgments에서 Matchmaker 저자(Park, Cancino-Chacón)에게 인사이트를 받았다고 명시되어 있어, 같은 시기 발표된 Matchmaker 라이브러리(분석 10번)와 자연스럽게 짝을 이룬다.</li>
+</ul>
+<h2 id="상세-요약">상세 요약</h2>
+<p>저자들의 출발점은 두 가지 비교다. 첫째, audio OLTW 기반의 음악 추적은 Dixon(2005) 이후 chroma·onset 특징 개선과 backward-forward·tempo 모델 같은 휴리스틱 추가로 점진적 개선을 누렸으나 더 이상 확연한 도약이 없다는 관찰. 둘째, symbolic 도메인(MIDI vs MIDI)에서의 정렬은 pitch라는 강한 단서 덕분에 audio 정렬보다 본질적으로 더 정확하지만, 실시간 환경에서는 audio → MIDI 변환을 거쳐야 해서 그 자체로 새로운 오류원을 만든다. 본 논문의 가설은 "이 변환 오류를 감수하더라도, 변환 후의 symbolic 정렬이 audio-only 정렬보다 더 정확하고 강건하다"는 것이다(섹션 1).</p>
+<p>시스템은 두 모듈로 구성된다. 실시간 AMT 모듈로 저자들은 Kwon-Jeong-Nam(2020) 모델[33]을 거의 그대로 채택한다 — convolutional acoustic model + frequency-conditioned FiLM + pitchwise LSTM이 onset/sustain/re-onset/offset/off의 multi-state softmax를 출력하는 구조로, 174 ms 지연에서 SOTA F1을 달성한다. 이 모듈은 본 논문의 기여가 아니며 "future improvement에 자동으로 혜택받을 수 있는 교체 가능한 컴포넌트"로 명시된다(섹션 3.1, 5).</p>
+<p>심볼 레벨 트래커가 본 논문의 본 기여다. 입력은 두 시퀀스 — 연주 측 B = [(b_j^P, b_j^T), ...]는 pitch p_j와 onset time의 튜플 시퀀스, 악보 측 A = [(a_i^P, a_i^T), ...]는 동시 onset에 속한 음표들을 묶은 pitch set과 onset의 튜플 시퀀스다. 핵심 알고리즘 두 가지가 있다.</p>
+<p><strong>Algorithm 1 — Pairwise Distance Metric.</strong> pitch error e^P은 b_j^P가 a_i^P 안에 있으면 0, 아니면 1이라는 이진 거리로, Peter(2023) ISMIR의 offline symbolic alignment에서 가져왔다. 시간 error e^T는 path-wise tempo 추정값 t_p로 현재 onset의 예상 시각 b̂_j^T = b_pj^T + (a_i^T − a_pi^T) · t_p를 계산한 뒤, 실제 관측된 b_j^T와 비교한다. 총 거리는 pd = e^P + c · e^T로 timing weight c가 두 항의 균형을 잡는다. 같은 알고리즘이 새 tempo 추정값 t_s = t_c · d + (1 − d) · t_p (지수 이동 평균, decay d)를 함께 갱신한다.</p>
+<p><strong>Algorithm 2 — Adapted OLTW.</strong> 표준 OLTW의 candidate selection·path normalization·window initialization를 보존하되, 두 가지를 새로 추가한다. (i) directional weights dw₀, dw₁, dw₂가 score/diagonal/performance 방향을 차등 패널티하고, (ii) 각 셀의 path-wise tempo를 저장하는 tempo matrix T가 외부 tempo model 없이 알고리즘 내부에서 multiple alternative paths를 동시에 추적하게 한다. 결과적으로 비용 cell AC[i, j]에는 누적 비용이, T[i, j]에는 그 cell에 도달하기까지의 tempo가, PL[i, j]에는 path 길이가 들어간다.</p>
+<pre class="mermaid"><code>flowchart LR
+    Mic[Live Audio] --&gt; AMT[Real-time AMT&lt;br/&gt;Kwon-Jeong-Nam 2020&lt;br/&gt;174 ms latency]
+    AMT --&gt; Symb[Pitch + Onset&lt;br/&gt;symbol stream]
+    Score[MusicXML / MIDI] --&gt; ScoreSeq[Pitch-set + Onset&lt;br/&gt;score sequence]
+    Symb --&gt; OLTW[Symbol-level OLTW&lt;br/&gt;+ pairwise pitch &amp; time&lt;br/&gt;+ path-wise tempo matrix]
+    ScoreSeq --&gt; OLTW
+    OLTW --&gt; Pos[Score Position]
+    OLTW -. compared with .-&gt; AudioOLTW[Audio-only OLTW&lt;br/&gt;baseline NS/NC/LNSO/LNCO]
+</code></pre>
+<p>평가는 Batik-plays-Mozart 코퍼스(Hu-Widmer 2023, ISMIR)[34] 위에서 수행된다. 30곡의 Mozart 소나타로 정밀 note-aligned MIDI 연주와 MusicXML 악보가 짝지어져 있고, 본 논문은 여기에 원본 오디오 녹음과 FluidSynth로 합성한 score audio를 추가했다. 비교 측은 Matchmaker[35]에서 가져온 audio OLTW에 directional weight 지원을 추가하고 NS(normalized semitone)·NC(normalized chroma)·LNSO·LNCO 4종 특징을 평가한 ablation 형태다. 평가 메트릭은 두 가지 — Robustness(추적이 끝까지 살아남은 연주의 비율, 절대 오차가 한 번이라도 10초를 넘으면 lost)과 Precision(robust한 연주에서의 절대 오차 분포 분위 ≤25/50/100/250/500 ms).</p>
+<p>결과는 분명하다(Table 1-3). transcribed MIDI 입력에서 최적 설정(window 20, c=2.0, dw₀=1)으로 robustness 91.67%·≤100 ms quantile 88.33%·≤500 ms quantile 97.37%를 보고한다. recorded MIDI(완벽한 transcription을 가정한 상한)에서는 robustness 94.44%·≤100 ms quantile 96.19%·≤25 ms quantile 93.50%로 매우 가파른 분포를 보인다. audio-only baseline은 best diagonal-favoring(dw₁=0.5) 설정에서 NS robustness 88.89%·≤100 ms 71.44%·≤25 ms 28.75%를 기록 — 같은 코퍼스·같은 정렬 알고리즘 골격을 두고 입력 표상만 audio에서 symbolic으로 바꿨을 뿐인데 정확도와 강건성 모두 큰 폭으로 우위에 선다(섹션 4.2). 저자들은 transcription 해상도(32 ms hop) 자체가 ≤25 ms quantile의 천장이 됨을 명시해, 더 빠른 transcription(예: Hu-Peter-Schlüter-Widmer 2025, 분석 12번)이 등장하면 자연스럽게 더 정밀해질 것이라 전망한다.</p>
+<h2 id="방법론과-데이터">방법론과 데이터</h2>
+<ul>
+<li><strong>실시간 AMT</strong>: Kwon-Jeong-Nam(2020)[33] — convolutional acoustic + FiLM + pitchwise LSTM, multi-state note softmax. 지연 174 ms. <strong>본 논문은 이 모듈을 교체 가능한 블랙박스로 간주</strong>.</li>
+<li><strong>심볼 시퀀스 표현</strong>: 연주 B는 (pitch, onset time) 튜플, 악보 A는 (pitch set, onset time) 튜플 — 같은 onset의 화음을 한 칸으로 묶음. Peter(2023, ISMIR) symbolic alignment에서 채택.</li>
+<li><strong>Pairwise distance metric</strong>: e^P = 1 − [b_j^P ∈ a_i^P], e^T = |b_j^T − b̂_j^T|, pd = e^P + c · e^T. tempo는 t_s = t_c · d + (1 − d) · t_p로 EMA 갱신.</li>
+<li><strong>Adapted OLTW</strong>: directional weights dw₀(score)·dw₁(diagonal)·dw₂(performance), tempo matrix T로 multi-path tempo 추적.</li>
+<li><strong>하이퍼파라미터</strong>: window 10/20/40/80, timing weight c ∈ {0.5, 1.0, 2.0}, dw₀ ∈ {1, 2}, dw₁=dw₂=1 고정. 최적 (window=20, c=2.0, dw₀=1).</li>
+<li><strong>Audio baseline</strong>: Matchmaker OLTW에 directional weight 추가, dw₁=0.5(diagonal favoring), 특징 NS/NC/LNSO/LNCO 4종 비교.</li>
+<li><strong>데이터셋</strong>: Batik-plays-Mozart(30곡, 한 명의 피아니스트, 정밀 note alignment). 원 오디오 + FluidSynth synthesized score audio 추가.</li>
+<li><strong>평가 지표</strong>: Robustness(절대 오차 10 s 초과 시 lost로 간주), Precision(≤25/50/100/250/500 ms quantile).</li>
+</ul>
+<table>
+<thead>
+<tr class="header">
+<th>입력</th>
+<th>설정</th>
+<th>Robustness</th>
+<th>≤100 ms</th>
+<th>≤50 ms</th>
+<th>≤25 ms</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Transcribed MIDI (real-time AMT)</td>
+<td>window 20, c=2.0, dw₀=1</td>
+<td><strong>91.67%</strong></td>
+<td>88.33%</td>
+<td>65.30%</td>
+<td>39.08%</td>
+</tr>
+<tr class="even">
+<td>Recorded MIDI (상한)</td>
+<td>window 20, c=2.0, dw₀=1</td>
+<td>94.44%</td>
+<td>96.19%</td>
+<td>94.71%</td>
+<td>93.50%</td>
+</tr>
+<tr class="odd">
+<td>Audio OLTW NC (baseline)</td>
+<td>dw₁=0.5</td>
+<td>88.89%</td>
+<td>73.02%</td>
+<td>52.11%</td>
+<td>32.02%</td>
+</tr>
+<tr class="even">
+<td>Audio OLTW LNCO (onset 특징)</td>
+<td>dw₁=0.5</td>
+<td>72.22%</td>
+<td>74.38%</td>
+<td>60.70%</td>
+<td>44.91%</td>
+</tr>
+</tbody>
+</table>
+<p>(<em>Table 1-3 발췌. 모든 값은 best 설정 기준.</em>)</p>
+<p>재현성: arXiv 본문에 알고리즘 의사코드 두 편(Algorithm 1, 2) 전체가 실려 있고 모든 하이퍼파라미터가 명시됨. 코드 공개 여부는 본문에 명시되지 않았으나 데이터셋(Batik-plays-Mozart)·AMT 모듈·audio baseline(Matchmaker) 모두 공개 자원이라 재현 비용은 낮다.</p>
+<h2 id="비판적-평가">비판적 평가</h2>
+<p><strong>강점</strong></p>
+<ul>
+<li><strong>분야 진단의 정량성</strong>: "audio OLTW가 plateau에 도달했다"는 주장을 본 논문 자체의 ablation으로 직접 입증한다. NS/NC/LNSO/LNCO 4종 audio 특징을 같은 OLTW 골격에 끼워 비교한 표가 그 근거.</li>
+<li><strong>모듈 분리가 명료함</strong>: AMT 모듈을 본 기여로 삼지 않고, 향후 더 빠른·더 정확한 transcription이 등장하면 자동으로 혜택받는 구조로 설계. Hu-Peter-Schlüter-Widmer 2025(분석 12번, 같은 그룹)의 저지연 AMT가 직접 결합 가능.</li>
+<li><strong>path-wise tempo의 우아함</strong>: 외부 tempo model을 두지 않고, OLTW의 tempo matrix 안에서 multiple paths가 각자 tempo를 추적하게 만든 설계. 외부 휴리스틱 의존성을 줄이면서도 Arzt 2010의 simple tempo model이 가져다 준 효익을 흡수.</li>
+<li><strong>상한 분석의 정직함</strong>: recorded MIDI 결과를 transcribed MIDI와 함께 보고해 "현재의 정확도 한계가 알고리즘이 아니라 transcription 정확도와 hop size에 있다"는 사실을 명시.</li>
+<li><strong>한계의 정량 보고</strong>: ≤25 ms quantile에 본질적 천장(transcription 32 ms hop의 절반)이 있다는 분석이 솔직하다. 자동 반주 응용을 위해 174 ms future extrapolation이 필요하다는 권고도 명시.</li>
+</ul>
+<p><strong>약점/한계</strong></p>
+<ul>
+<li><strong>피아노 솔로 한정</strong>: Batik 코퍼스가 모차르트 솔로 피아노로만 구성되어 있어, 일반화 주장은 신중하다. 본 프로젝트의 페이지 터너 응용(피아노/바이올린/첼로/기타) 관점에서 비-피아노 검증은 추가 작업이 필요.</li>
+<li><strong>데이터셋 규모</strong>: 30곡, 한 명의 피아니스트. Matchmaker(184 연주)나 (n)ASAP(59 연주) 대비 작아, robustness 주장의 통계적 신뢰 구간이 좁지 않을 수 있다.</li>
+<li><strong>AMT 의존성의 비대칭</strong>: AMT 모듈을 교체 가능한 블랙박스로 다루지만, 174 ms 고정 지연은 응용 가능성 자체를 좌우하는 핵심 변수. 이를 모듈 한계로 외부화한 점이 깔끔하긴 하나, 시스템 평가의 한 축은 AMT 자체를 함께 봐야 공정.</li>
+<li><strong>코드 공개 명시 부재</strong>: arXiv 본문에 GitHub 링크가 보이지 않음. 정식 SMC 2025 게재 이후 공개되었을 가능성이 있으나 재현성 측면에서 확인이 필요.</li>
+<li><strong>multiple performances 활용 부재</strong>: Arzt-Widmer 2015의 multi-reference 사상을 흡수하지 않았다. transcribed sequence vs multiple score variations 같은 확장은 후속 과제.</li>
+</ul>
+<h2 id="선행연구와-비교">선행연구와 비교</h2>
+<table>
+<thead>
+<tr class="header">
+<th>인용</th>
+<th>연도</th>
+<th>방법</th>
+<th>핵심 발견</th>
+<th>본 논문과의 차이</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Dixon [1]</td>
+<td>2005</td>
+<td>OLTW 원형</td>
+<td>선형 시간/공간으로 실시간 정렬</td>
+<td>본 논문은 OLTW의 audio→symbolic 변형</td>
+</tr>
+<tr class="even">
+<td>Arzt-Widmer-Dixon [2,3]</td>
+<td>2008-2012</td>
+<td>tempo model, distance normalization, page turning</td>
+<td>audio OLTW의 휴리스틱 강화</td>
+<td>본 논문이 plateau의 증거로 인용</td>
+</tr>
+<tr class="odd">
+<td>Arzt-Widmer [6]</td>
+<td>2015</td>
+<td>multiple reference performances</td>
+<td>multi-reference로 강건성 향상</td>
+<td>본 논문은 사용 안 함 — 후속 확장 가능</td>
+</tr>
+<tr class="even">
+<td>Cont (Antescofo) [12]</td>
+<td>2009</td>
+<td>duration-focused HMM</td>
+<td>기호 도메인의 anticipatory 동기화</td>
+<td>본 논문은 OLTW 노선</td>
+</tr>
+<tr class="odd">
+<td>Peter [15]</td>
+<td>2023</td>
+<td>offline symbolic alignment + reinforcement learning</td>
+<td>pitch-set ↔︎ pitch 이진 거리 표현</td>
+<td>본 논문이 이 표현을 실시간 OLTW로 가져옴</td>
+</tr>
+<tr class="even">
+<td>Zeitler-Maman-Müller [26]</td>
+<td>2024</td>
+<td>transcription raw feature + DTW (오프라인)</td>
+<td>raw onset 확률을 DTW 입력으로</td>
+<td>본 논문은 동일 사상을 실시간·심볼 정렬로 확장</td>
+</tr>
+<tr class="odd">
+<td>Kwon-Jeong-Nam [33]</td>
+<td>2020</td>
+<td>autoregressive multi-state note model</td>
+<td>174 ms 지연 SOTA 온라인 AMT</td>
+<td>본 논문의 transcription 모듈</td>
+</tr>
+<tr class="even">
+<td>Cancino-Chacón et al. (ACCompanion) [14]</td>
+<td>2023</td>
+<td>자동 반주 시스템</td>
+<td>Disklavier 200 ms 기계 지연 + 미래 예측</td>
+<td>본 논문이 174 ms 지연을 비슷한 방식으로 처리 가능하다고 인용</td>
+</tr>
+<tr class="odd">
+<td>Park et al. (Matchmaker) [35]</td>
+<td>2025</td>
+<td>오픈 소스 OLTW 라이브러리</td>
+<td>표준화된 평가 프레임워크</td>
+<td>본 논문의 audio baseline이 Matchmaker 기반</td>
+</tr>
+<tr class="even">
+<td>Kusaka-Maezawa (Mobile-AMT) [32]</td>
+<td>2024</td>
+<td>가벼운 실시간 AMT</td>
+<td>in-the-wild 녹음 강건성</td>
+<td>본 논문의 AMT 모듈 후보. Hu-Peter-Schlüter-Widmer 2025 (분석 12)가 후속</td>
+</tr>
+</tbody>
+</table>
+<h2 id="실무적-함의와-응용">실무적 함의와 응용</h2>
+<ul>
+<li><strong>자동 페이지 터너의 새 백엔드</strong>: 174 ms 지연은 페이지 터너에는 충분히 작다(저자도 명시). Matchmaker에 audio OLTW 대신 본 논문의 transcribe-then-track 모듈을 끼우면, 같은 라이브러리 인터페이스로 더 정확한 페이지 터너가 가능.</li>
+<li><strong>자막·시각화</strong>: 절대 오차 ≤100 ms 분위에서 88%를 기록하므로 가사 자막·교습 시각화처럼 100 ms 전후 동기성이 필요한 응용에 즉시 사용 가능.</li>
+<li><strong>자동 반주</strong>: 174 ms는 ACCompanion[14]의 Disklavier 기계 지연(약 200 ms)과 비슷하므로 동일한 미래 예측(extrapolation) 전략을 그대로 차용 가능. 본 논문이 명시한 "transcribed onset을 174 ms 미래로 extrapolate"하는 방법으로 반주 시스템 통합 가능.</li>
+<li><strong>연구 공통 모듈</strong>: AMT 모듈만 교체하면 즉각 향상되는 구조라, 새 AMT 모델이 등장할 때마다 본 시스템의 정확도/지연이 자동으로 갱신된다는 의미.</li>
+</ul>
+<h2 id="후속-연구와-핵심-참고문헌">후속 연구와 핵심 참고문헌</h2>
+<p>핵심 참고문헌</p>
+<ol>
+<li><strong>Dixon (2005, OLTW)</strong> — 알고리즘 골격의 원전.</li>
+<li><strong>Peter (ISMIR 2023, offline symbolic alignment)</strong> — pitch-set 거리 표현의 원전.</li>
+<li><strong>Zeitler-Maman-Müller (ISMIR 2024, transcription raw features)</strong> — transcribe-then-track 사상의 오프라인 원형(이 프로젝트의 분석 7번).</li>
+<li><strong>Kwon-Jeong-Nam (ISMIR 2020, autoregressive multi-state note)</strong> — 본 논문의 AMT 모듈.</li>
+<li><strong>Hu-Widmer (ISMIR 2023, Batik-plays-Mozart)</strong> — 평가 데이터셋.</li>
+<li><strong>Park et al. (ISMIR 2025, Matchmaker)</strong> — audio baseline 출처(이 프로젝트의 분석 10번).</li>
+<li><strong>Cancino-Chacón et al. (IJCAI 2023, ACCompanion)</strong> — 응용 통합의 모델.</li>
+</ol>
+<p>후속 방향(저자 + 분석자 종합)</p>
+<ul>
+<li><strong>저지연 AMT와의 결합</strong>: Hu-Peter-Schlüter-Widmer 2025(분석 12번)가 30 ms 이하 지연 AMT를 제시했으므로, 174 ms 지연이 30 ms 수준으로 떨어지면 자동 반주가 미래 예측 없이도 가능해질 가능성.</li>
+<li><strong>multiple performances + transcribe-then-track</strong>: 본 논문은 single reference를 가정하나, Arzt-Widmer 2015의 multi-reference 사상을 더해 표현 변동에 더 강건한 시스템 구성 가능.</li>
+<li><strong>비-피아노 일반화</strong>: Cowley 2025(GP+HMM 바이올린/플루트/오보에 follower)나 GOAT 2025(전기기타 데이터셋)의 AMT를 transcription 모듈 자리에 끼워 넣으면 본 프로젝트의 첼로/바이올린/기타 페이지 터너 응용으로 확장 가능.</li>
+<li><strong>RUMAA(분석 13번)와의 비교</strong>: 같은 시기 발표된 QMUL의 RUMAA는 transformer로 audio + score를 native로 받아 정렬·전사·실수 검출을 한 번에 수행. 본 논문의 모듈러 transcribe-then-track과 RUMAA의 end-to-end가 어떤 trade-off를 가지는지가 향후 분야 핵심 비교.</li>
+<li><strong>반복 기호 처리</strong>: 본 논문은 단순 OLTW로 unfold된 스코어를 가정. JLTR(분석 9번)의 "사람이 한 번 라벨링" UX 또는 RUMAA의 native MusicXML 파싱과 결합하면 실제 클래식 응용에 한 걸음 더 다가감.</li>
+</ul></template>

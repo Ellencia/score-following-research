@@ -1,0 +1,126 @@
+<template id="doc-11_datasets" data-title="2025-2026 신규 데이터셋 인벤토리" data-docx="11_데이터셋_인벤토리.docx"><h1 id="2025-2026-score-following-분야-신규-데이터셋-인벤토리">2025-2026 Score Following 분야 신규 데이터셋 인벤토리</h1>
+<h2 id="도입-데이터셋의-무게가-알고리즘의-무게를-넘은-시점">도입: 데이터셋의 무게가 알고리즘의 무게를 넘은 시점</h2>
+<p>분야의 첫 9편이 사용한 데이터셋은 익숙하다. (n)ASAP, MAESTRO, Batik-plays-Mozart, Vienna4x22, MeSA-13, SMR — 모두 피아노 솔로 또는 클래식 키보드 작품을 다뤘다. 이 자원의 한계는 분명했다. 비-피아노 학습이 거의 불가능했고, 실제 연습실 행동(반복, 재시작, 실수)을 다룬 자원이 부족했으며, 시각적 단서(손, 자세, 호흡)는 거의 없었다. 본 프로젝트 페이지 터너 응용 — 피아노/바이올린/첼로/기타 사용자를 모두 다뤄야 하는 — 의 관점에서 보면 이 한계가 응용 가능 범위를 좁히는 결정적 요소였다.</p>
+<p>2025년 한 해 동안 분야는 이 한계를 정조준하는 6종의 데이터셋을 새로 공개했다. 본 문서는 그 6종을 표로 일별하고, 각각이 어떤 사용 시나리오에서 가장 가치 있는지를 정리한다.</p>
+<h2 id="신규-데이터셋-6종-한눈에">신규 데이터셋 6종 한눈에</h2>
+<table>
+<thead>
+<tr class="header">
+<th>데이터셋</th>
+<th>발표</th>
+<th>악기</th>
+<th>규모</th>
+<th>라벨</th>
+<th>라이선스</th>
+<th>본 프로젝트 적용</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>GOAT</td>
+<td>Loth et al. ISMIR 2025</td>
+<td>일렉기타</td>
+<td>DI 5.9시간 + 재앰핑 29.5시간</td>
+<td>Guitar Pro 탭 + audio</td>
+<td>CC-BY 4.0</td>
+<td>일렉기타 페이지 터너의 AMT fine-tune</td>
+</tr>
+<tr class="even">
+<td>Guitar-TECHS</td>
+<td>Pedroza et al. ICASSP 2025</td>
+<td>일렉기타</td>
+<td>techniques + chords + scales</td>
+<td>multi-mic + DI + per-string MIDI 픽업</td>
+<td>본문 명시 필요</td>
+<td>실 사용 환경(태블릿 마이크) 강건성</td>
+</tr>
+<tr class="odd">
+<td>PianoVAM</td>
+<td>Kim et al. ISMIR 2025</td>
+<td>피아노</td>
+<td>21시간</td>
+<td>audio + video + MIDI + hand landmarks + fingering</td>
+<td>본문 명시 필요</td>
+<td>시각 단서 multimodal 페이지 터너</td>
+</tr>
+<tr class="even">
+<td>Rach3</td>
+<td>Morsi et al. ISMIR 2025</td>
+<td>피아노</td>
+<td>장시간 리허설 (시간 미명시)</td>
+<td>MIDI + audio + 행동 라벨</td>
+<td>데이터 사이트</td>
+<td>연습실 행동 baseline</td>
+</tr>
+<tr class="odd">
+<td>PDMX</td>
+<td>Long et al. ICASSP 2025</td>
+<td>모든 악기(심볼릭)</td>
+<td>250K+ MusicXML</td>
+<td>MusicXML 메타데이터</td>
+<td>Public domain</td>
+<td>multi-instrument 합성 학습 부트스트랩</td>
+</tr>
+<tr class="even">
+<td>Sheet Music Benchmark</td>
+<td>Martinez-Sevilla et al. ISMIR 2025</td>
+<td>모든 악기(OMR)</td>
+<td>멀티 장르</td>
+<td>Humdrum **kern</td>
+<td>본문 명시 필요</td>
+<td>PDF 입력 OMR baseline</td>
+</tr>
+</tbody>
+</table>
+<p>(<em>표의 "본문 명시 필요"는 분야 정보로부터 라이선스를 직접 확인하지 못했음을 의미. 사용 전 원 데이터셋 페이지에서 라이선스를 재확인할 것.</em>)</p>
+<h2 id="데이터셋별-상세">데이터셋별 상세</h2>
+<h3 id="goat--guitar-octave-adventure-tablatures-ismir-2025">GOAT — Guitar Octave Adventure Tablatures (ISMIR 2025)</h3>
+<p>Jack James Loth et al.이 ISMIR 2025에서 공개한 일렉기타 데이터셋. 이름의 의미와 별개로 핵심은 단순하다 — <strong>5.9시간의 DI(Direct Input) 녹음 + 29.5시간의 다양한 재앰핑(re-amped) 녹음 + 짝지어진 Guitar Pro 탭이 CC-BY 4.0으로 공개</strong>된다. 코드 + 데이터 모두 GitHub <code>JackJamesLoth/GOAT-Dataset</code>에서 받을 수 있다. 일렉기타 분야가 그동안 가지지 못했던 paired audio-tablature 자원이라는 점에서, 분야의 본격적 학습 가능 환경을 처음 연 자원이다.</p>
+<p><strong>본 프로젝트 적용.</strong> 페이지 터너의 일렉기타 사용자 시나리오에서 — 즉 사용자가 일렉기타 + 앰프 + 마이크 또는 DI 녹음으로 연주하는 환경 — 분석 10-12번의 transcribe-then-track 노선의 AMT 모듈을 일렉기타용으로 fine-tune하는 데 가장 큰 자원. 29.5시간의 재앰핑 데이터는 다양한 톤·게인·이펙트 조건의 강건성 학습에 직접 사용 가능. 다만 표 형태가 Guitar Pro 탭이라 표준 MusicXML로 변환하는 전처리가 필요할 수 있다.</p>
+<h3 id="guitar-techs--기타-연주-기법-데이터셋-icassp-2025">Guitar-TECHS — 기타 연주 기법 데이터셋 (ICASSP 2025)</h3>
+<p>Pedroza et al.이 ICASSP 2025에서 공개한 데이터셋. <strong>다양한 연주 기법(techniques) + 화음(chords) + 스케일(scales)을 multi-microphone + DI + per-string MIDI pickup의 다중 채널로 녹음</strong>한다. per-string MIDI pickup이 결정적이다 — 각 줄이 분리되어 ground-truth note onset/pitch가 정확히 알려진다. 또한 multi-microphone 구성이 실제 사용 환경(태블릿 내장 마이크, 외부 USB 마이크, 룸 마이크 등)의 다양성을 포함한다.</p>
+<p><strong>본 프로젝트 적용.</strong> 페이지 터너 응용의 가장 현실적 환경 — 사용자가 태블릿이나 노트북의 내장 마이크로 일렉기타 연주를 녹음하는 — 의 강건성 검증과 학습에 직접 사용 가능. GOAT가 학습 자원이라면 Guitar-TECHS는 평가 자원의 성격이 더 강하다. 두 데이터셋은 자연스럽게 보완 관계.</p>
+<h3 id="pianovam--piano-visual-audio-midi-ismir-2025">PianoVAM — Piano Visual-Audio-MIDI (ISMIR 2025)</h3>
+<p>Kim et al.이 ISMIR 2025에서 공개한 피아노 데이터셋. <strong>21시간 분량의 audio + video + MIDI + hand landmarks + fingering</strong>의 5채널 정렬 데이터다. 아마추어 Disklavier 환경(즉 정련된 콘서트 녹음이 아닌)에서 녹음된 것이 결정적 — Mobile-AMT(분석 12번 reference)가 강조한 in-the-wild 강건성 평가에 가장 적합한 자원. hand landmarks와 fingering 라벨이 함께 있어 multimodal 학습이 가능하다.</p>
+<p><strong>본 프로젝트 적용.</strong> 페이지 터너 응용에서 태블릿 전면 카메라가 사용 가능한 환경이라면, audio-only 한계 — 페이지 전환·fermata·쉼표 후 진입 같은 순간 — 를 시각 단서로 보완하는 멀티모달 시스템을 학습할 수 있다. Choi-Kwon-Nam 2025(Tier 3, 플루티스트 onset 예측)와 같은 사상이지만 피아노 데이터셋. 손 랜드마크 라벨로 fingering-aware page turning(특정 손가락이 페이지 끝 마디에 도달하면 미리 페이지 넘김 등)도 가능.</p>
+<h3 id="rach3--a-computational-approach-to-study-piano-rehearsals-ismir-2025">Rach3 — A Computational Approach to Study Piano Rehearsals (ISMIR 2025)</h3>
+<p>Morsi-Chiruthapudi-Peter-Pilkov-Bishop-Maezawa-Serra-Cancino-Chacón가 ISMIR 2025에서 공개한 데이터셋(데이터 도메인 dataset.rach3project.com). <strong>콘서트가 아닌 <em>리허설</em> 환경의 장시간 피아노 MIDI</strong>로, 반복·재시작·실수·멈춤 같은 연습실 특유의 행동이 자연스럽게 포함된다. JKU + UPF Barcelona + Yamaha의 공동 펀딩(FWF PAT 8820923) 결과물로, 분석 10번 Matchmaker의 ACK에서도 이 프로젝트가 언급된다.</p>
+<p><strong>본 프로젝트 적용.</strong> 페이지 터너의 가장 현실적 사용 환경 — 연습실, 가정의 학습용 사용 — 을 정조준한다. 콘서트 녹음의 깔끔한 흐름과 달리, 사용자가 한 마디 반복해서 치고 다시 처음으로 돌아가고 갑자기 멈추는 행동을 follower가 어떻게 다뤄야 하는지의 baseline. 본 프로젝트의 분석 8번 Pillay 2024가 진단한 "DL 기반 follower의 deployment 어려움"의 정확한 출처가 이런 행동 분포라는 점에서, 학습/평가 양쪽 자원으로 가치가 매우 크다.</p>
+<h3 id="pdmx--public-domain-music-xml-icassp-2025">PDMX — Public Domain Music XML (ICASSP 2025)</h3>
+<p>Long et al.이 ICASSP 2025에서 공개한 데이터셋. <strong>250,000편 이상의 public domain MusicXML 모음</strong>으로, 분야 최대 규모의 저작권 자유 심볼릭 음악 풀이다. PDMX 자체에는 audio가 없으나, FluidSynth 같은 합성기로 audio를 생성해 짝짓는 데 사용할 수 있다.</p>
+<p><strong>본 프로젝트 적용.</strong> 분석 13번 RUMAA의 학습 augmentation 사상을 PDMX 위에 얹으면 학습 데이터 규모를 한 자릿수 더 늘릴 수 있다. 다양한 악기·시대·장르가 포함되므로 multi-instrument score-following 학습의 부트스트랩 자원으로 결정적. 본 프로젝트 페이지 터너의 첼로/바이올린/기타 시나리오에서 score-side ground truth(MusicXML)를 대량 확보하기에 가장 좋은 자원.</p>
+<h3 id="sheet-music-benchmark--omr-공통-벤치-ismir-2025">Sheet Music Benchmark — OMR 공통 벤치 (ISMIR 2025)</h3>
+<p>Martinez-Sevilla et al.이 ISMIR 2025에서 공개한 OMR(Optical Music Recognition) 분야의 새 공통 벤치마크. **multi-genre 시트 이미지와 짝지어진 Humdrum <strong>kern 라벨</strong>이 있다. **kern은 MIDI보다 풍부하고 MusicXML보다 짧은 심볼릭 표기로, OMR 평가에 적합.</p>
+<p><strong>본 프로젝트 적용.</strong> 페이지 터너가 사용자 PDF 입력을 받을 때, 그 PDF를 디지털 score로 변환하는 OMR 단계의 baseline 모델을 학습/평가할 자원. 본 프로젝트의 분석 5번 Henkel 2021은 OMR을 통째로 우회하는 노선이지만, 분석 9번 JLTR과 분석 13번 RUMAA는 score 측이 잘 디지털화된다는 가정 위에서 작동하므로, OMR 정확도가 시스템 전체 정확도의 천장이 된다.</p>
+<h2 id="사용-시나리오별-권고">사용 시나리오별 권고</h2>
+<h3 id="일렉기타-페이지-터너를-만들고-있다면">일렉기타 페이지 터너를 만들고 있다면</h3>
+<ol>
+<li><strong>AMT fine-tune</strong>: GOAT(29.5시간 재앰핑)을 학습 데이터로, 분석 12번의 Causal-AMT 또는 Mobile-AMT를 일렉기타용으로 fine-tune.</li>
+<li><strong>강건성 평가</strong>: Guitar-TECHS의 multi-mic + DI 채널을 사용해 사용자 환경(태블릿 내장 마이크 vs 외장 USB 마이크 vs DI)별 정확도를 측정.</li>
+<li><strong>Score 풀</strong>: PDMX에서 일렉기타 또는 클래식 기타 악보를 추출(MusicXML 메타데이터의 instrument 필드 필터링).</li>
+<li><strong>OMR</strong>: 사용자가 Guitar Pro 탭이 아닌 표준 악보 PDF를 입력할 경우, Sheet Music Benchmark로 학습된 OMR 모듈로 score를 디지털화.</li>
+</ol>
+<h3 id="첼로바이올린-페이지-터너를-만들고-있다면">첼로/바이올린 페이지 터너를 만들고 있다면</h3>
+<ol>
+<li><strong>Score 풀</strong>: PDMX에서 첼로/바이올린 작품을 추출. MusicXML 자체로는 음향 데이터가 없으므로 합성 audio를 만들어 짝지음.</li>
+<li><strong>Baseline follower</strong>: Cowley 2025(GP+HMM, Tier 2)의 알고리즘을 출발점으로. 본 프로젝트가 다룬 모든 논문 중 비-피아노 정량을 보고한 유일한 2025 작업.</li>
+<li><strong>Augmentation</strong>: 분석 13번 RUMAA의 학습 augmentation(score-modulated + performance-modulated)을 PDMX-합성 데이터에 적용.</li>
+<li><strong>Reformulated Soft-DTW</strong>: 약 라벨링(예: 마디 단위) 환경에서 학습할 때 Zeitler-Müller 2025(Tier 2)의 corrected loss 사용.</li>
+</ol>
+<h3 id="피아노-페이지-터너-가정-학습-사용자">피아노 페이지 터너 (가정 학습 사용자)</h3>
+<ol>
+<li><strong>Baseline 시스템</strong>: 분석 10번 Matchmaker(pip 설치) + 분석 11번 transcribe-then-track 모듈.</li>
+<li><strong>연습실 행동 강건성 평가</strong>: Rach3로 평가. 콘서트 baseline 대비 연습실 환경에서 정확도가 얼마나 떨어지는지 측정.</li>
+<li><strong>Multimodal 확장</strong>: PianoVAM의 hand landmarks를 활용해 시각 단서 결합. 페이지 마지막 마디에 손이 도달하면 페이지 미리 넘기기 같은 응용 가능.</li>
+<li><strong>반복 처리</strong>: 분석 9번 JLTR의 사람 6초 라벨링 UX를 채택. 자동화는 분석 13번 RUMAA가 자원 있는 환경에서 가능하나 1분 청크 한정.</li>
+</ol>
+<h2 id="사용-가이드-데이터셋-결합의-두-가지-함정">사용 가이드: 데이터셋 결합의 두 가지 함정</h2>
+<p><strong>라이선스 호환성</strong>. CC-BY 4.0(GOAT), public domain(PDMX), 그리고 본 인벤토리에 명시되지 않은 라이선스의 데이터셋들이 섞여 있다. 본 프로젝트가 만든 모델/코드를 공개할 계획이 있다면, 학습 데이터의 라이선스가 결과물의 라이선스를 제한하므로 사전 확인이 필요. 특히 GOAT의 CC-BY 4.0은 출처 명시(attribution)를 요구한다.</p>
+<p><strong>도메인 시프트</strong>. PDMX의 합성 audio는 FluidSynth 톤이 일관되지만, 사용자의 실제 녹음은 마이크/룸 acoustics/악기 개체차로 분포가 크게 다르다. PDMX로 학습한 모델을 그대로 배포하면 in-the-wild에서 정확도가 큰 폭으로 떨어질 수 있다. Mobile-AMT의 acoustic distribution shift augmentation 사상(분석 12번 reference) 또는 GOAT의 다양한 재앰핑 데이터를 결합 학습에 사용하는 것이 권장된다.</p>
+<h2 id="한계와-빈-공간">한계와 빈 공간</h2>
+<p>이 6종 데이터셋이 채운 격차에도 불구하고, 분야가 <em>여전히</em> 가지지 못한 자원이 있다.</p>
+<p><strong>첼로 전용 데이터셋이 없다.</strong> 본 프로젝트가 다룬 18개월 동안 첼로 전용 paired audio-score 데이터셋은 등장하지 않았다. PDMX에서 첼로 작품을 추출하고 합성 audio를 만들거나, Cowley 2025의 비-피아노 자원을 재활용하는 우회가 현재로서는 유일한 선택지.</p>
+<p><strong>대규모 violin 자원도 부족하다.</strong> Cowley 2025가 바이올린/플루트/오보에를 평가에 사용했지만 데이터셋 자체는 작은 규모. URMP(2018, University of Rochester) 같은 기존 자원이 있지만 2025-2026 시점에 새로 공개된 violin-paired 자원은 없다.</p>
+<p><strong>합주 환경 자원의 부족.</strong> Tsai-Dey-Özer-Müller 2025의 Concerto Accompaniment Benchmark가 부분적으로 메우지만, 일반적 chamber music이나 대규모 ensemble 자원은 여전히 부족하다.</p>
+<p><strong>실시간 평가용 latency-aware 자원의 부재.</strong> 본 프로젝트 분석 12번이 30 ms 지연을 새 baseline으로 제시했지만, 그 지연 환경에서 정확도를 평가할 수 있는 표준 데이터셋은 없다. MAESTRO 같은 깔끔한 데이터셋은 latency 평가에 적합하지 않고, in-the-wild 자원은 라벨링이 충분히 정밀하지 않다.</p>
+<p>이 빈 공간들이 본 프로젝트와 같은 응용 개발 작업이 자체 데이터를 만드는 동기를 제공한다. 페이지 터너 응용의 사용자 데이터(동의를 받은 — 첼로, 바이올린, 일렉기타 사용자의 연주 + 정렬된 악보)를 모으면, 그 자체로 분야의 빈 공간을 메우는 자원이 된다.</p></template>
