@@ -1,0 +1,18 @@
+{
+  "base": "https://github.com/Ellencia/score-following-research/releases/download/analysis-audio-v1/",
+  "keys": {
+    "01_analysis": 6,
+    "02_analysis": 4,
+    "03_analysis": 6,
+    "04_analysis": 4,
+    "05_analysis": 4,
+    "06_analysis": 5,
+    "07_analysis": 7,
+    "08_analysis": 4,
+    "09_analysis": 5,
+    "10_analysis": 4,
+    "11_analysis": 5,
+    "12_analysis": 9,
+    "13_analysis": 5
+  }
+}
