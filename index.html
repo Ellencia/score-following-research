@@ -1871,14 +1871,31 @@
   // 현재 문단 하이라이트·자동 스크롤.
   const __tts = { utters: [], idx: 0, curEl: null, playing: false, paused: false, root: null, status: null, rate: 1, audioEl: null, audioUrls: null, audioIdx: 0 };
   let __docAudioEl = null;   // 문서별(해설/관계도 등) 미리 렌더된 음원 플레이어
+  let __audioManifest;       // assets/audio/manifest.json 캐시 (GitHub Releases 등 외부 호스팅 음원 목록)
 
-  // 임의 문서에 대해 assets/audio/<key>_NN.mp3(또는 <key>.mp3)를 찾아 모달 상단에 재생기 삽입
+  async function loadAudioManifest() {
+    if (__audioManifest !== undefined) return __audioManifest;
+    try {
+      const r = await fetch('assets/audio/manifest.json');
+      __audioManifest = r.ok ? await r.json() : null;
+    } catch (e) { __audioManifest = null; }
+    return __audioManifest;
+  }
+
+  // 임의 문서에 대해 음원을 찾아 모달 상단에 재생기 삽입.
+  // 1순위: manifest.json에 등록된 외부(Releases) 음원, 2순위: assets/audio/ 로컬 탐색
   async function injectDocAudio(root, key) {
     if (!key || !root) return;
     const base = 'assets/audio/';
     async function exists(u) { try { const r = await fetch(u, { method: 'HEAD' }); return r.ok; } catch (e) { return false; } }
     let urls = null;
-    if (await exists(base + key + '.mp3')) urls = [base + key + '.mp3'];
+    const mf = await loadAudioManifest();
+    if (mf && mf.keys && mf.keys[key]) {
+      const n = mf.keys[key];
+      urls = [];
+      for (let i = 1; i <= n; i++) urls.push(mf.base + key + '_' + String(i).padStart(2, '0') + '.mp3');
+    }
+    else if (await exists(base + key + '.mp3')) urls = [base + key + '.mp3'];
     else if (await exists(base + key + '_01.mp3')) {
       urls = [];
       for (let i = 1; i <= 99; i++) {
