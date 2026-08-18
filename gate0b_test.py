@@ -82,6 +82,14 @@ def eval_feature(score_file, perf_file, bpm, total_beats, dur, feat):
         return {"feature": feat, "error": "평가 가능한 beat 부족", "last_beat": last}
     bias = float(np.median(e))
     r = np.abs(e - bias)
+
+    # 드리프트 진단: 부호오차가 beat에 따라 선형으로 커지면 연주가 메트로놈과
+    # 점점 벌어진 것 → GT(박자그리드) 신뢰 불가. 오차가 아니라 녹음 문제로 안내.
+    beats_idx = np.arange(len(e), dtype=float)
+    slope = float(np.polyfit(beats_idx, e, 1)[0])          # ms per beat
+    total_drift = slope * len(e)                            # 곡 전체 누적 드리프트
+    drift_bad = abs(total_drift) > 800                      # 전체 0.8초 이상 벌어지면 경고
+
     return {
         "feature": feat,
         "complete": bool(complete),
@@ -92,6 +100,9 @@ def eval_feature(score_file, perf_file, bpm, total_beats, dur, feat):
         "median_ms": round(float(np.median(r))),
         "p95_ms": round(float(np.percentile(r, 95))),
         "le300_pct": round(float(np.mean(r <= 300) * 100)),
+        "drift_ms_per_beat": round(slope, 1),
+        "drift_total_ms": round(total_drift),
+        "drift_warning": bool(drift_bad),
         "pass": bool(complete and np.percentile(r, 95) <= PASS_P95_MS),
     }
 
@@ -128,6 +139,12 @@ def main():
         print(f"  완주: {'예' if m['complete'] else f'아니오 (beat {m['last_beat']}/{m['total_beats']}에서 중단)'}")
         print(f"  오프셋({m['bias_ms']}ms) 제거 후: 중앙값 {m['median_ms']}ms | "
               f"95퍼센타일 {m['p95_ms']}ms | ≤300ms {m['le300_pct']}%")
+        if m.get("drift_warning"):
+            print(f"  ⚠ 템포 드리프트 감지: beat당 {m['drift_ms_per_beat']}ms, 누적 {m['drift_total_ms']}ms")
+            print(f"    → 연주가 메트로놈과 점점 벌어짐. 위 수치는 정렬 성능이 아니라 녹음 문제일 수 있음.")
+            print(f"    → 더 느린 BPM으로 재녹음하거나, 메트로놈을 이어폰으로 들으며 다시 시도 권장.")
+        else:
+            print(f"  드리프트: 누적 {m['drift_total_ms']}ms — GT 신뢰 가능 (박자 유지 잘됨)")
         print(f"  판정: {'✅ 통과' if m['pass'] else '❌ 미달'} (완주 + p95 ≤ {PASS_P95_MS}ms)")
 
     # ── 종합 판정 + 로드맵 분기 안내 ─────────────────────────────────
