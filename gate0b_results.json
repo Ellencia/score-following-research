@@ -1,0 +1,26 @@
+[
+ {
+  "ts": "2026-08-18T21:18:37",
+  "label": "drift_selftest",
+  "score": "gate0a_melody16.musicxml",
+  "perf": "gate0a_perf.wav",
+  "bpm": 90.0,
+  "results": [
+   {
+    "feature": "chroma",
+    "complete": true,
+    "last_beat": 63.0,
+    "total_beats": 64,
+    "beats_evaluated": 64,
+    "bias_ms": 316,
+    "median_ms": 161,
+    "p95_ms": 305,
+    "le300_pct": 94,
+    "drift_ms_per_beat": 10.0,
+    "drift_total_ms": 643,
+    "drift_warning": false,
+    "pass": true
+   }
+  ]
+ }
+]
