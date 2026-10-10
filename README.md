@@ -47,6 +47,7 @@ python -m http.server 8000
 ## 📂 저장소 구조
 
 ```text
+FINDINGS.md                 # 주장 단위 질의 인덱스 (779행, 15절). 다른 프로젝트에서 "문헌 근거 있나"를 grep으로 확인하는 입구
 index.html                  # 단독 웹앱 (진입점)
 glossary.js                 # 용어집 hover 카드 데이터
 js/mermaid.min.js           # 다이어그램 렌더러
