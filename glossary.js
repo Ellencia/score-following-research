@@ -1116,4 +1116,40 @@ window.__SF_GLOSSARY = {
     aliases: ["MERT","MusicFM","MuQ × alignment","Foundation model × score following"]
   },
 
+  "Particle Filter": {
+    label: "입자필터 · Particle Filter / Sequential Monte Carlo (SMC)",
+    short: "악보 위치를 숫자 하나로 추정하지 않고 수백~수천 개의 가설(입자)을 뿌려, 매 프레임 전진·점수·복제(리샘플링)를 반복하는 추론기. 위치·템포가 연속값이고 계산량이 악보 길이와 무관하다.",
+    long:  "<p>악보 위치를 숫자 하나로 추정하지 않고 수백~수천 개의 가설(입자)을 뿌려, 매 프레임 (1) 자기 템포대로 전진하고(전이) (2) 지금 소리와 맞는 정도로 점수를 받고(관측 우도) (3) 점수 낮은 입자는 죽고 높은 입자는 복제되는(리샘플링) 추론기. HMM과 달리 위치·템포가 연속값이라 격자가 필요 없고, 계산량이 악보 길이와 무관하게 입자 수에만 비례한다. 대신 실행마다 결과가 조금씩 다르고, 입자가 두 무리로 갈라지면 평균이 엉뚱한 중간 지점을 가리킨다. Score following에서는 2010~2013년(Otsuka, Montecchio–Cont, Duan–Pardo, Xiong, Korzeniowski)에 집중되고 이후 박자 추적(BeatNet)으로 이동. 2026년 Matchmaker v0.3.0에 코드로 재등장.</p>",
+    category: "§2 고전적 정렬·추적 알고리즘",
+    papers: "6, 17번 문서",
+    aliases: ["Particle Filter","입자필터","입자 필터","Sequential Monte Carlo","SMC","파티클 필터"]
+  },
+
+  "Resampling": {
+    label: "리샘플링 · Resampling / Effective Sample Size (N_eff)",
+    short: "입자필터에서 가중치가 낮은 입자를 버리고 높은 입자를 복제해 입자 집단을 새로 뽑는 단계. 너무 자주 하면 가설이 일찍 죽고(Montecchio), 안 하면 가중치가 한 입자에 몰려 퇴화한다.",
+    long:  "<p>입자필터에서 가중치가 낮은 입자를 버리고 높은 입자를 복제해 입자 집단을 새로 뽑는 단계. 보통 유효 입자 수 N_eff가 임계값 아래로 떨어질 때만 수행한다. 시작점을 모르는 균일 사전분포로 출발할 때는 임계값을 높여야 관련 가설이 일찍 사라지지 않는다(Montecchio &amp; Cont ISMIR 2011). Duan–Pardo는 매 프레임 리샘플링 후 작은 가우시안 지터를 더한다.</p>",
+    category: "§2 고전적 정렬·추적 알고리즘",
+    papers: "17번 문서",
+    aliases: ["Resampling","리샘플링","N_eff","Effective Sample Size"]
+  },
+
+  "Rao-Blackwellized Particle Filter": {
+    label: "라오-블랙웰화 입자필터 · Rao-Blackwellized Particle Filter (RBPF)",
+    short: "상태 중 일부(이산 변수)는 정확히 계산하고 나머지(연속 변수)만 입자로 다루는 입자필터. Korzeniowski 2013이 쉼표 상태(울림/쉼)와 온셋 유무를 정확 계산 쪽에 두었다.",
+    long:  "<p>상태 중 일부는 해석적으로 정확히 계산하고 나머지만 입자로 근사하는 입자필터. 같은 입자 수로 분산이 줄어든다. Score following에서는 Korzeniowski·Krebs·Arzt·Widmer ICMC 2013이 쉼표 상태(울림/쉼)와 온셋 유무를 이산 변수로 정확 계산하고, 위치·템포만 입자로 다뤄 모차르트 소나타 misalign을 14.29%에서 1.92%로 줄였다. 2026년 Matchmaker에 같은 방식의 follower가 병합됐다.</p>",
+    category: "§2 고전적 정렬·추적 알고리즘",
+    papers: "17번 문서",
+    aliases: ["Rao-Blackwellized Particle Filter","Rao-Blackwellized","RBPF","라오-블랙웰"]
+  },
+
+  "Particle Injection": {
+    label: "입자 주입 · Particle Injection / Jump Particles",
+    short: "반복·생략·건너뜀 같은 불연속에 대비해 입자 일부를 현재 추정과 무관한 위치(점프 목적지 또는 균일 무작위)에 뿌려 두는 기법. Xiong &amp; Izmirli 2012가 전체의 10%를 점프 탐색용으로 격리해 5박 생략에서 복구했다.",
+    long:  "<p>반복·생략·건너뜀 같은 불연속에 대비해 입자 일부를 현재 추정과 무관한 위치에 뿌려 두는 기법. Xiong &amp; Izmirli ICMC 2012는 확률 3%로 균일 점프하는 입자를 별도 집단(B)으로 격리하고, B가 75%를 넘을 때만 주 가설을 바꾼다. 5박을 잘라낸 녹음에서 일반 입자필터가 최대 4.70 s까지 무너지는 동안 0.07~0.30 s를 유지했다. Otsuka 2011은 랜드마크 검출 시 그 위치에 입자를 추가하자고 제안만 했고, Montecchio 2012는 악보에 적힌 반복 지점으로의 점프를 샘플링에 넣었다. 2026년 CODA의 무음 구동 break mode는 같은 계열의 출력 정책이다.</p>",
+    category: "§2 고전적 정렬·추적 알고리즘",
+    papers: "17번 문서",
+    aliases: ["Particle Injection","입자 주입","Jump Particles","점프 입자"]
+  },
+
 };

@@ -1,0 +1,444 @@
+<template id="doc-topic_2026h2" data-title="2026년 하반기 분야 동향" data-docx=""><h1>2026년 하반기 Score Following 분야 동향 — 5개월의 변화와 공백 재판정</h1>
+<h2>도입: 10번 문서 이후의 5개월</h2>
+<p><code>10_2025_2026_landscape.md</code>는 2026년 5월까지를 다뤘다. 이 문서는 그 뒤 2026년 5월부터 10월 10일까지를 다룬다. 범위는 arXiv(cs.SD, eess.AS, cs.IR), ISMIR 2026 채택 논문 140편(아부다비, 11월 8–12일, 논문집은 미공개이나 제목·초록은 공개), ICASSP 2026(바르셀로나, 5월), MEC 2026(도쿄, 5월), NIME 2026(런던, 6월), SMC 2026(자그레브, 11월 프로그램), ICMC 2026(함부르크), TISMIR 2026, 그리고 Matchmaker·Audiveris 같은 도구의 릴리스 기록이다.</p>
+<p>표기 기준은 세 가지다. <strong>확인</strong>은 arXiv abs, 학회 공식 프로그램, GitHub API 같은 1차 페이지를 직접 연 것이다. <strong>스니펫만</strong>은 검색 결과 요약으로만 본 것이다. <strong>미확인</strong>은 찾지 못한 것이다. ISMIR 2026 논문 중 arXiv판이 없는 것은 프로그램 초록만 확인했으므로 수치표는 논문집 공개 후 재확인 대상이다.</p>
+<h2>한 쪽 요약: 다섯 달 동안 바뀐 것</h2>
+<ol>
+<li><strong>피아노 밖으로 나간 첫 정량 follower가 나왔다.</strong> KAIST의 STRAdi(Lee·Park·Nam, ISMIR 2026)는 바이올린 전용 완전 인과 전사기에 기호 트래커를 붙였다. JKU의 transcribe-then-track(분석 11번)을 그대로 바이올린에 옮긴 구조다. 오디오 기반 트래커보다 강건하고, 특히 바이올린이 쉬는 구간에서 강하다고 보고한다. <strong>첼로와 기타 follower는 여전히 없다.</strong></li>
+<li><strong>이미지 기반 score following이 다시 움직였다.</strong> CODA(Yang·Chen·Han, ISMIR 2026, arXiv 2607.21899)는 Henkel 계열 CYOLO-SB(분석 5번)를 기준선으로 삼아 시스템→마디→음표 순서의 계단식 예측을 한다. 무음으로 촉발되는 &quot;break mode&quot;로 반복·D.C.·코다 점프에서 복구하며, 반복 구조를 MSMD에 수작업 주석한 벤치마크를 처음 냈다. Henkel 본인은 여전히 조용하다.</li>
+<li><strong>Matchmaker가 라이브러리에서 공개 리더보드로 바뀌었다.</strong> v0.3.0(2026-05-25)에 HMM·OLTW·입자필터·parangonar 트래커가 들어갔고, 2026-08-31에는 Korzeniowski식 입자필터 follower PR이 병합됐다. matchmaker_benchmark는 PR 한 번으로 제출하는 리더보드다(146개 피아노 연주). 다만 현재 등재 항목은 예제 1개뿐이다. 데이터 메타데이터에 URMP(바이올린·첼로 앙상블)와 KRAISLER가 들어 있지만 평가 fold는 아직 피아노만이다.</li>
+<li><strong>JKU는 오프라인 정밀 정렬로 돌아왔다.</strong> Peter·Hu·Widmer의 &quot;Precise and Simple Audio-to-Score Alignment&quot;(MEC 2026, arXiv 2605.20014)는 88개 필터뱅크 기반 특징을 DP로 악보 위치에 바로 맞춘다. (n)ASAP 300여 곡에서 50 ms 이내 83.7%, 합성 후 DTW 방식은 53.2%였다. 실시간 쪽 신작은 Beat This! Live(온라인 비트 추적) 정도다.</li>
+<li><strong>저지연 AMT 신작은 Yamaha 쪽이다.</strong> Kusaka·Maezawa의 Band-Split RNN AMT(ISMIR 2026)는 룩어헤드 0에서 기준선보다 note-with-offset F1이 8.5포인트 높고 지연은 34 ms 짧다. 피아노와 <strong>기타</strong> 데이터셋에서 평가했다.</li>
+<li><strong>foundation model이 정렬에 처음 들어왔다. 단 이미지-오디오 쌍이다.</strong> Bukey…Donahue의 FuSiLi(ISMIR 2026, arXiv 2607.10023)는 CLIP ViT와 LAION-CLAP을 악보 이미지-오디오 쌍으로 미세조정해 프레임 단위 정렬을 학습한다. MERT/MuQ를 오디오-악보 정렬에 쓴 논문은 여전히 없다. MuQ·MERT는 A2S 전사(SheetSage-A2S, Hidalgo 외)에만 쓰였다.</li>
+<li><strong>OMR에서 큰 진전이 있었다.</strong> Hornbogen·Valentin의 &quot;Measure for Measure&quot;(ISMIR 2026)는 마디 단위 정렬 지표 MCR을 새로 냈다. DINOv2 기반 184M 모델을 PDMX로 학습해 zero-shot SMB 6.38%, 카메라로 촬영한 OpenScore Quartets 페이지에서 <strong>9.91%의 MCR</strong>을 기록했고, 기존 SOTA는 각각 35.92%·56.23%였다. 사진→악보(score-ocr)에 직접 관련된다. Audiveris는 5.11.0(2026-07-11)이 나왔다.</li>
+<li><strong>실시간 반주 생성은 붐이지만 score following과는 별개 흐름이다.</strong> LiveBand, Streaming Generation, Silent Metronome 모두 악보를 따라가지 않는다.</li>
+<li><strong>CMU 라인의 침묵이 깨졌다.</strong> Dannenberg의 Accomplice(NIME 2026), Bukey/Donahue의 FuSiLi, U-MusT(CMU 공저, ICASSP 2026)가 나왔다. IRCAM의 score following 신작은 찾지 못했다.</li>
+</ol>
+<h2>신규 문헌 카드</h2>
+<h3>A. Score following / 실시간 추적</h3>
+<h4>STRAdi — 바이올린 실시간 전사 + 추적 (ISMIR 2026, 확인)</h4>
+<p>Sein Lee, Jiyun Park, Juhan Nam (KAIST MAC Lab). ISMIR 2026 본 논문. arXiv판 미확인.</p>
+<p>바이올린은 onset이 약하고 비브라토·포르타멘토가 있으며 데이터가 적고, 앙상블에서는 쉼이 잦다. 그래서 완전 인과(미래 프레임 0) 전사 모델을 만들고 기호 트래커를 붙여 transcribe-and-track 파이프라인을 구성했다. 인과 모델이 비인과 모델과 경쟁력 있는 성능을 보였고, 오디오 기반 트래커보다 추적이 강건하며 특히 <strong>바이올린이 쉬는 구간에서 강하다</strong>(초록 기준, 수치 미확인). VioPTT의 CRNN을 개조했고, 학습 데이터는 MUSC와 MOSA의 바이올린 부분, 16 kHz. 평가 기준은 onset 50 ms, offset 20%, 피치 50 cent.</p>
+<p>코드: github.com/seingreen/STRAdi (Apache-2.0, v1.0.0 2026-07-26). <strong>score following 구현은 공개하지 않았고</strong> 전사 모델과 체크포인트만 있다. 예제는 KRAISLER 60초 발췌.</p>
+<p>본 프로젝트 관점: 첼로는 바이올린과 같은 찰현 악기라 onset 약함·비브라토·쉼이라는 세 어려움을 공유한다. STRAdi의 전사기를 첼로 음역으로 옮기는 것이 cello-follower에서 &quot;학습 노선&quot;으로 가야 할 때의 첫 후보다. 다만 cello-follower는 현재 학습 없는 chroma DTW로 G0~G3를 통과했으므로, 그 노선이 실패해야 이것을 만들 이유가 생긴다.</p>
+<h4>CODA — 계단식 불연속 인식 이미지 기반 추적 (ISMIR 2026, 확인)</h4>
+<p>Yining Yang, Ruogu Chen, Jie Han. arXiv 2607.21899 (2026-07-24). 소속 미명시, NSERC·Alberta Innovates 지원.</p>
+<p>악보 이미지 위에서 실시간으로 따라간다. 시스템→마디→음표를 계단식으로 선택해 해상도 사이의 예측 일관성을 강제한다. <strong>무음으로 촉발되는 break mode</strong>로 반복 구조를 몰라도 임의 점프에서 복구한다.</p>
+<table>
+<thead>
+<tr>
+<th>조건 (MSMD)</th>
+<th>≤0.10 s 비율</th>
+<th>마디 정확도</th>
+<th>시스템 정확도</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>합성 오디오, CODA</td>
+<td>.914</td>
+<td>.975</td>
+<td>.991</td>
+</tr>
+<tr>
+<td>합성 오디오, CYOLO-SB</td>
+<td>.837</td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>실제 피아노 녹음, CODA</td>
+<td>.743</td>
+<td>.891</td>
+<td>.953</td>
+</tr>
+<tr>
+<td>실제 피아노 녹음, CYOLO-SB</td>
+<td>.630</td>
+<td>.829</td>
+<td>.917</td>
+</tr>
+</tbody></table>
+<p>점프 복구는 1초 안에 시스템 복구 78%, 평균 0.72 s. 프레임당 12.8 ms. 반복 벤치마크는 테스트 94곡 중 66곡에 반복 131개를 주석했고, 반복 없는 28곡은 무작위 점프로 시험했다. 코드: github.com/ValleyC/CODA.</p>
+<p>본 프로젝트 관점: 10번 문서가 &quot;페이지 터너 자체의 평가 논문이 없다&quot;고 적은 공백에 가장 가까운 논문이다. 사용자 연구는 없지만 <strong>반복·D.C. 복구를 정량화한 첫 벤치마크</strong>다. break mode는 &quot;무음이 들리면 추적을 풀고 재탐색한다&quot;는 정책인데, 입자필터 문서(17번)의 Otsuka 확신도 스위칭·Xiong 점프 입자와 같은 계열의 출력 정책이다.</p>
+<h4>Accomplice — 키보드 연주 컴퓨터 반주 (NIME 2026, 목록 확인·초록 스니펫)</h4>
+<p>Roger B. Dannenberg. NIME 2026, DOI 10.5281/zenodo.20784425. 실험 전자음악용 반주 시스템. 연주자의 MIDI를 받아 MIDI 악보를 따라가고 MIDI·O2·OSC를 동기 출력한다. 처음부터 끝까지 따라가는 고전적 score following 대신 섹션 큐잉·시작 모드·반응도 조절을 하는 GUI가 있다. 오픈소스. 10번 문서의 &quot;Dannenberg/Raphael 라인 침묵&quot;이 깨진 항목이다.</p>
+<h4>Soft Online Time Warping + Kalman Tempo Filtering / LISzT 데모 (KSMI 2026, 목록만 확인)</h4>
+<p>Jiyun Park, Juhan Nam. 제1회 한국음악정보학회(KSMI) 2026의 확장 초록과 데모. 제목만 확인했고 본문·수치 미확인. LISzT는 OMR → 웹오디오 실시간 추적을 묶은 데모로, 사진 악보로 바로 따라가는 구성이다. score-ocr + cello-follower가 하려는 것과 같은 파이프라인이다.</p>
+<h4>Matchmaker Benchmark — 공개 리더보드 (확인)</h4>
+<p>github.com/pymatchmaker/matchmaker_benchmark. 평가 세트는 146개 연주(ASAP·Batik·Vienna 4x22, 오디오·MIDI). 지표는 tracking rate, beat median, ms median, beat_median_all(놓친 곡 포함), RTF. 순위는 tracking rate 내림차순, 그다음 beat median. leaderboard.json(2026-10-08)에 등재된 항목은 &quot;Pitch matcher (example)&quot; 1개뿐(tracking rate 0.2055). data/ 아래에 metadata-urmp.csv(44줄, 예: 01_Jupiter_vn_vc), kraisler, winterreise, chorale, zeilinger 파일이 있다. 비피아노·성악 확장을 준비 중인 흔적이지만 평가 fold는 피아노 3개 데이터셋이다.</p>
+<h3>B. 오프라인 정렬·정렬 인프라</h3>
+<h4>Precise and Simple Audio-to-Score Alignment (MEC 2026, 확인)</h4>
+<p>Silvan Peter, Patricia Hu, Gerhard Widmer (JKU). arXiv 2605.20014 (2026-05-19). onset과 스펙트럼 활성을 담은 순차 오디오 특징을 DP로 악보 위치에 바로 맞춘다. 전사가 필요 없고 음색에 적응한다고 한다. 다만 필터뱅크가 피아노 88건반 중심이라 평가는 피아노 전용. 오프라인.</p>
+<table>
+<thead>
+<tr>
+<th>방법</th>
+<th>평균</th>
+<th>중앙값</th>
+<th>50 ms 이내</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>제안</td>
+<td>86 ms</td>
+<td>21 ms</td>
+<td>83.7%</td>
+</tr>
+<tr>
+<td>오디오-오디오 DTW</td>
+<td>135 ms</td>
+<td>49 ms</td>
+<td>53.2%</td>
+</tr>
+</tbody></table>
+<p>(n)ASAP 300여 연주. 코드: parangonar (github.com/sildater/parangonar). 본 프로젝트의 &quot;정답 만들기&quot;(cello-follower의 탭 정답, p95 1.5 s FAIL·중앙값 100 ms)에 쓸 오프라인 정렬 상한 후보다. 단 피아노 필터뱅크라 첼로에 그대로 쓰려면 검증이 필요하다.</p>
+<h4>Estimating the Reliability of DTW Alignments Using Circumstantial Evidence (ISMIR 2026, 확인)</h4>
+<p>Pratapneni, Yuan, Tsai (HMC). arXiv 2607.15443. 정렬 경로의 국소 구간을 떼어 FlexDTW(경계 완화)로 다시 돌린 뒤 원래 경로와 얼마나 일치하는지를 신뢰도로 쓴다. 비지도, AUROC 0.970. 오디오-오디오 정렬에서 평가. <strong>DTW 출력에 신뢰도를 붙이는 방법</strong>이라는 점에서 cello-follower의 &quot;이탈 중 들썩임&quot;(17번 문서 (a))에 입자필터 없이 접근하는 한 예다. 같은 시기 Tsai는 Segmental DTW(2607.15475), parallelizable DTW(2607.15478), Dense-Sparse DTW(2607.18189, 10번 문서의 ICASSP 2025 작업)를 arXiv에 재게시했다.</p>
+<h4>FuSiLi — 전역 지도로 국소 다중모달 정렬 (ISMIR 2026, 확인)</h4>
+<p>Bukey, Novack, Jung, Jeong, Donahue (CMU, UCSD, Neutune, 서강대). arXiv 2607.10023. 악보 이미지 패치와 오디오 프레임 사이의 Sinkhorn 기반 소프트 정렬 유사도. 전역(세그먼트 쌍) 지도만으로 국소 대응을 학습. CLIP ViT와 LAION-CLAP HTSAT를 미세조정. MSMD 프레임 단위 top-1 정확도 30%(전역 기준선 16%). 추론 시 Sinkhorn이 필요 없어 37 ms가 5 ms로. 오프라인, 실시간 주장 없음. 코드: github.com/irmakbky/fusili. 분석 9번 Bukey 2024 JLTR의 1저자가 정렬 자체를 학습으로 푼 후속이다.</p>
+<h4>A Flexible Encoding Model for Non-Unique Note Alignments (MEC 2026, 확인)</h4>
+<p>Chiruthapudi, Štefunko, Peter, Hu, Hajič jr., Cancino-Chacón. arXiv 2606.28032. Match 파일 형식을 하위 호환으로 확장. 가상 포인터 음표로 다대다 링크를 표현하고 섹션 주석을 확장해, 리허설의 반복이나 통주저음 즉흥처럼 대응이 하나로 정해지지 않는 경우를 인코딩한다. 10번 문서의 Rach3(리허설 데이터)·Basso Continuo(CMMR 2025)가 필요로 하던 데이터 형식이다.</p>
+<h4>그 외 정렬 (확인 수준 병기)</h4>
+<ul>
+<li><strong>Soft Late-Fusion Alignment … Solo Flute</strong> (Thibaud, Bigo, Giraud, Teytaut, ISMIR 2026, 프로그램 초록 확인). Syrinx와 Density 21.5 각 23개 연주. 일부에 onset 수작업 주석, 다중 참조 오디오-오디오 정렬로 전파. <strong>비피아노(플루트) 정량 정렬</strong>이지만 오프라인.</li>
+<li><strong>Time to Align!</strong> (Hentschel 외, TISMIR 9(1), 2026-07-23, 목록 확인·내용 스니펫). 그래픽·논리·물리 3개 시간 도메인 정렬 모델과 Python 라이브러리(github.com/TimeToAlign/timetoalign).</li>
+<li><strong>Music Alignment Uncovered 워크숍</strong> (MEC 2026, 도쿄 5/26, 확인). Cancino-Chacón, Park, Peter, Özer, Chiruthapudi. 오프라인·온라인 정렬 Colab 노트북이 github.com/pymatchmaker/mec2026_alignment_workshop에 있다. 분야 표준 레시피를 손으로 돌려보기에 가장 빠른 입구.</li>
+<li><strong>Cosmodoit</strong> (Guichaoua, Bedoya, Chew, arXiv 2605.03541, 목록만). 연주-악보 정렬과 특징 추출 Python 파이프라인.</li>
+</ul>
+<h3>C. 실시간·저지연 AMT</h3>
+<ul>
+<li><strong>Low-Latency Real-Time AMT with Band-Split RNN and Temporal Lookahead</strong> (Kusaka, Maezawa, Yamaha, ISMIR 2026, 프로그램 초록 확인). 서브밴드 특징을 완전 인과 RNN 인코더로 처리해 룩어헤드 없이 배음 구조를 잡고, 지연을 더 허용하면 유연한 룩어헤드를 켠다. 피아노와 기타 데이터셋에서 룩어헤드 0일 때 note-with-offset F1 +8.5포인트, 지연 −34 ms, 100 ms 미만 동작. 분석 12번 Hu 2025(&lt;30 ms)와 같은 문제를 Yamaha가 푼 것이며, <strong>기타에서 평가한 첫 저지연 AMT</strong>다. 어떤 기타 데이터셋인지는 미확인.</li>
+<li><strong>Beat This! Live</strong> (Juhász, Widmer, Schlüter, JKU, ISMIR 2026, 프로그램 초록 확인). 레이블을 시간 이동해 학습시켜 현재보다 약간 앞서 예측. GTZAN 비트 F1 80.6→86.7, 다운비트 56.5→74.1(BeatNet+ 대비). score following의 템포 사전정보로 쓸 수 있다. 17번 문서의 박자 추적 입자필터(BeatNet)를 신경망이 또 한 번 대체한 사례.</li>
+<li><strong>Harmonica</strong> (Ou, Martel, Hennessy-Priest, Cho, arXiv 2609.04640, ICASSP 2027 투고, 확인). 악기 무관 전사. nano 모델 26.3K 파라미터, 실시간의 1,622.5배 속도. 지연 수치는 초록에 없음.</li>
+<li><strong>ClassicPitch</strong> (Venohr, Weiß, ISMIR 2026, 프로그램 초록 확인). 50K 미만 CNN, 잡음 많은 역사 녹음에서도 안정. 오픈 웨이트(github.com/yannik-venohr/classic-pitch).</li>
+<li><strong>Phase-Based Onset Enhancement for Piano Transcription in Ensemble Settings</strong> (Kim, Park, Nam, KAIST, ISMIR 2026, 확인). 크기와 위상을 함께 써서 앙상블 속 피아노를 전사. 새 데이터셋 PCD-K(협주곡 피아노 파트 Disklavier 재연주, 70발췌, zenodo 21528883). &quot;다른 파트가 섞인 소리에서 한 파트&quot;라는 문제 설정이 cello-follower 4중주 문제와 같다. 단 피아노다.</li>
+<li><strong>기타 AMT 신작</strong> (확인 수준 병기): MuScriptor(Rouard 외, Kyutai/Mirelo, arXiv 2607.08168, ISMIR 2026, 1.3B 모델, Multi F1 48.2 vs YourMT3+ 21.9, 수치는 스니펫만). TUTTI(Hu 외, ISMIR 2026, 합성 다악기 A2S 사전학습). Music Transcription with (Almost) No Supervision(Shin…Thickstun, arXiv 2605.24193). Snapping Matters(Saha, Berendes, Müller, Maman, arXiv 2606.11903, ICMC 2026, 약정렬 데이터를 이분 그래프 매칭으로 onset 스냅). A Dual Evaluation for Music Transcription(Wang…Smith, arXiv 2608.04511). Dual-Time Representation Framework(Sugimoto, Nishikimi, Nakamura, ISMIR 2026, 물리시간↔박자시간 이중 표현). Velocity Prediction in Automatic Guitar Transcription(Loth, Riley, Dixon, Benetos, arXiv 2606.24912, EUSIPCO 2026). 10월 목록만 확인: SheetSage2(2610.05336), Part-Aware Choral Transcription(2610.09861), Randomized Scores and Diverse Timbres(2610.11197), Fingering-Annotated Piano Sheet Music Transcription(2609.28787).</li>
+</ul>
+<h3>D. 실시간 반주 생성 — score following 아님</h3>
+<p>LiveBand(Pasini 외, arXiv 2606.03803, ISMIR 2026, 스니펫만), Streaming Generation for Music Accompaniment(Wu…Huang, ISMIR 2026, 미래 가시성 t_f와 청크 길이 k 트레이드오프, 확인), Silent Metronome(Bretz, Soydaner, Plaat, arXiv 2609.07688, 박 위상 명시 조건화, 확인), Real-Time Language Model Jamming(2606.11886), S2Accompanist(2605.17414), MazzikaAI(2608.10360). 모두 악보를 따라가지 않는다. 분야 관심이 &quot;따라가기&quot;에서 &quot;같이 만들기&quot;로 옮겨간 흐름이며, 페이지 터너와는 무관하다.</p>
+<h3>E. 데이터셋 (11번 문서 이후 추가분)</h3>
+<table>
+<thead>
+<tr>
+<th>이름</th>
+<th>출처</th>
+<th>내용</th>
+<th>확인</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>KRAISLER</td>
+<td>Kim, Park, Lee, Kwon, Won, Nam. TISMIR 2026-08-06</td>
+<td>피아노-바이올린 이중주 20발췌 약 25분. 피아노 Disklavier MIDI, MusicXML/PDF, 피아노 악보-MIDI 정렬, 바이올린 음표·비트 주석. CC-BY 4.0, zenodo 21082251</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>BSED / BSD</td>
+<td>Berendes…Müller. TISMIR 2026</td>
+<td>베토벤 교향곡 20발췌 × 5버전 약 37분, 악보-오디오 정렬 수동 검증. BSD는 62시간 학습셋</td>
+<td>스니펫 + 목록</td>
+</tr>
+<tr>
+<td>SKY-Piano</td>
+<td>Bae…Nam. arXiv 2607.27296, ISMIR 2026</td>
+<td>다중모달 피아노 연주</td>
+<td>목록만</td>
+</tr>
+<tr>
+<td>PCD-K</td>
+<td>Kim, Park, Nam. ISMIR 2026</td>
+<td>협주곡 피아노 파트 Disklavier 재연주 70발췌</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>SheetSage-A2S</td>
+<td>Cummins…Ju. arXiv 2608.06165</td>
+<td>61시간, 9,468클립 A2S</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>OSSQ-OMR</td>
+<td>Kim, Liu, Valero-Mas, Jeong. arXiv 2608.10978, ISMIR 2026</td>
+<td>현악4중주 116곡, 시스템 이미지 24,544장</td>
+<td>스니펫만</td>
+</tr>
+</tbody></table>
+<p>KRAISLER는 <strong>바이올린 음표 주석이 있는 실내악 정렬 데이터</strong>라는 점에서 cello-follower 4중주 실녹음 정답(현재 &quot;정답 필요&quot; 상태)의 선례다. OSSQ-OMR은 현악4중주 악보 OMR 데이터로 score-ocr의 4중주 PDF 작업(waltz2·passacaglia)과 같은 입력 유형이다.</p>
+<h3>F. OMR — 사진→악보</h3>
+<ul>
+<li><strong>Measure for Measure</strong> (Hornbogen, Valentin, ISMIR 2026, 프로그램 초록 확인). 마디 단위 정렬 지표 MCR. **kern·ABC·MusicXML을 직접 파싱해 마디 단위로 정렬한 뒤 음표를 채점하고, 46샘플 인간 연구에서 수정 노력과 가장 잘 맞았다고 한다. DINOv2 기반 184M 모델을 PDMX로 학습.</li>
+</ul>
+<table>
+<thead>
+<tr>
+<th>평가셋</th>
+<th>제안 (MCR)</th>
+<th>기존 SOTA</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Sheet Music Benchmark, zero-shot</td>
+<td>6.38%</td>
+<td>35.92%</td>
+</tr>
+<tr>
+<td>OpenScore Quartets 카메라 촬영 페이지</td>
+<td>9.91%</td>
+<td>56.23%</td>
+</tr>
+</tbody></table>
+<p>arXiv와 코드는 미확인. score-ocr의 지표가 &quot;곡당 남는 손일&quot;인데, MCR이 바로 그것을 겨냥한 지표다. 모델이 공개되면 Audiveris 대비 재측정 대상.</p>
+<ul>
+<li><strong>OSSQ-OMR</strong> (위 표). OMR-NED 3.6%(합성) / 5.9%(스캔).</li>
+<li><strong>Debussy Dataset</strong> (Scheithauer 외, ISMIR 2026, 확인). 자필 악보에서 SOTA zero-shot SER 80% 초과, 미세조정 후 51~64%.</li>
+<li><strong>OMR for Real-World Manuscripts with Synthetic Data</strong> (Mayer…Hajič jr., arXiv 2606.09479, ICDAR 2026, 확인). Smashcima 합성으로 도메인 적응.</li>
+<li><strong>Transcoda</strong> (arXiv 2605.10835, 스니펫만), <strong>Full-Page OMR of Handwritten Monophonic Scores</strong> (Rosello 외, arXiv 2609.05662, 스니펫만).</li>
+<li><strong>Audiveris 5.11.0</strong> (2026-07-11, GitHub API 확인. 5.10.0은 2026-03-11). 개인 shape set, 글리프 분류기 L2 정규화, 두께가 다른 오선 처리 개선. score-ocr은 5.10 기준이므로 업데이트 후 재측정 대상.</li>
+</ul>
+<h3>G. foundation model / diffusion</h3>
+<ul>
+<li><strong>Audio-to-Score Transcription using Pre-trained Features … SheetSage-A2S</strong> (Cummins…Ju, arXiv 2608.06165, 확인). <strong>MuQ</strong> 특징으로 클래식 SER 4.98%(기존 15.3%), 팝 20.92%.</li>
+<li><strong>On the use of Pre-trained Audio Encoders for A2S Transcription</strong> (Hidalgo-Centeno, Penarrubia, Valero-Mas, ISMIR 2026, 초록·README 확인). 인코더 6종(cnn, music2vec, <strong>MERT</strong>, wav2vec2, Whisper, Qwen2, Flamingo3)을 동결·LoRA·전체 미세조정으로 비교, 오류율 3% 미만.</li>
+<li><strong>Noise2Fret</strong> (Simionato, Bigo, arXiv 2608.30854, ISMIR 2026, 스니펫만). 확산으로 줄·프렛을 생성하고 손 뻗기 가능성 등 보조손실 5종. GuitarSet과 <strong>GOAT</strong>로 평가. tab-ripper가 뽑는 &quot;줄·프렛&quot; 표현을 오디오에서 직접 생성하는 쪽의 최신작이다.</li>
+<li><strong>Masked Diffusion Enables Coherent Beat Tracking</strong> (Foscarin, Korzeniowski, Vogl, arXiv 2608.04624, ISMIR 2026, 목록만). 17번 문서의 Korzeniowski가 13년 뒤 확산 모델로 박자 추적을 한다.</li>
+<li><strong>U-MusT</strong> (Sogang, SNU, CMU. ICASSP 2026 포스터 확인. 원 arXiv 2505.12863). 악보 이미지·기호·오디오를 하나의 Transformer로 상호 번역, OMR SER 24.58% → 13.67%. YTSV는 1,300시간 이상의 유튜브 악보 영상 쌍(github.com/MALerLab/youtube-score-video-dataset). 5월 이전 작업이라 10번 문서에 빠졌던 것을 여기서 보충한다. tab-ripper의 &quot;영상에서 악보 읽기&quot;와 같은 입력 유형이지만 오선보이고 탭이 아니다.</li>
+</ul>
+<h3>H. 페이지터너·악보 읽기 인터페이스</h3>
+<ul>
+<li>SMC 2026 프로그램에 &quot;Challenges for Eye-Tracking in Naturalistic Music-Reading Setups: A Pilot Study&quot;(Charlotte Schneider)가 있다(제목만 확인). 같은 프로그램에 score following 논문은 없다.</li>
+<li>&quot;Analyzing Visual Attention Patterns During Band Rehearsal with Mobile Eye Tracking&quot; (arXiv 2606.03485, ETRA &#39;26, 스니펫만).</li>
+<li>&quot;Gaze behavior of a cellist: From sight-reading to performance&quot; (Ritchie, Sharpe, Musicae Scientiae 2026, doi 10.1177/10298649251385671, 스니펫만). <strong>첼리스트의 시선 행동</strong> 연구. 페이지 넘김 시점을 &quot;눈이 어디를 보는가&quot;로 정하려 할 때 유일한 첼로 전용 자료다.</li>
+<li>CHI/UIST 2026의 페이지터너 논문은 미확인(찾지 못함).</li>
+</ul>
+<h2>후속 추적 결과</h2>
+<table>
+<thead>
+<tr>
+<th>추적 대상</th>
+<th>결과</th>
+<th>확인</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>(a) Matchmaker</td>
+<td>v0.1.1(2024-12) → v0.2.1(2025-10) → <strong>v0.3.0(2026-05-25)</strong>. 악보 MusicXML 템포 직접 파싱, Outer-product HMM, Pitch-IOI HMM, parangonar 트래커, Arzt·Dixon 심볼릭 버전, 오디오·MIDI 입자필터(#56), 1 ms 폴링. 이후 PR: alignment_path 순서 변경(07-13), 평가 기능 benchmark 저장소로 분리(07-23), Dixon OLTW·LSE 특징 재작업(08-26), <strong>Korzeniowski식 입자필터 follower #66(08-31)</strong>, methods.yaml 플러그인 등록(#67, 10-05). 커밋 메시지상 중복 note id 버그로 평가 fold 5개 악보(146곡 중 85곡)에서 parangonar 계열 4개가 완주하지 못했고, 입자필터는 공유 RNG 때문에 실행 순서에 따라 결과가 달라지는 비결정성 버그가 있었다. 둘 다 수정됨</td>
+<td>GitHub API 확인</td>
+</tr>
+<tr>
+<td>(b) RUMAA 후속, Primenta·Loth·Benetos 다악기 정식 논문</td>
+<td><strong>미발견</strong>. Chang의 2026 arXiv는 생성·Text2Score·AMT Challenge 결과뿐. Loth 등은 기타 velocity 전사(EUSIPCO 2026)만</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(c) Cowley GP+HMM 후속</td>
+<td><strong>미발견</strong></td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(d) JKU transcribe-then-track·저지연 AMT 후속</td>
+<td>JKU는 오프라인 정밀 정렬, Match 형식 확장, Beat This! Live, 표현 타이밍 대규모 연구(Hu 외, TISMIR 2026-07-17, 목록만)로 갔다. 2026-05 이후 새 실시간 피아노 전사 논문은 없음. transcribe-then-track 구조를 이어받은 것은 KAIST STRAdi(바이올린)</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(e) GOAT·Guitar-TECHS 사용 논문</td>
+<td>기타 정렬·following 논문은 <strong>없음</strong>. GOAT는 Noise2Fret이 사용. TART(2609.11904, UC Berkeley, ISMIR 2026, 스니펫만)가 audio→MIDI F50 81.35%, Tab F1 71.8%. Guitar-TECHS 사용 2026 논문 미확인</td>
+<td>확인/스니펫</td>
+</tr>
+<tr>
+<td>(f) 첼로·바이올린·현악 following</td>
+<td>바이올린: STRAdi가 첫 정량 following. 관련 자원 KRAISLER, VioTech(ISMIR 2026 바이올린 주법 검출), VIOLET·VioLM(합성), OSSQ-OMR. <strong>첼로 following 논문은 없음</strong></td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(g) MERT/MuQ/MusicFM 정렬</td>
+<td>오디오-악보 정렬에 쓴 논문 <strong>없음</strong>. 가장 가까운 것은 FuSiLi(CLIP+CLAP, 이미지-오디오). MuQ·MERT는 A2S 전사에만</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(h) diffusion/flow 정렬</td>
+<td><strong>없음</strong>. 확산은 탭 전사·비트 추적·드럼 전사·반주 생성에만</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(i) 입자필터/SMC 재사용</td>
+<td>논문은 없고 <strong>코드만</strong>. Matchmaker v0.3.0 입자필터(#56), Korzeniowski식 follower(#66). 17번 문서 참고</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(j) OMR 2026</td>
+<td>F절. Measure for Measure(카메라 촬영 9.91%), Audiveris 5.11.0. Sheet Music Benchmark 후속으로 Measure for Measure가 SMB를 주 평가셋으로 쓰며 지표를 비판. OMR + 실시간 추적 결합은 LISzT 데모</td>
+<td>확인</td>
+</tr>
+<tr>
+<td>(k) 유튜브 탭 영상·탭 OCR</td>
+<td>2026 학술 논문 <strong>없음</strong>. 비학술 자원 github.com/rohin-garg/youtube-guitar-tab-parser(프레임 샘플링 후 LLM vision으로 탭 영역 검출, 마디 번호로 중복 제거, PDF 합침. Show HN, 스니펫만). U-MusT/YTSV는 오선보 영상이며 탭 아님. TISMIR &quot;Rhythm Guitar Tablature Continuation&quot;(D&#39;Hooge 외, 2026-08-10)은 탭 생성</td>
+<td>확인/스니펫</td>
+</tr>
+</tbody></table>
+<p>tab-ripper 관점: (k)의 결론은 &quot;학술적으로 아무도 안 한 일&quot;이라는 뜻이다. 유튜브 탭 영상 추출은 저작권 문제로 논문이 나오기 어려운 주제이고, 유일한 선례(youtube-guitar-tab-parser)는 LLM vision으로 탭 영역을 찾는 방식이라 tab-ripper의 &quot;채널 프로파일 + 템플릿 매칭&quot; 결정과 정반대다. 둘을 비교 측정할 가치는 있다.</p>
+<h2>공백 재판정 (2026-10 기준)</h2>
+<table>
+<thead>
+<tr>
+<th>10번 문서가 &quot;없다&quot;고 한 것</th>
+<th>판정</th>
+<th>근거</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>foundation model 기반 alignment</td>
+<td><strong>부분적으로 메워짐</strong></td>
+<td>FuSiLi(CLIP+CLAP 미세조정, 악보 이미지-오디오 프레임 정렬, 오프라인). MERT/MuQ 오디오-악보 정렬은 여전히 없음</td>
+</tr>
+<tr>
+<td>diffusion 기반 alignment</td>
+<td><strong>안 메워짐</strong></td>
+<td>확산은 탭 전사·비트 추적·반주 생성에만</td>
+</tr>
+<tr>
+<td>페이지터너 user study</td>
+<td><strong>안 메워짐</strong></td>
+<td>CODA가 반복 복구를 정량화했지만 사용자 연구 없음. 주변은 eye-tracking 파일럿(SMC 2026, 제목만), 첼리스트 시선(Musicae Scientiae, 스니펫), LISzT 데모(목록만)</td>
+</tr>
+<tr>
+<td>비피아노(첼로·기타) 정량 follower</td>
+<td><strong>바이올린은 메워짐, 첼로·기타는 안 메워짐</strong></td>
+<td>STRAdi(바이올린 transcribe-and-track). 플루트 오프라인 정렬(Thibaud 외). 기타는 실시간 AMT(Kusaka·Maezawa)까지만. Matchmaker 벤치마크 URMP 메타는 있으나 평가 미포함</td>
+</tr>
+<tr>
+<td>Henkel/IRCAM/CMU 라인 침묵</td>
+<td><strong>CMU는 깨짐, Henkel·IRCAM은 지속</strong></td>
+<td>CMU: Accomplice, FuSiLi, U-MusT. Henkel 계열 방법론은 CODA가 이어받았으나 본인 신작 없음. IRCAM 신작 없음(Roebel은 MuScriptor 공저만)</td>
+</tr>
+</tbody></table>
+<p>10번 문서의 결론 &quot;MERT/MuQ를 비-피아노 score following에 처음 적용하는 것이 가장 큰 미개척 기회&quot;는 <strong>그대로 유효</strong>하다. 다만 5개월 사이 바이올린 전사기(STRAdi)와 바이올린 정렬 데이터(KRAISLER)가 생겨, 그 기회의 재료 중 &quot;비-피아노 전사기&quot;와 &quot;정답 데이터&quot; 두 가지가 바이올린에 한해 공개됐다.</p>
+<h2>학회별 현황</h2>
+<table>
+<thead>
+<tr>
+<th>학회</th>
+<th>상태</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ISMIR 2026</td>
+<td>본 논문 140편 공개(accepted-papers 페이지, papers.json). 아부다비 하이브리드. <strong>LBD 목록 미공개</strong>(lbds.json 빈 배열, 마감 9/25, camera-ready 10/16). arXiv 주석상 LBD는 ScorePrompts, LayerIt, CloudEar, PANEL. 튜토리얼 6종(LLMs×Music, HARP, Intro to MIR, Evaluating Music Foundation Models, Attribution, Music for Learning) 중 score following 없음</td>
+</tr>
+<tr>
+<td>ICASSP 2026</td>
+<td>arXiv 주석 &quot;ICASSP 2026&quot; 음악 논문 57편 중 score following·정렬 논문 없음. U-MusT 발표만</td>
+</tr>
+<tr>
+<td>MEC 2026</td>
+<td>Precise and Simple Alignment, Flexible Encoding Model, 정렬 워크숍, Video-to-Score Alignment in MEI(Reich), Score-Agnostic Structure Analysis(Hu, Peter, Widmer), Measure Detector 재검토(Nguyen, Beer). 제목만 확인</td>
+</tr>
+<tr>
+<td>NIME 2026</td>
+<td>Accomplice</td>
+</tr>
+<tr>
+<td>SMC 2026</td>
+<td>score following 없음. Beat Tracking for Live Improvisation(Monnet, Wollny, Rohrmeier), Score-Informed Transformer for MIDI Velocity(He, Togneri, Huang), eye-tracking 파일럿</td>
+</tr>
+<tr>
+<td>ICMC 2026</td>
+<td>Snapping Matters</td>
+</tr>
+<tr>
+<td>DAFx 2026 / CMMR 2026</td>
+<td>관련 논문 미확인 / 개최 여부 미확인</td>
+</tr>
+<tr>
+<td>TISMIR 2026</td>
+<td>KRAISLER, BSED, Time to Align!, Hu 외 표현 타이밍, 리듬기타 탭 생성</td>
+</tr>
+</tbody></table>
+<h2>누락 보충 (2026-05 이전, 10번 문서에 없던 것)</h2>
+<ul>
+<li><strong>U-MusT / YTSV</strong> (arXiv 2505.12863, 2025-05). 위 G절.</li>
+<li><strong>GAPS (Guitar-Aligned Performance Scores)</strong> (QMUL, aim-qmul.github.io/GAPS, 2024, 스니펫만). 클래식 기타 14시간, 악보-오디오 정렬, 200명 이상 연주자, score following 용도 명시. 11번 문서의 GOAT·Guitar-TECHS와 함께 봐야 할 기타 정렬 데이터.</li>
+<li><strong>VioPTT</strong> (arXiv 2509.23759, 스니펫만). STRAdi의 기반 바이올린 주법 인식 전사 모델.</li>
+<li><strong>Matchmaker ISMIR 2025 논문의 Zenodo판</strong> &quot;A Systematic Evaluation of Real-Time Audio Score Following for Piano Performance&quot;(zenodo 17706341). 분석 10번 Park 2025와 같은 작업인지 제목이 달라 확인 필요.</li>
+<li><strong>Interactive Performance</strong> (Bang, Kwon, Nam, arXiv 2505.16259, 목록만). 실시간 전사를 쓴 예술 응용.</li>
+</ul>
+<h2>결론 — 5개월의 한 줄과 응용 권고</h2>
+<p>5개월 동안 분야는 (1) transcribe-then-track이 바이올린으로 확장(STRAdi), (2) 이미지 기반 추적이 반복·점프 복구를 정량화(CODA), (3) 평가 인프라가 리더보드로 진화하되 아직 피아노만(Matchmaker Benchmark), (4) OMR이 카메라 촬영 입력에서 실용 수준에 근접(Measure for Measure), 네 가지를 보였다. 첼로·기타 follower와 페이지 터너 사용자 연구는 여전히 비어 있다.</p>
+<p>본 프로젝트 응용 권고는 12번·15번 문서를 바꾸지 않는다. 바뀐 재료만 적는다.</p>
+<ul>
+<li><strong>cello-follower</strong>: 학습 노선으로 가야 할 때 STRAdi 전사기(공개, Apache-2.0)를 첼로 음역으로 옮기는 것이 첫 후보. 4중주 실녹음 정답은 KRAISLER의 주석 방식을 따라 만든다. 이탈 중 들썩임은 Tsai의 DTW 신뢰도 추정이 입자필터 없는 접근의 선례다. 반복 생략 복구는 CODA의 break mode 벤치마크(MSMD 131개 반복 주석)가 첫 비교 대상이다.</li>
+<li><strong>score-ocr</strong>: Audiveris 5.11.0으로 올려 재측정. Measure for Measure 모델이 공개되면 &quot;곡당 손일&quot; 지표로 Audiveris와 비교. 4중주 PDF는 OSSQ-OMR과 같은 입력 유형이라 그 데이터의 오류 분포가 참고가 된다.</li>
+<li><strong>tab-ripper</strong>: 학술 선례 없음. 유일한 비학술 선례(LLM vision 탭 영역 검출)와 템플릿 매칭을 같은 영상에서 비교 측정하면 그 자체가 기록할 가치가 있다. Noise2Fret·TART는 오디오에서 탭을 만드는 쪽이라 영상 추출의 검증 기준선으로 쓸 수 있다.</li>
+<li><strong>아카이브</strong>: ISMIR 2026 논문집(11월)이 공개되면 STRAdi, Kusaka·Maezawa, Measure for Measure, Thibaud 외의 수치표를 채우고, LBD 목록을 확인한다.</li>
+</ul>
+<h2>참고 URL</h2>
+<p><strong>ISMIR 2026</strong></p>
+<ul>
+<li><a href="https://ismir2026.ismir.net/accepted-papers">https://ismir2026.ismir.net/accepted-papers</a></li>
+<li><a href="https://ismir2026program.ismir.net/">https://ismir2026program.ismir.net/</a></li>
+<li><a href="https://ismir2026.ismir.net/tutorials">https://ismir2026.ismir.net/tutorials</a></li>
+</ul>
+<p><strong>Score following / 정렬</strong></p>
+<ul>
+<li><a href="https://github.com/seingreen/STRAdi">https://github.com/seingreen/STRAdi</a></li>
+<li><a href="https://arxiv.org/abs/2607.21899">https://arxiv.org/abs/2607.21899</a> · <a href="https://github.com/ValleyC/CODA">https://github.com/ValleyC/CODA</a></li>
+<li><a href="https://nime.org/proc/nime2026_140/index.html">https://nime.org/proc/nime2026_140/index.html</a> · <a href="https://zenodo.org/records/20784425">https://zenodo.org/records/20784425</a></li>
+<li><a href="https://www.jiyunpark.me/publications">https://www.jiyunpark.me/publications</a></li>
+<li><a href="https://arxiv.org/abs/2605.20014">https://arxiv.org/abs/2605.20014</a> · <a href="https://github.com/sildater/parangonar">https://github.com/sildater/parangonar</a></li>
+<li><a href="https://arxiv.org/abs/2607.15443">https://arxiv.org/abs/2607.15443</a></li>
+<li><a href="https://arxiv.org/abs/2607.10023">https://arxiv.org/abs/2607.10023</a> · <a href="https://github.com/irmakbky/fusili">https://github.com/irmakbky/fusili</a></li>
+<li><a href="https://arxiv.org/abs/2606.28032">https://arxiv.org/abs/2606.28032</a></li>
+<li><a href="https://transactions.ismir.net/articles/10.5334/tismir.296">https://transactions.ismir.net/articles/10.5334/tismir.296</a> · <a href="https://github.com/TimeToAlign/timetoalign">https://github.com/TimeToAlign/timetoalign</a></li>
+<li><a href="https://pymatchmaker.github.io/mec2026_alignment_workshop/index.html">https://pymatchmaker.github.io/mec2026_alignment_workshop/index.html</a></li>
+<li><a href="https://music-encoding.org/conference/2026/program/">https://music-encoding.org/conference/2026/program/</a></li>
+</ul>
+<p><strong>Matchmaker</strong></p>
+<ul>
+<li><a href="https://github.com/pymatchmaker/matchmaker">https://github.com/pymatchmaker/matchmaker</a> · <a href="https://github.com/pymatchmaker/matchmaker/releases/tag/v0.3.0">https://github.com/pymatchmaker/matchmaker/releases/tag/v0.3.0</a></li>
+<li><a href="https://github.com/pymatchmaker/matchmaker_benchmark">https://github.com/pymatchmaker/matchmaker_benchmark</a> · <a href="https://pymatchmaker.github.io/matchmaker_benchmark/">https://pymatchmaker.github.io/matchmaker_benchmark/</a></li>
+</ul>
+<p><strong>AMT</strong></p>
+<ul>
+<li><a href="https://arxiv.org/abs/2609.04640">https://arxiv.org/abs/2609.04640</a></li>
+<li><a href="https://github.com/yannik-venohr/classic-pitch">https://github.com/yannik-venohr/classic-pitch</a></li>
+<li><a href="https://zenodo.org/records/21528883">https://zenodo.org/records/21528883</a></li>
+<li><a href="https://arxiv.org/abs/2607.08168">https://arxiv.org/abs/2607.08168</a> · <a href="https://arxiv.org/abs/2605.24193">https://arxiv.org/abs/2605.24193</a> · <a href="https://arxiv.org/abs/2606.11903">https://arxiv.org/abs/2606.11903</a> · <a href="https://arxiv.org/abs/2608.04511">https://arxiv.org/abs/2608.04511</a> · <a href="https://arxiv.org/abs/2606.24912">https://arxiv.org/abs/2606.24912</a></li>
+</ul>
+<p><strong>반주 생성</strong></p>
+<ul>
+<li><a href="https://arxiv.org/abs/2606.03803">https://arxiv.org/abs/2606.03803</a> · <a href="https://arxiv.org/abs/2609.07688">https://arxiv.org/abs/2609.07688</a></li>
+</ul>
+<p><strong>foundation model / diffusion / 기타 탭</strong></p>
+<ul>
+<li><a href="https://arxiv.org/abs/2608.06165">https://arxiv.org/abs/2608.06165</a> · <a href="https://github.com/ahidalgocenteno/a2s-pretrained">https://github.com/ahidalgocenteno/a2s-pretrained</a></li>
+<li><a href="https://arxiv.org/abs/2608.30854">https://arxiv.org/abs/2608.30854</a> · <a href="https://arxiv.org/abs/2609.11904">https://arxiv.org/abs/2609.11904</a> · <a href="https://arxiv.org/abs/2608.04624">https://arxiv.org/abs/2608.04624</a></li>
+<li><a href="https://arxiv.org/pdf/2505.12863">https://arxiv.org/pdf/2505.12863</a> · <a href="https://github.com/MALerLab/youtube-score-video-dataset">https://github.com/MALerLab/youtube-score-video-dataset</a></li>
+</ul>
+<p><strong>데이터셋 / TISMIR</strong></p>
+<ul>
+<li><a href="https://transactions.ismir.net/articles/10.5334/tismir.338">https://transactions.ismir.net/articles/10.5334/tismir.338</a> · <a href="https://zenodo.org/records/21082251">https://zenodo.org/records/21082251</a></li>
+<li><a href="https://transactions.ismir.net/articles/10.5334/tismir.343">https://transactions.ismir.net/articles/10.5334/tismir.343</a></li>
+<li><a href="https://arxiv.org/abs/2607.27296">https://arxiv.org/abs/2607.27296</a></li>
+</ul>
+<p><strong>OMR</strong></p>
+<ul>
+<li><a href="https://arxiv.org/abs/2608.10978">https://arxiv.org/abs/2608.10978</a> · <a href="https://arxiv.org/abs/2606.09479">https://arxiv.org/abs/2606.09479</a> · <a href="https://arxiv.org/abs/2605.10835">https://arxiv.org/abs/2605.10835</a> · <a href="https://arxiv.org/abs/2609.05662">https://arxiv.org/abs/2609.05662</a></li>
+<li><a href="https://github.com/Audiveris/audiveris/releases">https://github.com/Audiveris/audiveris/releases</a></li>
+</ul>
+<p><strong>페이지터너 주변</strong></p>
+<ul>
+<li><a href="https://smc26.mbz.hr/index.php?opt=item&amp;act=mlist&amp;id=8">https://smc26.mbz.hr/index.php?opt=item&amp;act=mlist&amp;id=8</a></li>
+<li><a href="https://arxiv.org/abs/2606.03485">https://arxiv.org/abs/2606.03485</a></li>
+<li><a href="https://doi.org/10.1177/10298649251385671">https://doi.org/10.1177/10298649251385671</a></li>
+</ul>
+<p><strong>후속 추적 / 누락 보충</strong></p>
+<ul>
+<li><a href="https://arxiv.org/abs/2502.10426">https://arxiv.org/abs/2502.10426</a></li>
+<li><a href="https://github.com/JackJamesLoth/GOAT-Dataset">https://github.com/JackJamesLoth/GOAT-Dataset</a> · <a href="https://aim-qmul.github.io/GAPS/">https://aim-qmul.github.io/GAPS/</a></li>
+<li><a href="https://arxiv.org/pdf/2509.23759">https://arxiv.org/pdf/2509.23759</a></li>
+<li><a href="https://zenodo.org/records/17706341">https://zenodo.org/records/17706341</a></li>
+<li><a href="https://github.com/rohin-garg/youtube-guitar-tab-parser">https://github.com/rohin-garg/youtube-guitar-tab-parser</a></li>
+</ul>
+<h2>조사 한계</h2>
+<p>arXiv 검색 페이지는 최근 결과 50<del>200건으로 잘리기 때문에 2026-05</del>10 cs.SD 전체를 한 건씩 훑지는 못했다. 주제어·저자 검색과 ISMIR 2026 papers.json 전체 140편의 초록 키워드 스캔으로 보완했다. STRAdi, Kusaka·Maezawa, Measure for Measure, Thibaud 외의 arXiv판과 상세 수치표는 찾지 못했다. ISMIR 2026 논문집 PDF가 공개되면 다시 확인할 대상이다.</p>
+
+</template>
